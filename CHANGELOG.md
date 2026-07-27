@@ -4,6 +4,28 @@ All notable changes to skyplothelper are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1]
+
+### Performance
+- Constellation boundary overlays render dramatically faster: the plotly path
+  ~25× (a ~25 s call is now ~1 s) and the matplotlib path ~10×. `project()`
+  now memoizes the per-projection WCS (which also speeds up any code that
+  projects many small batches against the same frame), and
+  `add_constellation_boundaries` draws all chords in a single artist.
+
+### Changed
+- `add_constellation_boundaries` returns a one-element list containing a single
+  `matplotlib.collections.LineCollection` of all boundary chords (previously a
+  list of individual `Line2D` artists). Iterate `get_segments()` for
+  per-segment access.
+
+### Fixed
+- Compatibility with numpy 2.0 (`ndarray.ptp()` / `np.trapz` removals) and
+  Python 3.14 (annotation rendering in the generated `llms-full.txt`).
+
+[1.0.1]: https://github.com/pjcigan/skyplothelper/releases/tag/v1.0.1
+
+
 ## [1.0.0]
 
 Initial release.

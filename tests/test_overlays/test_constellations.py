@@ -195,13 +195,14 @@ def test_constellation_boundaries_no_seam_streak_on_galactic_frame():
     fig.canvas.draw()
     lines = add_constellation_boundaries(ax)
     fig.canvas.draw()
+    lc = lines[0]                       # single LineCollection of all chords
+    tr = lc.get_transform()
     worst = 0.0
-    for ln in lines:
-        pts = ln.get_transform().transform(
-            np.column_stack([ln.get_xdata(), ln.get_ydata()]))
-        pts = pts[np.isfinite(pts).all(1)]
-        if len(pts) >= 2:
-            worst = max(worst, float(np.abs(np.diff(pts[:, 0])).max()))
+    for seg in lc.get_segments():       # each chord's endpoints, per-segment
+        disp = tr.transform(seg)
+        disp = disp[np.isfinite(disp).all(1)]
+        if len(disp) >= 2:
+            worst = max(worst, float(np.abs(np.diff(disp[:, 0])).max()))
     assert worst < 0.5 * fig.bbox.width    # no boundary sweeps across the map
     plt.close(fig)
 
@@ -235,8 +236,9 @@ def test_boundary_densification_is_tunable():
     coarse = sph.add_constellation_boundaries(ax, step_deg=5.0)
     fine = sph.add_constellation_boundaries(ax, step_deg=0.5)
 
-    def npts(arts):
-        return sum(len(a.get_xdata()) for a in arts if hasattr(a, "get_xdata"))
+    def nsegs(arts):
+        return sum(len(a.get_segments())
+                   for a in arts if hasattr(a, "get_segments"))
 
-    assert npts(fine) > npts(coarse) * 3
+    assert nsegs(fine) > nsegs(coarse) * 3
     plt.close(fig)

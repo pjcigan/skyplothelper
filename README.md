@@ -294,9 +294,10 @@ are available.
 Bug reports, feature requests, and pull requests are welcome — with the honest caveat that
 skyplothelper is maintained by a single developer with limited time, so reviews and fixes happen as
 time allows and may take a while. For anything non-trivial, please open an issue to discuss before
-writing code. Usage questions ("how do I do X?") are usually answered fastest by the
-[docs](https://skyplothelper.readthedocs.io) or by `sph.recipes('<keyword>')` in your own session —
-issues are best reserved for bugs and feature ideas. See
+writing code. Usage questions ("how do I do X?") belong in
+[Discussions](https://github.com/pjcigan/skyplothelper/discussions) — and are usually answered
+fastest by the [docs](https://skyplothelper.readthedocs.io) or by `sph.recipes('<keyword>')` in your
+own session — so issues stay reserved for bugs and feature ideas. See
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for development setup, guidelines, and what to expect, and
 please be kind and constructive in all project spaces.
 

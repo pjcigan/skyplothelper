@@ -30,9 +30,11 @@ is left wondering.
 
 A quick triage, since each needs something different:
 
-- **"How do I do X?"** — usage questions are welcome, but they're the lowest
-  priority here and may go unanswered during busy stretches. The docs will
-  usually get you an answer faster than I can: the [user
+- **"How do I do X?"** — usage questions are welcome in
+  [Discussions](https://github.com/pjcigan/skyplothelper/discussions);
+  please post them there rather than opening an issue, so the tracker stays
+  focused on bugs and features. They may go unanswered during busy stretches,
+  and the docs will usually get you an answer faster than I can: the [user
   guide](https://skyplothelper.readthedocs.io/en/latest/guide/index.html)
   explains each subsystem, the
   [tutorials](https://skyplothelper.readthedocs.io/en/latest/tutorials/index.html)

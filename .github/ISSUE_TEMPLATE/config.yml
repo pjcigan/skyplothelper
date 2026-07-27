@@ -4,16 +4,21 @@
 # directory, which keeps reports structured — the bug form requires a
 # reproducer and version info, the two things that otherwise cost a round trip.
 #
-# The contact link below intercepts usage questions before they become issues.
-# When GitHub Discussions is enabled for this repo, add a Discussions (Q&A)
-# contact link above the docs link and update the matching wording in
-# CONTRIBUTING.md and README.md to point there instead.
+# The contact links below intercept usage questions before they become issues,
+# routing them to Discussions (Q&A) and the docs so the tracker stays focused on
+# bugs and feature ideas.
 blank_issues_enabled: false
 
 contact_links:
   - name: Question — "how do I do X?"
+    url: https://github.com/pjcigan/skyplothelper/discussions
+    about: >-
+      Ask usage questions in Discussions (Q&A) — that keeps the issue tracker
+      focused on bugs and feature ideas. A quick check of the user guide, the
+      tutorials, or sph.overview() / sph.recipes('<keyword>') in your own
+      session often answers it even faster.
+  - name: Docs — user guide, tutorials, gallery
     url: https://skyplothelper.readthedocs.io
     about: >-
-      Usage questions are usually answered fastest by the user guide, the
-      tutorials, or sph.overview() / sph.recipes('<keyword>') in your own
-      session. Please reserve issues for bugs and feature ideas.
+      The user guide explains each subsystem, the tutorials are runnable
+      end-to-end examples, and the feature gallery shows recipes at a glance.

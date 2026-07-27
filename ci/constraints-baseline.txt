@@ -1,0 +1,31 @@
+# Validated baseline — the exact stack the dev environment is green against
+# (numpy 1.26 / matplotlib 3.9 / astropy 6.0, and the optional test deps at
+# their dev-env minors). The must-pass CI job installs against these
+# constraints so it reproduces local green; the informational "latest deps"
+# job runs unconstrained to surface forward-compat drift.
+#
+# Pinned to the minor series (==X.Y.*), not exact patch, so security patches
+# still flow. Bump these deliberately when you validate a newer stack locally.
+#
+# Usage:  pip install -e ".[dev,test]" -c ci/constraints-baseline.txt
+
+# Core (pinned tightly — these are where version drift bites: astropy WCS /
+# tick-formatting behavior, shapely 2.0→2.1 geometry changes, numpy stubs).
+numpy==1.26.*
+matplotlib==3.9.*
+astropy==6.0.*
+shapely==2.0.*
+
+# Optional runtime deps (from the [test] extra).
+scipy==1.12.*
+plotly==5.*
+astroquery==0.4.*
+reproject==0.13.*
+pandas==2.*
+pysymlog==1.0.*
+dash==4.*
+
+# Lint / type tools — pinned so checks are reproducible (stub-version drift in
+# matplotlib/numpy typing is noise, not code defects).
+mypy==2.1.*
+ruff==0.15.*

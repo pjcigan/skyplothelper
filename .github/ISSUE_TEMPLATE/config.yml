@@ -1,0 +1,19 @@
+# Issue-chooser configuration.
+#
+# blank_issues_enabled: false forces a choice between the forms in this
+# directory, which keeps reports structured — the bug form requires a
+# reproducer and version info, the two things that otherwise cost a round trip.
+#
+# The contact link below intercepts usage questions before they become issues.
+# When GitHub Discussions is enabled for this repo, add a Discussions (Q&A)
+# contact link above the docs link and update the matching wording in
+# CONTRIBUTING.md and README.md to point there instead.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Question — "how do I do X?"
+    url: https://skyplothelper.readthedocs.io
+    about: >-
+      Usage questions are usually answered fastest by the user guide, the
+      tutorials, or sph.overview() / sph.recipes('<keyword>') in your own
+      session. Please reserve issues for bugs and feature ideas.

@@ -1,0 +1,386 @@
+/* ---------------------------------------------------------------------------
+   skyplothelper docs — appearance overrides.
+
+   The pydata-sphinx-theme exposes its colors, fonts, and spacing as CSS
+   variables, so a custom look is just a matter of overriding values here.
+   Uncomment and tweak. Light and dark modes are themed independently via the
+   [data-theme="light"] / [data-theme="dark"] selectors.
+
+   Full variable reference:
+   https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html
+   --------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+   Color palette — an astronomy / sky-chart aesthetic: muted, refined tones
+   (more "cozy jazz cocktail bar" than "nightclub"). The light mode draws from
+   the package's own "publication" + "parchment" plot themes (warm paper, ink
+   blue, leather/rust); the dark mode is a warm charcoal (the "coffee" plot
+   theme / a denim-and-cream code scheme) with gold-leaf and ember accents.
+   Tweak any value here — these are the only knobs that drive the whole site.
+   --------------------------------------------------------------------------- */
+
+/*::selection {
+/*    background-color: #your-hex-color; /* Controls the highlight background */
+/*    color: #your-hex-color;            /* Controls the text color */
+/*}
+
+/* Custom selection (highlight) for Light Mode */
+html[data-theme="light"] ::selection {
+    background-color: #caab70;
+    color: #fffae4;
+}
+
+/* Custom selection (highlight) for Dark Mode */
+html[data-theme="dark"] ::selection {
+    background-color: #926d44;
+    color: #d9d5c5;
+}
+
+/* --- Light mode: warm paper, ink blue, leather/rust ----------------------- */
+html[data-theme="light"] {
+    /* surfaces */
+    --pst-color-background: #faf7f0;     /* warm cream page */
+    --pst-color-on-background: #f0e8d8;  /* header / footer — warm parchment, recedes below the page */
+    --pst-color-surface: #f2ece0;        /* cards, admonitions, code blocks */
+    --pst-color-on-surface: #2e2b26;
+    /* text */
+    --pst-color-text-base: #2e2b26;      /* warm near-black ink */
+    --pst-color-text-muted: #847d6e;     /* taupe */
+    /* brand + links */
+    --pst-color-primary: #2e5266;        /* ink / slate blue */
+    --pst-color-secondary: #9d4b36;      /* rust */
+    /* Hover for secondary-styled buttons (the "back to top" pill). The theme's
+       default -highlight is an off-palette purple; deepen our own rust instead. */
+    --pst-color-secondary-highlight: #7c3a2b;      /* deeper rust (button hover) */
+    --pst-color-secondary-highlight-text: #ffffff;
+    --pst-color-accent: #b98e3e;         /* brass */
+    --pst-color-link: #2e5266;
+    --pst-color-link-hover: #9d4b36;     /* warm rust on hover */
+    /* misc */
+    --pst-color-border: #d8cfbe;         /* warm tan */
+    --pst-color-target: #f3e6c8;         /* pale-gold anchor highlight */
+    --pst-color-inline-code: #7c5234;    /* leather brown */
+    --pst-color-shadow: rgba(60, 50, 40, 0.12);
+}
+
+/* --- Dark mode: warm charcoal, denim-blue links, gold/ember accents ------- */
+html[data-theme="dark"] {
+    /* surfaces */
+    --pst-color-background: #1d1c1a;     /* warm charcoal page */
+    --pst-color-on-background: #262525;  /* header / footer — more neutral grey */
+    --pst-color-surface: #2b2b29;        /* cards, admonitions, inline-code bg — more neutral grey */
+    --pst-color-on-surface: #d9d5c5;
+    /* text */
+    --pst-color-text-base: #d9d5c5;      /* warm cream */
+    --pst-color-text-muted: #847d6e;     /* taupe */
+    /* brand + links */
+    --pst-color-primary: #b97c4a;        /* burnished bronze — active nav / current page
+                                            (denim-dark alt: #7189a8) */
+    --pst-color-secondary: #d4b36a;      /* gold leaf */
+    /* Hover for secondary-styled buttons (the "back to top" pill) — deepen our
+       gold rather than fall back to the theme's off-palette purple -highlight. */
+    --pst-color-secondary-highlight: #c69a4c;      /* deeper amber-gold (button hover) */
+    --pst-color-secondary-highlight-text: #14130f;
+    --pst-color-accent: #9d4b36;         /* rust */
+    --pst-color-link: #455c66;           /* ink blue — content / sidebar / prev-next links */
+    --pst-color-link-hover: #d4b36a;     /* warm gold on hover */
+    /* misc */
+    --pst-color-border: #403e39;         /* warm dark */
+    --pst-color-target: #3a3320;         /* muted-gold anchor highlight */
+    --pst-color-inline-code: #c8bda0;    /* neutral straw (faint yellow) */
+    --pst-color-shadow: rgba(0, 0, 0, 0.5);
+}
+
+/* Base font size / family (optional — uncomment and set to taste). */
+/*
+html {
+    --pst-font-size-base: 16px;
+    --pst-font-family-base: "Source Sans Pro", sans-serif;
+}
+*/
+
+/* ---------------------------------------------------------------------------
+   Content width
+   pydata caps the page at a fixed 88rem and the article text column at 60em,
+   which strands space on wide / ultrawide monitors. Let the page grow toward
+   ~80% of the window (with a sane cap) and let the article use that room,
+   while keeping running prose at a comfortable measure — tables, the
+   plot-types grid, code blocks, and API listings get the full width. The
+   shared --sph-page-width also drives the header, so the banner stays aligned
+   with the content. The clamp floor equals the old 88rem cap, so nothing
+   narrows on mid-size screens; below pydata's 960px breakpoint width:100%
+   still governs and the responsive layout is unchanged.
+   --------------------------------------------------------------------------- */
+:root {
+    --sph-page-width: clamp(88rem, 82vw, 130rem);
+}
+.bd-page-width {
+    max-width: var(--sph-page-width);
+}
+.bd-main .bd-content .bd-article-container {
+    max-width: 100rem;
+}
+/* Comfortable line length for running prose within the wider column; wide
+   blocks (tables, grids, code, API listings) are unaffected and span the
+   full column. */
+.bd-article p,
+.bd-article li,
+.bd-article dd > p,
+.bd-article blockquote {
+    max-width: 62em;
+}
+
+/* ---------------------------------------------------------------------------
+   Top navbar layout
+   The theme lets the nav items wrap onto two lines. These rules keep each
+   label on one line, vertically center the three regions, and add subtle
+   dividers between logo | section links | tools. (Header width + centering
+   are handled with the content width above, via --sph-page-width.)
+   --------------------------------------------------------------------------- */
+
+/* Align the header to the (clamped) content width and center it, so the now
+   compact banner sits over the page content rather than far to the left on a
+   wide screen. Shares --sph-page-width with the body for exact alignment. */
+.bd-header .bd-header__inner {
+    max-width: var(--sph-page-width);
+    margin-inline: auto;
+    align-items: center;
+}
+
+/* Vertically center the three header regions and their contents. */
+.bd-header .navbar-header-items,
+.bd-header .navbar-header-items__start,
+.bd-header .navbar-header-items__center,
+.bd-header .navbar-header-items__end {
+    align-items: center;
+}
+
+/* Keep each section link on a single line — only the responsive breakpoint
+   should move links into the "More" dropdown / hamburger. */
+.bd-header .bd-navbar-elements .nav-link {
+    white-space: nowrap;
+}
+
+/* Don't let the right-hand tools (search, theme switch, GitHub, PyPI) wrap. */
+.bd-header .navbar-header-items__end {
+    flex-wrap: nowrap;
+}
+
+/* Subtle dividers: logo | section links | tools. */
+.bd-header .navbar-header-items {
+    border-left: 1px solid var(--pst-color-border, rgba(128, 128, 128, 0.25));
+    padding-left: 1rem;
+}
+/* Gap between the "skyplothelper" wordmark and the first divider, mirroring
+   the wordmark's gap from the left page edge for a symmetric look. */
+.bd-header .navbar-header-items__start {
+    padding-right: 1rem;
+}
+.bd-header .navbar-header-items__end {
+    border-left: 1px solid var(--pst-color-border, rgba(128, 128, 128, 0.25));
+    padding-left: 0.75rem;
+    margin-left: 0.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Mode-aware figures + the plot-color toggle.
+   Each figure ships as a light and a dark PNG (classes .plot-light /
+   .plot-dark); html[data-plot-theme] — set by _static/plot-theme.js, which
+   also adds the navbar toggle — selects which one displays. Defaults to the
+   light variant if JS is unavailable. The pydata `dark-light` class on the
+   images exempts them from the theme's automatic dark-mode dimming filter.
+   Used by both the plot-types gallery (paired <img> authored in the page) and
+   the tutorial notebooks (plot-theme.js pairs each nbsphinx output image with
+   its _static/nb_dark/<stem>_<i>.png counterpart at runtime).
+   --------------------------------------------------------------------------- */
+html[data-plot-theme="dark"] img.plot-light { display: none; }
+html[data-plot-theme="light"] img.plot-dark { display: none; }
+html:not([data-plot-theme]) img.plot-dark { display: none; }
+
+img.sph-plot {
+    border-radius: 6px;
+    border: 1px solid var(--pst-color-border, rgba(128, 128, 128, 0.25));
+    max-width: 100%;
+}
+
+/* Animation GIFs (docs/_static/animations/animations__*.gif, copied to _images/
+   by nbsphinx) are authored with a transparent exterior so they float on the
+   page in either theme. Exempt them from pydata's dark-mode rule that paints a
+   white backing behind every content image (which exists to keep line-art
+   diagrams legible, but here fills the see-through frame with white). */
+html[data-theme="dark"] .bd-content img[src*="animations__"] {
+    background-color: transparent !important;
+    padding: 0;
+    border-radius: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Plotly output cells (the Interactive Plotting notebook).
+   Every live plotly figure there is built with theme="dark" and keeps its own
+   dark background regardless of the page light/dark toggle (a dark sky reads
+   well either way). Without this, that dark plotly frame floats on the page's
+   light output-cell card. Paint the output card the docs dark page color in
+   BOTH page modes so the figure blends in seamlessly. Scoped with :has() to
+   output areas that actually contain a plotly div, so other notebooks'
+   mode-aware matplotlib <img> figures (plain <img>, no plotly div) are
+   untouched. Browsers without :has() simply keep the old light card.
+
+   Paint the card the docs DARK PAGE color in both modes — deliberately NOT the
+   figures' own paper_bgcolor (#0a0a14). The theme puts `padding: .5rem` on the
+   output area, so ~8px of card sits outside the plotly canvas; painting that
+   ring the figure's own color makes the dark block read ~8px larger than the
+   plot on every side, i.e. as though the figure doesn't fill its frame. At the
+   page color the ring instead disappears into the page in dark mode, and the
+   canvas edge stays a visible boundary in light mode.
+
+   Literal rather than var(--pst-color-background): that variable resolves to
+   #fff in light mode, which is the off-white card we're removing.
+
+   The second rule is needed because the theme deliberately paints notebook
+   outputs LIGHT while in dark mode (var(--pst-color-text-base), our cream) on
+   the assumption outputs are light-mode content. That rule is specificity
+   (0,6,2) — :not(:has(table.dataframe)) smuggles in an element — so the plain
+   rule above (0,3,0) loses and is a no-op in dark mode. Reusing the theme's own
+   selector plus our :has() gives (0,7,2), which wins. */
+:root { --sph-plotly-card-bg: #1d1c1a; }   /* = the dark page color, line 65 */
+
+.nboutput .output_area:has(.plotly-graph-div) {
+    background: var(--sph-plotly-card-bg);
+    border-radius: 6px;
+}
+html[data-theme="dark"] .bd-content .nboutput .output_area.rendered_html:not(:has(table.dataframe)):has(.plotly-graph-div) {
+    background-color: var(--sph-plotly-card-bg);
+    color: var(--pst-color-text-base);
+}
+
+/* The navbar plot-color button: a small custom glyph (an L-shaped plot
+   frame with a 3-segment data zigzag in the lower-left) with the mode
+   letter (A/L/D) in the open upper-right corner, for at-a-glance reading.
+   Tinted when a forced (non-auto) mode is active. */
+.sph-plot-theme-glyph {
+    position: relative;
+    display: inline-block;
+    width: 1.3em;
+    height: 1.3em;
+    vertical-align: -0.25em;
+}
+.sph-plot-theme-glyph > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.sph-plot-theme-glyph .sph-plot-axes { opacity: 0.75; }
+.sph-plot-theme-badge {
+    position: absolute;
+    top: -0.08em;
+    right: -0.08em;
+    font-size: 0.8em;
+    font-weight: 700;
+    line-height: 1;
+}
+.sph-plot-theme-toggle[data-mode="light"],
+.sph-plot-theme-toggle[data-mode="dark"] {
+    color: var(--pst-color-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   Left sidebar: persistent "API Reference" link (see _templates/api-nav.html)
+   --------------------------------------------------------------------------- */
+.bd-sidebar-api {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--pst-color-border, rgba(128, 128, 128, 0.25));
+}
+.bd-sidebar-api__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    padding: 0.25rem 0;
+    color: var(--pst-color-text-base);
+    text-decoration: none;
+}
+.bd-sidebar-api__link::after {
+    content: "\2192";  /* right arrow */
+    opacity: 0.55;
+}
+.bd-sidebar-api__link:hover {
+    color: var(--pst-color-primary);
+    text-decoration: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Dark-mode navigation link colors.
+   Content links, left-sidebar links and prev/next use the slate denim
+   (--pst-color-link); the current page stays bronze. The right "On this page"
+   sidebar mirrors light mode: muted grey idle, slate denim for the active
+   section, faded rust on hover. Inline code inside links (function
+   cross-references) uses the lighter denim.
+   --------------------------------------------------------------------------- */
+/* left sidebar: idle = slate denim, current page = bronze */
+html[data-theme="dark"] .bd-sidebar-primary .nav-link {
+    color: var(--pst-color-link);
+}
+html[data-theme="dark"] .bd-sidebar-primary .current > .nav-link {
+    color: var(--pst-color-primary);
+}
+/* right sidebar — "On this page" */
+html[data-theme="dark"] .bd-sidebar-secondary .nav-link {
+    color: #8c8c8c;                      /* idle: muted middle grey */
+}
+html[data-theme="dark"] .bd-sidebar-secondary .nav-link:hover {
+    color: #774437;                      /* hover: faded rust */
+}
+html[data-theme="dark"] .bd-sidebar-secondary .nav-link.active {
+    color: #2e5266;                      /* active section: slate denim */
+}
+/* inline code inside links, e.g. function cross-references */
+html[data-theme="dark"] a code {
+    color: #719da8;                      /* lighter denim */
+}
+
+/* ---------------------------------------------------------------------------
+   Notebook (nbsphinx) cell output: stderr / warning blocks.
+   nbsphinx hard-codes a pink wash (#fdd, in nbsphinx-code-cells.css) behind
+   stderr/warning output, which clashes with the warm palette and looks doubly
+   wrong in dark mode (that rule isn't mode-aware). Retint to a low-opacity rust
+   wash (rust = #9d4b36) that sits over whichever page background is active, so
+   the default text color stays legible in both modes, plus a rust left rule so
+   the block still reads as "notice me." The leading `html` lifts specificity
+   above the nbsphinx rule regardless of CSS load order. Foreground text is left
+   inherited (the active mode's body text color).
+   --------------------------------------------------------------------------- */
+html div.nboutput.container div.output_area.stderr {
+    background: rgba(157, 75, 54, 0.13);   /* rust #9d4b36 @ 13% */
+    border-left: 3px solid #9d4b36;        /* rust */
+}
+
+/* ---------------------------------------------------------------------------
+   Click-to-zoom lightbox for gallery figures (paired with _static/lightbox.js).
+   Clicking a zoomable .sph-plot image opens it full-size in this overlay.
+   --------------------------------------------------------------------------- */
+img.sph-zoomable {
+    cursor: zoom-in;
+}
+.sph-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;                 /* above the sticky navbar */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.82);
+    cursor: zoom-out;
+}
+.sph-lightbox.is-open {
+    display: flex;
+}
+.sph-lightbox-img {
+    max-width: 95vw;
+    max-height: 92vh;
+    border-radius: 4px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+    /* a hairline so a white figure still reads against the dim backdrop */
+    outline: 1px solid rgba(255, 255, 255, 0.12);
+}

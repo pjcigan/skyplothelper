@@ -1,0 +1,102 @@
+# ── Development context — EXCLUDED from the public repo ─────────────
+# Dev-only: internal planning docs, agent instructions, scratch. Still
+# TRACKED in the local dev git (deliberately, for development history);
+# these whole-folder ignores take effect at the fresh public `git init`,
+# which starts clean and never adds them. NOTE: the working-tree
+# .gitignore is read live, so in the interim these also stop NEW files
+# in these paths from being tracked — already-tracked dev docs stay
+# committable by explicit path (`git commit <path>` / `git add -f`).
+hidden/
+.claude/
+CLAUDE.md
+*~
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Sphinx documentation
+docs/_build/
+docs/api/generated/
+
+# Test / lint caches
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Credentials / secrets — must NEVER be committed
+.pypirc
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Merge-verification visual gallery (regenerable)
+tests/merge_verification/visual/output/*.png
+tests/merge_verification/visual/output/*.html
+
+# pytest-mpl visual regression baselines (local-only — see
+# tests/visual_baselines/README.md for regen instructions)
+tests/visual_baselines/baseline/
+tests/visual_baselines/result/
+
+# examples/data/ IS tracked in the public GitHub repo (the docs/tutorials use
+# these science FITS, rasters, planet maps, and cached query results, and users
+# download them from GitHub). It is NOT shipped in the pip package — the wheel
+# packages only skyplothelper/, and the sdist `include` list omits /examples —
+# so this data lives on GitHub without bloating the installable distribution.
+# Provenance / original sources are documented in examples/data/README.md.
+
+# Generated/downloaded Earth-boundary data (via fetch_boundary_data /
+# prepare_earth_data). The bundled constellation_*.npz ARE tracked.
+skyplothelper/data/coastlines.npz
+skyplothelper/data/tectonic_plates.npz
+skyplothelper/data/time_zones.npz
+
+# Jupyter notebook checkpoints (tutorial authoring)
+.ipynb_checkpoints/

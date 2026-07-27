@@ -1,0 +1,107 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Must-pass: pinned to the validated baseline (ci/constraints-baseline.txt),
+  # so CI reproduces the dev environment's green run. `.[dev,test]` pulls the
+  # full stack — shapely + healpy are core, cartopy + the rest come from the
+  # `test` extra (all ship linux + macOS wheels), so the whole suite runs.
+  test:
+    name: Py${{ matrix.python-version }} / ${{ matrix.os }} (baseline)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install (pinned baseline)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,test]" -c ci/constraints-baseline.txt
+
+      - name: Lint (ruff)
+        run: ruff check skyplothelper tests
+
+      - name: Type check (mypy)
+        run: mypy
+
+      - name: Tests
+        run: pytest tests/ -q
+
+  # Informational: newest deps (astropy 8 / matplotlib 3.11 / numpy 2.x, latest
+  # ruff/mypy) across the newest Python runtimes (incl. 3.13 / 3.14, which the
+  # pinned baseline can't test — numpy 1.26 ships no cp313/cp314 wheels).
+  # ``continue-on-error`` is deliberate: this stack is UNPINNED, so an upstream
+  # release could break it on an unrelated PR. It tracks forward-compat drift
+  # (the pre-publish "support the latest stack" work list) without gating the
+  # pipeline — the pinned ``test`` job above is the real gate.
+  test-latest:
+    name: Py${{ matrix.python-version }} / ubuntu (latest deps) — informational
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13', '3.14']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install (latest)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,test]"
+
+      - name: Lint (ruff)
+        run: ruff check skyplothelper tests
+
+      - name: Type check (mypy)
+        run: mypy
+
+      - name: Tests
+        run: pytest tests/ -q
+
+  # Packaging: the sdist/wheel build and metadata must stay valid before any
+  # publish.
+  build:
+    name: Build & check package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build & twine check
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check dist/*

@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a new capability, or an improvement to an existing one.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome.
+
+        One note so expectations are clear: skyplothelper is maintained by a
+        single developer, so what gets adopted comes down to what one person
+        can maintain long-term. Not every request can be taken on — that's a
+        scope judgment, not a verdict on the idea.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: >-
+        Describe the use case — the figure you're trying to make, or the
+        workflow that's awkward today. Starting from the problem rather than a
+        proposed API usually leads to a better-fitting solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: How do you handle it today?
+      description: >-
+        Any existing workaround, including "not currently possible". This helps
+        gauge whether the gap is a missing feature or a discoverability issue.
+    validations:
+      required: false
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Possible approach
+      description: >-
+        Optional — if you have an API shape or implementation in mind, sketch
+        it here.
+    validations:
+      required: false

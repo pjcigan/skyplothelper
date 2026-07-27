@@ -1,0 +1,216 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "skyplothelper"
+dynamic = ["version"]
+description = "Astronomy visualization toolkit: WCS frames, spherical geometry, tilted globes, and cone (z-RA) frames"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "BSD-3-Clause" }
+authors = [
+    { name = "Phil Cigan" },
+]
+keywords = [
+    "astronomy", "astrophysics", "visualization", "plotting", "matplotlib",
+    "plotly", "astropy", "wcs", "healpix", "sky map", "all-sky", "star chart",
+    "galactic", "spherical projection", "aitoff", "mollweide", "orthographic",
+    "coordinates", "catalog", "spectral cube", "moment map", "fits image",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+# Declared floors are the minimum versions the package supports; full test
+# coverage runs against the dev environment (numpy 1.26, matplotlib 3.9,
+# astropy 6.0) and the CI matrix (Python 3.10-3.12). The numpy floor tracks
+# astropy 6.0's own requirement (``numpy>=1.23``), so a lower numpy is
+# unreachable in practice. The matplotlib floor is the oldest release carrying
+# every API the package touches (``Path``, ``AnchoredSizeBar``, ``OffsetImage``,
+# ``mpl_toolkits.axes_grid1.anchored_artists``; ``np.column_stack`` /
+# ``np.bincount`` on the numpy side). astropy is floored at 6.0, the version
+# the WCSAxes / coordinate-formatter code is validated against — ``_compat.py``
+# degrades gracefully on older astropy, but that path is outside the supported
+# matrix. Python 3.9 is intentionally unsupported: it reached upstream
+# end-of-life in October 2025 and the scientific-Python ecosystem has dropped it.
+dependencies = [
+    "numpy>=1.23",
+    "matplotlib>=3.6",
+    "astropy>=6.0",
+    # shapely backs the planar set-algebra core (CompoundRegion, frame/lon/lat
+    # bands, frame geometry) — headline features, not an optional add-on. 2.0
+    # is the first release with the stable-2.x API the geometry code uses;
+    # shapely ships self-contained wheels (bundled GEOS) on every platform, so
+    # this stays a clean pip install with no system libraries.
+    "shapely>=2.0",
+    # HEALPix compatibility is a flagship feature, so healpy is a core dep —
+    # EXCEPT on Windows, where healpy ships no wheel (it wraps the unix-only
+    # HEALPix C++). The marker keeps `pip install skyplothelper` working on
+    # Windows (without the HEALPix paths, which raise an informative error);
+    # linux + macOS get healpy by default.
+    "healpy; platform_system != 'Windows'",
+]
+
+[project.optional-dependencies]
+# Optional extras are gated behind ``_HAS_*`` flags, so unconstrained pins are
+# fine — install the latest matching the user's other constraints. Specific
+# floors can be added if a user reports a compatibility issue.
+cartopy = ["cartopy"]
+query = ["astroquery"]
+reproject = ["reproject"]
+# scipy backs cone's redshift→distance conversions (via astropy.cosmology,
+# which needs scipy for the distance integrals) and the optional gaussian
+# nightshade blend.
+cone = ["scipy"]
+pysymlog = ["pysymlog"]
+plotly = ["plotly>=5.0"]
+dash = ["dash>=2.9"]
+all = [
+    "cartopy",
+    "astroquery",
+    "reproject",
+    "scipy",
+    "pysymlog",
+    "plotly>=5.0",
+    "dash>=2.9",
+]
+dev = [
+    "pytest",
+    "pytest-mpl",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+# The optional runtime deps CI installs so the suite exercises the cartopy /
+# plotly / cone / query / ... code paths (shapely + healpy are core). All ship
+# pip wheels on linux + macOS. Pandas is test-only (several tests accept
+# DataFrame catalogs).
+test = [
+    "cartopy",
+    "plotly>=5.0",
+    "scipy",
+    "astroquery",
+    "reproject",
+    "pysymlog",
+    "pandas",
+    "dash>=2.9",
+]
+docs = [
+    "sphinx>=8.0",
+    "pydata-sphinx-theme>=0.15",
+    "sphinx-design",
+    "sphinx-copybutton",
+    "myst-parser",
+    "nbsphinx",
+]
+
+[project.urls]
+Homepage = "https://github.com/pjcigan/skyplothelper"
+Documentation = "https://skyplothelper.readthedocs.io"
+Repository = "https://github.com/pjcigan/skyplothelper"
+Issues = "https://github.com/pjcigan/skyplothelper/issues"
+
+[tool.hatch.version]
+path = "skyplothelper/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["skyplothelper"]
+# Ensure the PEP 561 marker ships so downstream type-checkers honor our hints.
+force-include = { "skyplothelper/py.typed" = "skyplothelper/py.typed" }
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/skyplothelper",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/CITATION.cff",
+    "/pyproject.toml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    "hidden",
+    ".claude",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+# E501: line length is enforced via [tool.ruff].line-length, not the lint rule.
+# All other codes that were temporarily tolerated during the merge
+# (E701/E702/E721/E731/E741/F541/F821/F841/W291/W293) have since been
+# cleaned up. That cleanup uncovered ~19 real missing-import bugs across
+# cone/twin, geometry/{shapes,_frame_geom}, globe/{animation,boundaries,
+# insets,nightshade}, and one dead-variable arithmetic bug in
+# core/coords:RAcosDEC_err — all fixed in place.
+ignore = [
+    "E501",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Visual regression tests (pytest-mpl) are local-only and excluded from
+# the default run. To run them: pytest tests/visual_baselines --mpl
+# To regen baselines: see tests/visual_baselines/README.md
+addopts = "--ignore=tests/visual_baselines"
+
+[tool.mypy]
+# No explicit python_version: mypy follows the interpreter it runs under (the
+# CI matrix pins that per job). Pinning "3.10" made mypy reject numpy 2.5's
+# PEP 695 ``type`` statements in its stubs, breaking the latest-stack check;
+# ruff's target-version="py310" still guards 3.10 syntax compatibility.
+files = ["skyplothelper"]
+# The scientific-Python stack (astropy, healpy, shapely, cartopy, plotly,
+# scipy, reproject, astroquery, pysymlog) ships without type stubs; don't
+# fail on the missing imports.
+ignore_missing_imports = true
+# The package is fully annotated, so the whole tree is type-checked strictly.
+# (This started as a per-module ratchet — lenient base + a strict override
+# list that grew as packages were annotated — then collapsed to a strict base
+# once every module had landed.)
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+
+# Coverage is opt-in (not in pytest addopts) so the default suite stays fast
+# and the visual-baseline exclusion isn't disturbed. Measure with:
+#   pytest tests/ --cov=skyplothelper --cov-report=term-missing
+# See the release checklist in .claude/POST_MERGE_TODOS.md (Tier 1, coverage).
+[tool.coverage.run]
+source = ["skyplothelper"]
+branch = true
+omit = [
+    "skyplothelper/_version.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+# Lines that are unreachable-by-design or type-only shouldn't count against
+# coverage.
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+    "\\.\\.\\.",
+]

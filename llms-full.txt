@@ -1,0 +1,434 @@
+# skyplothelper
+
+> Astronomy sky-plotting for Python (v1.0.0): WCS frames, all-sky maps, tilted globes, redshift (z-RA) wedges, spectral cubes + moment maps, HEALPix, and catalog plotting — matplotlib and plotly.
+
+skyplothelper is **frame-first**: create a sky frame, then draw data and decorations onto its axes. In a Python session, `import skyplothelper as sph; sph.overview()` prints the orientation below and `sph.recipes('<keyword>')` prints these recipes.
+
+## The frame-first model
+
+skyplothelper is FRAME-FIRST. You almost never call matplotlib directly:
+you create a *sky frame* (a WCSAxes with the right projection + coordinate
+grid), then draw data and decorations ONTO that frame's axes.
+
+    import skyplothelper as sph
+    ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)   # 1. a frame
+    sph.plot_catalog(ax, catalog, ra_col='ra', dec_col='dec')     # 2. data onto it
+    ax.legend(); plt.savefig('sky.png')                           # 3. decorate/save
+
+`make_wcs_frame` is the one entry point for flat all-sky and field frames;
+`make_globe_frame` (sky globes) and `make_planet_frame` (Earth/planets) build
+3D-looking orthographic frames; `make_cone_frame` builds redshift/velocity
+(z vs RA) wedges. Data-plotting and overlay helpers all take that `ax` first.
+
+## Conventions (the common first-attempt mistakes)
+
+- Coordinates are astronomical/sky by default: longitude increases to the LEFT (east-left). Only make_planet_frame (and cartopy frames) default to geographic (east-right). Do NOT flip a mirrored-looking Earth by changing defaults — use make_planet_frame.
+- Projections use FITS codes ('AIT','MOL','SIN','TAN','CAR', ...) or human names ('aitoff','mollweide','orthographic'). 'center' sets the central longitude (deg).
+- frame= takes an astropy frame name: 'ICRS' (equatorial, the default), 'galactic', or 'ecliptic' (among others). It sets the grid labels AND the coordinate system your data lon/lat are interpreted in.
+- plot_catalog's 2nd arg is a CATALOG (astropy Table / pandas DataFrame / dict of columns), and ra_col/dec_col/colorby/sizeby name COLUMNS in it — not coordinate arrays. Pass raw arrays to ax.scatter(..., transform=ax.get_transform('world')) instead.
+- Prefer the bundled 'sph.*' colormaps (e.g. cmap='sph.deepsky') over matplotlib built-ins for map/image renders; sph.show_colormaps() lists them.
+- Optional dependencies gate some features: reproject (raster draping), healpy (HEALPix), cartopy (Earth coastlines), astroquery (catalog queries). Core plotting needs only numpy/matplotlib/astropy.
+- Longitudes/latitudes passed to plotting helpers are in the frame's own coordinate system, in degrees (e.g. galactic l,b for a galactic frame).
+
+## Recipes (runnable; your data as named placeholders)
+
+### all-sky frames
+
+**Empty all-sky map with a coordinate grid**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+# ax is a WCSAxes with an Aitoff all-sky grid; draw onto it, then save.
+```
+*Adjust:* projection='MOL' (Mollweide), 'CAR' (rectangular), etc; frame='galactic'/'ecliptic' relabels the grid.
+*Worked example:* [A Tour of Projections](https://skyplothelper.readthedocs.io/en/latest/tutorials/projections.html)
+
+### catalogs
+
+**Scatter a catalog on an all-sky map**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.plot_catalog(ax, catalog, ra_col='ra', dec_col='dec',
+                 colorby='mag', sizeby='flux', cbar=True)
+# catalog: an astropy Table / pandas DataFrame / dict of columns;
+# colorby/sizeby name COLUMNS (deg for ra/dec).
+```
+*Adjust:* for a non-ICRS catalog use lon_col=/lat_col= + frame=; size_scale=('sqrt'|'log'|callable) shapes the sizeby mapping.
+*Worked example:* [Catalogs — Querying, Plotting and Searching](https://skyplothelper.readthedocs.io/en/latest/tutorials/catalogs.html)
+
+**Catalog scatter with color + size legends**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.plot_catalog(ax, catalog, ra_col='ra', dec_col='dec',
+                 colorby='mag', sizeby='flux',
+                 cbar=True, size_legend=True)
+```
+*Adjust:* cbar_label=/size_legend_num= customize; sizeby='flux' + size_scale='sqrt' is common for fluxes.
+*Worked example:* [Catalogs — Querying, Plotting and Searching](https://skyplothelper.readthedocs.io/en/latest/tutorials/catalogs.html)
+
+**Color stars by temperature (perceived color)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+colors = sph.teff_to_rgb(teff)      # (N,3) perceived RGB per star
+ax.scatter(ra, dec, c=colors, transform=ax.get_transform('world'))
+```
+*Adjust:* From a color index instead: sph.color_index_to_rgb(value, index='BP-RP') (Gaia BP-RP, SDSS g-r, 2MASS J-K, or Johnson B-V). sph.bp_rp_to_rgb / sph.bv_to_rgb are shortcuts. Hot=blue-white, cool=orange; the Sun is white, not green. Don't feed BP-RP to bv_to_rgb -- it over-reddens.
+*Worked example:* [Catalogs — Querying, Plotting and Searching](https://skyplothelper.readthedocs.io/en/latest/tutorials/catalogs.html)
+
+### overlays
+
+**Overlay a second coordinate system's grid (e.g. galactic on ICRS)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.CoordinateOverlay(ax, frame='galactic').plot(color='orange')
+```
+*Worked example:* [Overlay Coordinate Grids](https://skyplothelper.readthedocs.io/en/latest/tutorials/overlay_grids.html)
+
+**Draw a great circle / plane on a sky frame**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.add_plane_overlay(ax, plane='galactic')   # or 'ecliptic'
+sph.add_great_circle(ax, pole_lon=0, pole_lat=90)
+```
+*Worked example:* [Annotations & Overlays](https://skyplothelper.readthedocs.io/en/latest/tutorials/annotations.html)
+
+**Reticle / crosshair on a target**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'TAN', frame='ICRS', center=180)
+sph.add_reticle(ax, (180.0, 0.0))          # (ra, dec) deg
+```
+*Worked example:* [Annotations & Overlays](https://skyplothelper.readthedocs.io/en/latest/tutorials/annotations.html)
+
+**Field-of-view / geodesic circle**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.add_geodesic_circle(ax, 180.0, 0.0, radius_deg=15)
+```
+*Adjust:* a true small circle on the sphere (e.g. a survey footprint radius).
+*Worked example:* [Regions & Spherical Polygons](https://skyplothelper.readthedocs.io/en/latest/tutorials/regions.html)
+
+**Outline a region (spherical polygon)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.add_spherical_polygon(ax, [150, 210, 210, 150],
+                          [-20, -20, 20, 20], facecolor='C0', alpha=0.2)
+```
+*Adjust:* edges follow great circles (geodesic='auto'); add_great_circle_band for a zone between two parallels of a great circle.
+*Worked example:* [Regions & Spherical Polygons](https://skyplothelper.readthedocs.io/en/latest/tutorials/regions.html)
+
+**Constellation stick figures**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.add_constellation_lines(ax)            # bundled line data
+sph.add_constellation_labels(ax)
+```
+*Adjust:* add_constellation_boundaries for IAU borders; constellations=['Ori',...] to select.
+*Worked example:* [Constellations and Asterisms](https://skyplothelper.readthedocs.io/en/latest/tutorials/constellations.html)
+
+### images
+
+**Quick-look a FITS image (contours/pixel map, beam, stats)**
+
+```python
+import skyplothelper as sph
+res = sph.quicklook_plot('image.fits', image=True, contours=False,
+                         colorbar=True, colormap='sph.deepsky')
+# res.fig / res.ax / res.image; auto beam + title from the header.
+```
+*Adjust:* image_data may be a path or a 2-D array (+ header=/wcs=). contours=True overlays sigma-based contours.
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+**Show a FITS image on a WCS frame with a colorbar**
+
+```python
+import skyplothelper as sph
+res = sph.simpleimage_figure(image, header, cmap='sph.deepsky',
+                             colorbar=True)
+# image is a 2-D ndarray, header its FITS WCS header.
+```
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+**Drape an RGB sky panorama onto a projection**
+
+```python
+import skyplothelper as sph
+img, hdr = sph.load_sky_image('milkyway.jpg', frame='galactic', center=0)
+ax = sph.make_wcs_frame(111, 'AIT', frame='galactic', center=0)
+ax.imshow(sph.reproject_background(img, hdr, ax))
+```
+*Adjust:* needs reproject. downscale=2 gives a faster draft render.
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+**Scale bar on an image**
+
+```python
+import skyplothelper as sph
+res = sph.simpleimage_figure(image, header, cmap='sph.deepsky')
+sph.add_sizebar_asec(res.ax, header, 30, '30\"')   # 30 arcsec bar
+```
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+### globes
+
+**Orthographic sky globe centered on a target**
+
+```python
+import skyplothelper as sph
+ax = sph.make_globe_frame(111, center_LONdeg=266.4, center_LATdeg=-29.0)
+# a tilted-globe view centered on (RA, Dec); draw sky data onto ax.
+```
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Globe of the Earth (or a planet)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_planet_frame(111, body='earth', center_LONdeg=0,
+                           center_LATdeg=20)
+# geographic (east-right) orientation; drape a texture onto it with the
+# next recipe, then add surface markers / features.
+```
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Drape an Earth/planet texture onto a globe**
+
+```python
+import numpy as np
+import skyplothelper as sph
+ax = sph.make_planet_frame(111, body='earth', center_LONdeg=0,
+                           center_LATdeg=20)
+# 1. wrap an equirectangular RGB raster (Blue Marble, planet map) in a
+#    synthetic GEOGRAPHIC WCS (geo=True — lands it the right way round):
+hdu = sph.pseudofits_from_image('earth_texture.jpg', geo=True)
+# 2. resample onto the globe frame's pixel grid, drape below the graticule:
+out_hdr = ax.wcs.to_header()
+nx = round(ax.get_xlim()[1] - ax.get_xlim()[0])
+ny = round(ax.get_ylim()[1] - ax.get_ylim()[0])
+out_hdr['NAXIS1'], out_hdr['NAXIS2'] = nx, ny
+bg = sph.reproject_rgb_map(hdu, out_hdr, shape_out=(ny, nx))
+ax.imshow(np.nan_to_num(bg), zorder=-10)
+```
+*Adjust:* geo=True is essential — it gives the raster an east-right geographic WCS. reproject_rgb_map handles the RGB resample (needs the reproject extra). The same drape works on a make_globe_frame SKY globe with a celestial raster (geo=False).
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Rotation-axis rod on an orthographic globe**
+
+```python
+import skyplothelper as sph
+ax = sph.make_globe_frame(111, center_LONdeg=30, center_LATdeg=15)
+sph.add_pole_rod(ax)
+```
+*Adjust:* SIN/globe frames only; length= sets how far the rod tips reach.
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+### healpix
+
+**Plot a sparse HEALPix map**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'MOL', frame='ICRS', center=0)
+sph.plot_healpix_sparse(pixel_indices, values, nside, ax=ax,
+                        nest=False, cmap='sph.deepsky')
+```
+*Adjust:* needs healpy. Omit values (None) to just outline pixels.
+*Worked example:* [HEALPix Workflows](https://skyplothelper.readthedocs.io/en/latest/tutorials/healpix_workflows.html)
+
+### cubes
+
+**Channel maps from a spectral-line cube**
+
+```python
+import skyplothelper as sph
+res = sph.channel_map('cube.fits', channels=9, cmap='sph.dusk')
+# a compact grid of velocity-labeled channel panels + one colorbar.
+```
+*Adjust:* moment0=True adds an integrated-intensity panel; beam=True, scalebar=<arcsec> add furniture.
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+**Moment maps (integrated intensity / velocity field / dispersion)**
+
+```python
+import skyplothelper as sph
+cube = sph.DataCube.from_fits('cube.fits')
+cube.moment0().plot()                       # integrated intensity
+cube.moment1(threshold=3*rms).plot()        # velocity field
+# moments 1/2 NEED a threshold (a few x RMS) or they are noise.
+```
+*Adjust:* MomentMap.plot() renders on an sph frame (diverging velocity field) and returns a result with .fig/.ax; the header beam draws automatically (beam=False to disable). MomentMap.from_fits(path, order=) wraps your own map.
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+### interactive (plotly)
+
+**Interactive (plotly) all-sky figure**
+
+```python
+import skyplothelper.plotly as sphpl
+fig = sphpl.make_figure(projection='aitoff')
+sphpl.add_scatter(fig, lon, lat)
+fig.show()
+```
+*Adjust:* the plotly subpackage mirrors the matplotlib API for hoverable, zoomable HTML figures.
+*Worked example:* [Interactive Plotting with Plotly](https://skyplothelper.readthedocs.io/en/latest/tutorials/interactive_plotly.html)
+
+### cone (z-RA) frames
+
+**Redshift / velocity wedge (cone frame)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_cone_frame(111, angle_center=180, angle_half_width=60,
+                         r_min=0, r_max=0.1)
+sph.cone_scatter(ax, ra, redshift, s=8)   # angle=RA (deg), r=z
+```
+*Adjust:* make_cone_frame draws a redshift/velocity vs RA wedge; cone_hexbin / cone_pcolormesh for density.
+*Worked example:* [Cone & Bowtie Plots](https://skyplothelper.readthedocs.io/en/latest/tutorials/cone_bowtie.html)
+
+### markers
+
+**Mark a telescope/facility on a globe**
+
+```python
+import skyplothelper as sph
+ax = sph.make_planet_frame(111, body='earth', center_LONdeg=-70,
+                           center_LATdeg=-24)
+sph.add_telescope_marker(ax, (-70.4, -24.6))   # (lon, lat) deg
+```
+*Adjust:* also add_antenna_marker / add_dome_marker; aim_at= points the dish.
+*Worked example:* [Markers — Rotatable and Image Stamps](https://skyplothelper.readthedocs.io/en/latest/tutorials/markers.html)
+
+### insets
+
+**Zoom-in inset panel on a map/globe**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+inset = sph.reproject_inset_axes(ax, [0.05, 0.05, 0.3, 0.3],
+                                 projection='TAN', center=(180, 0),
+                                 size=20)   # 20 deg field
+```
+*Adjust:* draws a magnified WCS panel; drape data/rasters onto `inset` as usual.
+*Worked example:* [Insets and Zoom Axes](https://skyplothelper.readthedocs.io/en/latest/tutorials/insets_and_zoom.html)
+
+### adjusting & legibility
+
+**Set the coordinate grid spacing & style**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0,
+                        lon_spacing=30, lat_spacing=15,
+                        gridcolor='0.4', gridalpha=0.6)
+sph.style_grid(ax, color='0.4', alpha=0.6)     # or restyle post-hoc
+```
+*Adjust:* lon_spacing/lat_spacing in degrees (or 'auto'); style_grid also takes stroke_color=/stroke_lw= for legibility over busy backgrounds.
+*Worked example:* [Decorating Frames](https://skyplothelper.readthedocs.io/en/latest/tutorials/decorating_frames.html)
+
+**Format the coordinate tick labels**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.format_ticklabels(ax, style='publication', lon_fmt='hh:mm')
+```
+*Adjust:* lon_fmt/lat_fmt control sexagesimal vs decimal; which='lon'/'lat'/'both' targets one axis; lon_sep sets the separators.
+*Worked example:* [Decorating Frames](https://skyplothelper.readthedocs.io/en/latest/tutorials/decorating_frames.html)
+
+**Add strokes (outlines) for legibility**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+# most sph text / marker / overlay helpers take stroke_color=/stroke_lw=:
+sph.add_reticle(ax, (180, 0), stroke_color='white', stroke_lw=2)
+sph.apply_frame_stroke(ax, stroke_color='white')      # stroke the frame
+sph.style_grid(ax, stroke_color='white', stroke_lw=1.5)  # stroke the grid
+```
+*Adjust:* a contrasting stroke keeps labels/lines readable over busy images; ~39 helpers accept the stroke_color=/stroke_lw= pair.
+*Worked example:* [Decorating Frames](https://skyplothelper.readthedocs.io/en/latest/tutorials/decorating_frames.html)
+
+**Add or customize a colorbar**
+
+```python
+import skyplothelper as sph
+res = sph.simpleimage_figure(image, header, cmap='sph.deepsky')
+sph.add_colorbar(res.image, ax=res.ax, label='Jy/beam', location='right')
+```
+*Adjust:* location='left'/'top'/'bottom'; mode='inset' for ImageGrid/channel_map panels (auto-falls back to inset when a divider can't be added).
+*Worked example:* [Decorating Frames](https://skyplothelper.readthedocs.io/en/latest/tutorials/decorating_frames.html)
+
+**Apply a publication theme / global style**
+
+```python
+import skyplothelper as sph
+sph.set_theme('publication')      # or a dict of rcParam overrides
+# then build frames/plots as usual; set_base_style('standard'|...) too.
+```
+*Worked example:* [Themes, Palettes & Fonts](https://skyplothelper.readthedocs.io/en/latest/tutorials/styling.html)
+
+## Function signatures
+
+- `make_wcs_frame(subplotnumber: 'Any' = 111, projection: 'str' = 'AIT', center: 'SkyCoord | float | tuple[float, float] | None' = None, center_lon: 'float | None' = None, center_lat: 'float | None' = None, frame: 'str' = 'ICRS', direction: 'str' = 'sky', lon_units: 'str' = 'auto', lon_spacing: 'float | str' = 'auto', lat_spacing: 'float | str' = 'auto', grid: 'bool' = True, gridcolor: 'str' = '0.5', gridalpha: 'float' = 0.5, gridlw: 'float | None' = None, gridls: 'str | None' = None, aspect: 'Any' = 'auto', npix: 'Any' = None, shape: 'str | None' = None, cdelt: 'float | None' = None, fov_deg: 'float | None' = None, lonpole: 'float' = 0.0, latpole: 'float' = 0.0, equinox: 'float | None' = 2000.0, obstime: 'Any' = None, apply_format_defaults: 'bool' = True, pv2_1: 'float | None' = None, pv2_2: 'float | None' = None, return_hdr: 'bool' = False, fig: 'Any' = None, subplot_kw: 'dict[str, Any] | None' = None, tick_style: 'str' = 'auto', tick_rotation: 'Any' = 'tangent', edge_ticks: 'str' = 'auto', auto_fontsize: 'bool' = True, outline_color: 'Any' = None, outline_lw: 'float | None' = None, **kwargs: 'Any') -> 'Any'`
+- `plot_catalog(ax: 'Any', catalog: 'Any', ra_col: 'str' = 'ra', dec_col: 'str' = 'dec', lon_col: 'str | None' = None, lat_col: 'str | None' = None, frame: 'str | None' = None, unit: 'str' = 'deg', marker: 'str' = 'o', color: 'Any' = 'C0', s: 'float' = 20, alpha: 'float' = 0.7, colorby: 'str | None' = None, sizeby: 'str | None' = None, cmap: 'Any' = 'viridis', vmin: 'float | None' = None, vmax: 'float | None' = None, smin: 'float' = 10, smax: 'float' = 200, size_vlim: 'tuple[float, float] | None' = None, size_scale: 'str | Callable[[npt.NDArray[np.floating]], npt.NDArray[np.floating]]' = 'linear', color_scale: 'str | Normalize' = 'linear', cmap_range: 'tuple[float, float] | None' = None, cbar: 'bool' = False, cbar_label: 'str' = '', cbar_format: 'str | Formatter | None' = None, cbar_ticks: 'Sequence[float] | None' = None, size_legend: 'bool' = False, size_legend_num: 'int' = 4, size_legend_kwargs: 'dict[str, Any] | None' = None, label_col: 'str | None' = None, label_fontsize: 'float' = 8, label_offset: 'tuple[float, float]' = (5, 5), transform: 'Any' = None, **kwargs: 'Any') -> 'Any'`
+- `CoordinateOverlay(ax: 'Any', frame: 'str' = 'galactic', lon_vals: 'npt.ArrayLike | None' = None, lat_vals: 'npt.ArrayLike | None' = None, n_samples: 'int' = 200) -> 'None'`
+- `quicklook_plot(image_data: 'Any', ax: 'Any' = None, *, header: 'pyfits.Header | None' = None, wcs: 'Any' = None, source_name: 'str | None' = None, obs_date: 'str | None' = None, label: 'str | None' = None, show_info: 'bool' = True, info_color: 'str | None' = None, peak: 'float | None' = None, rms: 'float | None' = None, unit: 'str | None' = None, beam_maj: 'float | None' = None, beam_min: 'float | None' = None, beam_pa: 'float | None' = None, beam_style: 'str' = 'crosshair', contours: 'bool' = True, levels: 'npt.ArrayLike | None' = None, contour_start: 'float' = 3, contour_factor: 'float' = 2, negative_contours: 'bool' = True, n_negative: 'int | None' = 1, cbar_format: 'Any' = None, cbar_minor_ticks: 'Any' = None, color: 'str' = 'k', contour_cmap: 'Any' = None, contour_color: 'Any' = None, contour_alpha: 'float' = 0.9, contour_stroke_color: 'Any' = 'auto', contour_stroke_lw: 'float' = 0.7, beam_color: 'Any' = None, beam_stroke_color: 'Any' = 'auto', beam_stroke_lw: 'float' = 1.4, contour_lw: 'float | str' = 0.5, contour_labelstyle: 'str' = 'RMS', image: 'bool' = True, colorbar: 'bool' = True, colormap: 'Any' = 'sph.deepsky', norm: 'Any' = None, stretch: 'str | None' = None, vmin: 'float | None' = None, vmax: 'float | None' = None, display_factor: 'float' = 1.0, offset_coords: 'bool' = False, ref_coord: 'Any' = None, offset_units: 'str' = 'mas', field_size: 'float | None' = None, grid: 'bool' = False, gridcolor: 'str' = '0.3', gridalpha: 'float' = 0.5, tick_style: 'str' = 'publication', mpl_style: 'str | None' = 'professional', frame_color: 'str | None' = None, frame_stroke: 'Any' = None, figure_font: 'str' = 'DejaVu Sans', facecolor: 'str' = 'w', axcolor: 'str' = 'k', **kwargs: 'Any') -> 'QuicklookResult'`
+- `simpleimage_figure(image_arr: 'npt.ArrayLike', hdrin: 'pyfits.Header', *, figsize: 'tuple[float, float] | None' = None, dpi: 'int' = 150, facecolor: 'str' = 'w', savepath: 'str | None' = None, **plot_kwargs: 'Any') -> 'SimpleImageResult'`
+- `add_colorbar(mappable: 'Any', ax: 'Any' = None, label: 'str | None' = None, orientation: 'str' = 'vertical', mode: 'str' = 'divider', location: 'str | None' = None, shrink: 'float' = 1.0, pad: 'float' = 0.05, aspect: 'float' = 25, cax: 'Any' = None, stroke_color: 'Any' = None, stroke_lw: 'float' = 2.5, stroke_targets: 'str' = 'both', minor_ticks: 'Any' = 'auto', tick_format: 'Any' = None, **kwargs: 'Any') -> 'Any'`
+- `make_globe_frame(subplot_number: 'Any' = 111, center_LONdeg: 'float' = 0, center_LATdeg: 'float' = 0.0, radesys: 'str' = 'ICRS', direction: 'str' = 'sky', lon_units: 'str' = 'auto', projection: 'str' = 'SIN', equinox: 'float' = 2000.0, lonpole: 'float' = 0.0, latpole: 'float' = 0.0, obstime: 'Any' = None, Naxispix: 'int' = 360, lon_deg_spacing: 'float' = 30, lat_deg_spacing: 'float' = 30, grid: 'bool' = True, gridcolor: 'Any' = '0.8', gridalpha: 'float' = 0.3, gridlw: 'float | None' = None, gridls: 'str | None' = None, aspect: 'Any' = 1, return_header: 'bool' = False, extra_cards: 'dict[str, Any] | None' = None, tick_style: 'str' = 'in_frame', tick_rotation: 'Any' = 'tangent', auto_fontsize: 'bool' = True) -> 'Any'`
+- `make_planet_frame(subplot_number: 'Any' = 111, *, body: 'str' = 'earth', center_LONdeg: 'float' = 0.0, center_LATdeg: 'float' = 0.0, radesys: 'str | None' = None, **kwargs: 'Any') -> 'Any'`
+- `pseudofits_from_image(input_path: 'str | os.PathLike[str] | npt.NDArray[Any]', fitsproj: 'str' = 'CAR', gmst_deg: 'float' = 0.0, geo: 'bool' = False) -> 'Any'`
+- `reproject_rgb_map(input_hdu: 'Any', *args: 'Any', **kwargs: 'Any') -> 'np.ndarray'`
+- `plot_healpix_sparse(pixel_indices: 'npt.ArrayLike', values: 'npt.ArrayLike | None', nside: 'int', ax: 'Any' = None, nest: 'bool' = False, step: 'int' = 1, show_boundaries: 'bool' = False, boundary_color: 'str' = '0.5', boundary_lw: 'float' = 0.5, set_extent: 'bool' = True, padding_factor: 'float' = 1.5, cmap: 'Any' = 'viridis', vmin: 'float | None' = None, vmax: 'float | None' = None, backend: 'str' = 'patches', sampling: 'str' = 'canvas', interp: 'bool' = False, xyres_pix: 'tuple[int, int]' = (2000, 1000), blank_value: 'float' = nan, **patch_kwargs: 'Any') -> 'Any'`
+- `channel_map(cube: 'Any', *, header: 'pyfits.Header | None' = None, channels: 'int | Sequence[int] | None' = 9, every_N: 'int' = 1, average: 'int | None' = None, smooth: 'str | None' = None, smooth_width: 'int' = 3, trim_empty: 'bool' = False, order: 'str | None' = None, ncols: 'int' = 3, nrows: 'int | None' = None, start_panel: 'int' = 0, stretch: 'Any' = 'linear', vmin: 'float | None' = None, vmax: 'float | None' = None, plo: 'float' = 0.5, phi: 'float' = 99.8, norm: 'Any' = None, cmap: 'str' = 'sph.lagoon', wcs_panels: 'bool' = True, pad: 'float | None' = None, wspace: 'float | None' = None, hspace: 'float | None' = None, panel_facecolor: 'Any' = None, tick_direction: 'str' = 'in', tick_labelsize: 'float | None' = None, figsize: 'tuple[float, float] | None' = None, facecolor: 'str | None' = None, suptitle: 'str | None' = None, imshow_kwargs: 'dict[str, Any] | None' = None, ticks: 'str' = 'minimal', label_panel: 'Any' = 'lower left', coords: 'str' = 'sky', label: 'Any' = 'auto', label_unit: 'str | None' = None, restfreq: 'Any' = None, vsys: 'float | None' = None, label_fmt: 'str | None' = None, label_color: 'str' = 'white', label_fontsize: 'float' = 10.0, label_stroke_lw: 'float' = 2.0, label_stroke_color: 'str' = 'black', label_kwargs: 'dict[str, Any] | None' = None, colorbar: 'bool' = True, cbar_label: 'str | None' = None, cbar_pad: 'float' = 0.12, beam: 'bool' = False, beam_panel: 'Any' = 'lower right', beam_kwargs: 'dict[str, Any] | None' = None, scalebar: 'float | None' = None, scalebar_label: 'str | None' = None, scalebar_panel: 'Any' = 'lower right', scalebar_kwargs: 'dict[str, Any] | None' = None, moment0: 'bool' = False, moment0_panel: 'Any' = 'upper left', moment0_label: 'str | None' = 'moment 0', moment0_cmap: 'str | None' = None) -> 'ChannelMapResult'`
+- `DataCube(data: 'Any', header: 'pyfits.Header | None' = None) -> 'None'`
+- `MomentMap(data: ForwardRef('npt.NDArray'), units: ForwardRef('str | None'), wcs: ForwardRef('Any'), order: ForwardRef('int'), header: ForwardRef('Any') = None)`
+- `add_great_circle(ax: 'Any', pole_lon: 'float' = 0.0, pole_lat: 'float' = 90.0, frame: 'str' = 'galactic', n_points: 'int' = 500, lat_offset: 'float' = 0.0, color: 'Any' = 'k', lw: 'float' = 1, ls: 'str' = '-', alpha: 'float' = 1.0, label: 'str | None' = None, zorder: 'int' = 5, stroke_color: 'Any' = None, stroke_lw: 'float' = 2.5, **kwargs: 'Any') -> 'list[Any]'`
+- `add_plane_overlay(ax: 'Any', plane: 'str' = 'galactic', color: 'Any' = None, lw: 'float' = 1, ls: 'str' = '-', alpha: 'float' = 1.0, label: 'str | None' = None, parallels: 'Sequence[float] | None' = None, parallel_ls: 'str' = ':', parallel_alpha: 'float' = 0.4, parallel_lw: 'float | None' = None, parallel_color: 'Any' = None, **kwargs: 'Any') -> 'list[Any]'`
+- `load_sky_image(filepath: 'str', frame: 'str' = 'ICRS', center: 'float' = 180.0, flip_y: 'bool' = True) -> 'tuple[np.ndarray, pyfits.Header]'`
+- `reproject_background(image: 'np.ndarray', source_header: 'pyfits.Header', ax_or_header: 'Any', order: 'str' = 'bilinear', downscale: 'float' = 1.0) -> 'np.ndarray'`
+- `plotly.make_figure(projection: 'str' = 'AIT', center: 'float' = 0.0, lat_center: 'float' = 0.0, direction: 'str' = 'sky', frame: 'str | None' = None, lon_units: 'str' = 'auto', theme: 'str' = 'light', width: 'int' = 900, height: 'int' = 500, show_grid: 'bool' = True, grid_lon_spacing: 'float | None' = None, grid_lat_spacing: 'float | None' = None, fov_deg: 'float | None' = None, extent: 'tuple[float, float, float, float] | None' = None, title: 'str | None' = None) -> 'Any'`
+- `plotly.add_scatter(fig: 'Any', lons: 'SkyCoord | npt.ArrayLike', lats: 'npt.ArrayLike | None' = None, *, projection: 'str | None' = None, center: 'float | None' = None, lat_center: 'float | None' = None, direction: 'str | None' = None, hovertemplate: 'str | None' = 'auto', customdata: 'npt.ArrayLike | None' = None, mode: 'str' = 'markers', name: 'str | None' = None, **trace_kwargs: 'Any') -> 'Any'`
+- `teff_to_rgb(teff: 'npt.ArrayLike', saturation: 'float' = 0.55) -> 'npt.NDArray[np.float64]'`
+- `make_cone_frame(subplot_spec: 'Any' = 111, *, angle_center: 'float' = 0.0, angle_half_width: 'float' = 45.0, r_min: 'float' = 0.0, r_max: 'float' = 0.2, r_origin: 'float | None' = None, r_variable: 'str' = 'redshift', r_unit: 'str' = 'Mpc', cosmology: 'Any' = None, angle_direction: 'int' = -1, zero_location: 'str' = 'N', zero_offset: 'float' = 0.0, angle_unit: 'str' = 'deg', angle_tick_spacing: 'float | None' = None, r_tick_spacing: 'float | None' = None, r_label: 'str | None' = None, angle_label: 'str' = 'R.A.', label_fontsize: 'int' = 11, tick_fontsize: 'int' = 9, radial_axis_side: 'str' = 'left', rlabel_position: 'str | float' = 'auto', r_label_offset: 'float' = 0.2, r_label_align: 'str' = 'ray', r_label_flip: 'bool' = False, angle_label_align: 'str' = 'tangent', angle_label_flip: 'bool' = False, angle_label_outside: 'float' = 0.18, radial_axis_color: 'Any' = None, grid: 'bool' = True, gridcolor: 'Any' = '0.8', gridalpha: 'float' = 0.5, gridlw: 'float | None' = None, gridls: 'str | None' = None, fig: 'Any' = None) -> 'Any'`
+- `cone_scatter(ax: 'Any', angle: 'npt.ArrayLike', r: 'npt.ArrayLike', **kwargs: 'Any') -> 'Any'`
+- `add_telescope_marker(ax: 'Any', coord: 'SkyCoord | tuple[float, float]', *, tube_elev: 'float' = 30.0, rotation: 'float' = 0.0, aim_at: 'SkyCoord | tuple[float, float] | None' = None, aim_mode: 'str' = 'aimed', globe_center: 'SkyCoord | tuple[float, float] | None' = None, target_coords: 'str' = 'display', max_tilt: 'float' = 180.0, flip: 'Any' = 'auto', rest_elev: 'float' = 90.0, size: 'float' = 22.0, coord_type: 'str' = 'pixel', frame: 'str | None' = None, face_color: 'Any' = 'white', edge_color: 'Any' = 'black', edge_lw: 'float' = 0.8, alpha: 'float' = 1.0, stroke_color: 'Any' = None, stroke_lw: 'float' = 2.0, label: 'Any' = None, label_side: 'str' = 'auto', label_offset: 'float' = 3.0, label_color: 'Any' = None, label_fontsize: 'Any' = None, label_kwargs: 'dict[str, Any] | None' = None, zorder: 'int' = 10) -> 'AnchoredOffsetbox'`
+- `add_reticle(ax: 'Any', coord: 'SkyCoord | tuple[float, float]', **kwargs: 'Any') -> 'Reticle'`
+- `add_geodesic_circle(ax: 'Any', lon: 'SkyCoord | float', lat: 'Any' = None, radius_deg: 'Any' = None, resolution: 'int' = 200, complement: 'bool' = False, clip: 'str' = 'auto', backend: 'str' = 'patch', **kwargs: 'Any') -> 'Any'`
+- `add_spherical_polygon(ax: 'Any', lons: 'SkyCoord | npt.ArrayLike', lats: 'Any' = None, resolution: 'int' = 100, geodesic: 'bool | str' = 'auto', geodesic_threshold: 'float' = 10.0, complement: 'bool' = False, clip: 'str' = 'auto', backend: 'str' = 'patch', min_piece_area: 'float | None' = None, **kwargs: 'Any') -> 'Any'`
+- `add_constellation_lines(ax: 'Any', data_file: 'str | None' = None, constellations: 'Iterable[str] | None' = None, rank_max: 'int | None' = None, color: 'Any' = '#C7A86A', lw: 'float' = 0.5, alpha: 'float' = 0.7, ls: 'str' = '-', zorder: 'int' = 2, stroke_color: 'Any' = None, stroke_lw: 'float' = 2.0, **kwargs: 'Any') -> 'list[Any]'`
+- `reproject_inset_axes(parent_ax: 'Any', rect: 'Any', wcs: 'Any' = None, projection: 'str' = 'TAN', center: 'SkyCoord | tuple[float, float] | None' = None, size: 'Any' = None, fig: 'Any' = None, npix: 'int' = 500, inherit_frame: 'bool' = True, direction: 'str' = 'inherit', transform: 'Any' = None, auto_fontsize: 'bool' = True, bg_color: 'Any' = None, tick_style: 'str' = 'auto', tick_rotation: 'Any' = 'tangent', **subplot_kw: 'Any') -> 'Any'`
+- `add_sizebar_asec(axin: 'Any', hdrin: 'Any', length_asec: 'float', label: 'str', **kwargs: 'Any') -> 'Any'`
+- `add_pole_rod(ax: 'Any', *, length: 'float' = 1.5, color: 'Any' = '#F4F0E6', linewidth: 'float' = 2.5, linestyle: 'str' = '-', stroke_color: 'Any' = '0.15', stroke_lw: 'float' = 4.0, occlude_back: 'bool' = True, zorder_front: 'float' = 10, zorder_back: 'float' = -5, end_marker: 'str | None' = None, end_marker_size: 'float' = 8, end_marker_color: 'Any' = None, solid_capstyle: 'str' = 'round', **plot_kwargs: 'Any') -> 'list[Any]'`
+- `style_grid(ax: 'Any', stroke_lw: 'float | None' = None, stroke_color: 'str | None' = None, path_effects: 'list[Any] | None' = None, color: 'str | None' = None, alpha: 'float | None' = None, lw: 'float | None' = None, ls: 'str | None' = None, **kwargs: 'Any') -> 'None'`
+- `format_ticklabels(ax: 'Any', style: 'str | None' = 'publication', lon_fmt: 'str | None' = None, lat_fmt: 'str | None' = None, lon_sep: 'str | tuple[str, ...] | None' = None, lat_sep: 'str | tuple[str, ...] | None' = None, simplify: 'bool' = True, which: 'str' = 'both', fontsize: 'float | None' = None, color: 'str | None' = None, stroke_lw: 'float | None' = None, stroke_color: 'str | None' = None, exclude_overlapping: 'bool' = True, frame_defaults: 'bool' = True, rotation: 'float | None' = None, lon_rotation: 'float | None' = None, lat_rotation: 'float | None' = None, decimal_places: 'int | None' = None, axis_labels: 'bool | dict[str, Any]' = True, ra_fmt: 'str | None' = None, dec_fmt: 'str | None' = None, ra_sep: 'str | tuple[str, ...] | None' = None, dec_sep: 'str | tuple[str, ...] | None' = None, **kwargs: 'Any') -> 'None'`
+- `apply_frame_stroke(ax: 'Any', stroke_color: 'Any' = 'white', stroke_lw: 'float | None' = 1.6) -> 'None'`
+- `set_theme(theme: 'str | dict[str, Any]' = 'publication') -> 'None'`
+- `set_base_style(style: 'str | dict[str, Any]' = 'standard', specific_RCs: 'dict[str, Any] | None' = None) -> 'None'`
+
+## Docs
+
+- [Quickstart](https://skyplothelper.readthedocs.io/en/latest/quickstart.html)
+- [User guide](https://skyplothelper.readthedocs.io/en/latest/guide/index.html)
+- [API reference](https://skyplothelper.readthedocs.io/en/latest/api/index.html)
+- [Tutorials](https://skyplothelper.readthedocs.io/en/latest/tutorials/index.html)
+- [Example data & marker icons](https://github.com/pjcigan/skyplothelper/blob/main/examples/data/README.md) — the demo FITS, catalogs, Earth/planet textures, and imscatter marker icons the tutorials use (with sources, credits, and the icon rest angles). In the repo under `examples/data/`; not shipped in the wheel.

@@ -1,0 +1,1 @@
+(window.__SPH_DARK = window.__SPH_DARK || {})["cone_bowtie"] = ["anatomy", "scatter", "density", "lines", "orientation", "bowtie", "bowtie-horizontal", "distance-axis", "twin-axis", "log-radius", "generic-jet", "generic-azimuthal", "generic-time", "capstone"];

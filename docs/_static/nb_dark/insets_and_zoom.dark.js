@@ -1,0 +1,1 @@
+(window.__SPH_DARK = window.__SPH_DARK || {})["insets_and_zoom"] = ["overview", "zoom-one-call", "mark-connect", "connector-corners", "connector-curvature", "placement", "postage-stamps", "circular-inset", "locator", "orientation", "capstone"];

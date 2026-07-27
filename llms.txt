@@ -1,0 +1,395 @@
+# skyplothelper
+
+> Astronomy sky-plotting for Python (v1.0.0): WCS frames, all-sky maps, tilted globes, redshift (z-RA) wedges, spectral cubes + moment maps, HEALPix, and catalog plotting — matplotlib and plotly.
+
+skyplothelper is **frame-first**: create a sky frame, then draw data and decorations onto its axes. In a Python session, `import skyplothelper as sph; sph.overview()` prints the orientation below and `sph.recipes('<keyword>')` prints these recipes.
+
+## The frame-first model
+
+skyplothelper is FRAME-FIRST. You almost never call matplotlib directly:
+you create a *sky frame* (a WCSAxes with the right projection + coordinate
+grid), then draw data and decorations ONTO that frame's axes.
+
+    import skyplothelper as sph
+    ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)   # 1. a frame
+    sph.plot_catalog(ax, catalog, ra_col='ra', dec_col='dec')     # 2. data onto it
+    ax.legend(); plt.savefig('sky.png')                           # 3. decorate/save
+
+`make_wcs_frame` is the one entry point for flat all-sky and field frames;
+`make_globe_frame` (sky globes) and `make_planet_frame` (Earth/planets) build
+3D-looking orthographic frames; `make_cone_frame` builds redshift/velocity
+(z vs RA) wedges. Data-plotting and overlay helpers all take that `ax` first.
+
+## Conventions (the common first-attempt mistakes)
+
+- Coordinates are astronomical/sky by default: longitude increases to the LEFT (east-left). Only make_planet_frame (and cartopy frames) default to geographic (east-right). Do NOT flip a mirrored-looking Earth by changing defaults — use make_planet_frame.
+- Projections use FITS codes ('AIT','MOL','SIN','TAN','CAR', ...) or human names ('aitoff','mollweide','orthographic'). 'center' sets the central longitude (deg).
+- frame= takes an astropy frame name: 'ICRS' (equatorial, the default), 'galactic', or 'ecliptic' (among others). It sets the grid labels AND the coordinate system your data lon/lat are interpreted in.
+- plot_catalog's 2nd arg is a CATALOG (astropy Table / pandas DataFrame / dict of columns), and ra_col/dec_col/colorby/sizeby name COLUMNS in it — not coordinate arrays. Pass raw arrays to ax.scatter(..., transform=ax.get_transform('world')) instead.
+- Prefer the bundled 'sph.*' colormaps (e.g. cmap='sph.deepsky') over matplotlib built-ins for map/image renders; sph.show_colormaps() lists them.
+- Optional dependencies gate some features: reproject (raster draping), healpy (HEALPix), cartopy (Earth coastlines), astroquery (catalog queries). Core plotting needs only numpy/matplotlib/astropy.
+- Longitudes/latitudes passed to plotting helpers are in the frame's own coordinate system, in degrees (e.g. galactic l,b for a galactic frame).
+
+## Recipes (runnable; your data as named placeholders)
+
+### all-sky frames
+
+**Empty all-sky map with a coordinate grid**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+# ax is a WCSAxes with an Aitoff all-sky grid; draw onto it, then save.
+```
+*Adjust:* projection='MOL' (Mollweide), 'CAR' (rectangular), etc; frame='galactic'/'ecliptic' relabels the grid.
+*Worked example:* [A Tour of Projections](https://skyplothelper.readthedocs.io/en/latest/tutorials/projections.html)
+
+### catalogs
+
+**Scatter a catalog on an all-sky map**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.plot_catalog(ax, catalog, ra_col='ra', dec_col='dec',
+                 colorby='mag', sizeby='flux', cbar=True)
+# catalog: an astropy Table / pandas DataFrame / dict of columns;
+# colorby/sizeby name COLUMNS (deg for ra/dec).
+```
+*Adjust:* for a non-ICRS catalog use lon_col=/lat_col= + frame=; size_scale=('sqrt'|'log'|callable) shapes the sizeby mapping.
+*Worked example:* [Catalogs — Querying, Plotting and Searching](https://skyplothelper.readthedocs.io/en/latest/tutorials/catalogs.html)
+
+**Catalog scatter with color + size legends**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.plot_catalog(ax, catalog, ra_col='ra', dec_col='dec',
+                 colorby='mag', sizeby='flux',
+                 cbar=True, size_legend=True)
+```
+*Adjust:* cbar_label=/size_legend_num= customize; sizeby='flux' + size_scale='sqrt' is common for fluxes.
+*Worked example:* [Catalogs — Querying, Plotting and Searching](https://skyplothelper.readthedocs.io/en/latest/tutorials/catalogs.html)
+
+**Color stars by temperature (perceived color)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+colors = sph.teff_to_rgb(teff)      # (N,3) perceived RGB per star
+ax.scatter(ra, dec, c=colors, transform=ax.get_transform('world'))
+```
+*Adjust:* From a color index instead: sph.color_index_to_rgb(value, index='BP-RP') (Gaia BP-RP, SDSS g-r, 2MASS J-K, or Johnson B-V). sph.bp_rp_to_rgb / sph.bv_to_rgb are shortcuts. Hot=blue-white, cool=orange; the Sun is white, not green. Don't feed BP-RP to bv_to_rgb -- it over-reddens.
+*Worked example:* [Catalogs — Querying, Plotting and Searching](https://skyplothelper.readthedocs.io/en/latest/tutorials/catalogs.html)
+
+### overlays
+
+**Overlay a second coordinate system's grid (e.g. galactic on ICRS)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.CoordinateOverlay(ax, frame='galactic').plot(color='orange')
+```
+*Worked example:* [Overlay Coordinate Grids](https://skyplothelper.readthedocs.io/en/latest/tutorials/overlay_grids.html)
+
+**Draw a great circle / plane on a sky frame**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.add_plane_overlay(ax, plane='galactic')   # or 'ecliptic'
+sph.add_great_circle(ax, pole_lon=0, pole_lat=90)
+```
+*Worked example:* [Annotations & Overlays](https://skyplothelper.readthedocs.io/en/latest/tutorials/annotations.html)
+
+**Reticle / crosshair on a target**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'TAN', frame='ICRS', center=180)
+sph.add_reticle(ax, (180.0, 0.0))          # (ra, dec) deg
+```
+*Worked example:* [Annotations & Overlays](https://skyplothelper.readthedocs.io/en/latest/tutorials/annotations.html)
+
+**Field-of-view / geodesic circle**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.add_geodesic_circle(ax, 180.0, 0.0, radius_deg=15)
+```
+*Adjust:* a true small circle on the sphere (e.g. a survey footprint radius).
+*Worked example:* [Regions & Spherical Polygons](https://skyplothelper.readthedocs.io/en/latest/tutorials/regions.html)
+
+**Outline a region (spherical polygon)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.add_spherical_polygon(ax, [150, 210, 210, 150],
+                          [-20, -20, 20, 20], facecolor='C0', alpha=0.2)
+```
+*Adjust:* edges follow great circles (geodesic='auto'); add_great_circle_band for a zone between two parallels of a great circle.
+*Worked example:* [Regions & Spherical Polygons](https://skyplothelper.readthedocs.io/en/latest/tutorials/regions.html)
+
+**Constellation stick figures**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.add_constellation_lines(ax)            # bundled line data
+sph.add_constellation_labels(ax)
+```
+*Adjust:* add_constellation_boundaries for IAU borders; constellations=['Ori',...] to select.
+*Worked example:* [Constellations and Asterisms](https://skyplothelper.readthedocs.io/en/latest/tutorials/constellations.html)
+
+### images
+
+**Quick-look a FITS image (contours/pixel map, beam, stats)**
+
+```python
+import skyplothelper as sph
+res = sph.quicklook_plot('image.fits', image=True, contours=False,
+                         colorbar=True, colormap='sph.deepsky')
+# res.fig / res.ax / res.image; auto beam + title from the header.
+```
+*Adjust:* image_data may be a path or a 2-D array (+ header=/wcs=). contours=True overlays sigma-based contours.
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+**Show a FITS image on a WCS frame with a colorbar**
+
+```python
+import skyplothelper as sph
+res = sph.simpleimage_figure(image, header, cmap='sph.deepsky',
+                             colorbar=True)
+# image is a 2-D ndarray, header its FITS WCS header.
+```
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+**Drape an RGB sky panorama onto a projection**
+
+```python
+import skyplothelper as sph
+img, hdr = sph.load_sky_image('milkyway.jpg', frame='galactic', center=0)
+ax = sph.make_wcs_frame(111, 'AIT', frame='galactic', center=0)
+ax.imshow(sph.reproject_background(img, hdr, ax))
+```
+*Adjust:* needs reproject. downscale=2 gives a faster draft render.
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+**Scale bar on an image**
+
+```python
+import skyplothelper as sph
+res = sph.simpleimage_figure(image, header, cmap='sph.deepsky')
+sph.add_sizebar_asec(res.ax, header, 30, '30\"')   # 30 arcsec bar
+```
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+### globes
+
+**Orthographic sky globe centered on a target**
+
+```python
+import skyplothelper as sph
+ax = sph.make_globe_frame(111, center_LONdeg=266.4, center_LATdeg=-29.0)
+# a tilted-globe view centered on (RA, Dec); draw sky data onto ax.
+```
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Globe of the Earth (or a planet)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_planet_frame(111, body='earth', center_LONdeg=0,
+                           center_LATdeg=20)
+# geographic (east-right) orientation; drape a texture onto it with the
+# next recipe, then add surface markers / features.
+```
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Drape an Earth/planet texture onto a globe**
+
+```python
+import numpy as np
+import skyplothelper as sph
+ax = sph.make_planet_frame(111, body='earth', center_LONdeg=0,
+                           center_LATdeg=20)
+# 1. wrap an equirectangular RGB raster (Blue Marble, planet map) in a
+#    synthetic GEOGRAPHIC WCS (geo=True — lands it the right way round):
+hdu = sph.pseudofits_from_image('earth_texture.jpg', geo=True)
+# 2. resample onto the globe frame's pixel grid, drape below the graticule:
+out_hdr = ax.wcs.to_header()
+nx = round(ax.get_xlim()[1] - ax.get_xlim()[0])
+ny = round(ax.get_ylim()[1] - ax.get_ylim()[0])
+out_hdr['NAXIS1'], out_hdr['NAXIS2'] = nx, ny
+bg = sph.reproject_rgb_map(hdu, out_hdr, shape_out=(ny, nx))
+ax.imshow(np.nan_to_num(bg), zorder=-10)
+```
+*Adjust:* geo=True is essential — it gives the raster an east-right geographic WCS. reproject_rgb_map handles the RGB resample (needs the reproject extra). The same drape works on a make_globe_frame SKY globe with a celestial raster (geo=False).
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Rotation-axis rod on an orthographic globe**
+
+```python
+import skyplothelper as sph
+ax = sph.make_globe_frame(111, center_LONdeg=30, center_LATdeg=15)
+sph.add_pole_rod(ax)
+```
+*Adjust:* SIN/globe frames only; length= sets how far the rod tips reach.
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+### healpix
+
+**Plot a sparse HEALPix map**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'MOL', frame='ICRS', center=0)
+sph.plot_healpix_sparse(pixel_indices, values, nside, ax=ax,
+                        nest=False, cmap='sph.deepsky')
+```
+*Adjust:* needs healpy. Omit values (None) to just outline pixels.
+*Worked example:* [HEALPix Workflows](https://skyplothelper.readthedocs.io/en/latest/tutorials/healpix_workflows.html)
+
+### cubes
+
+**Channel maps from a spectral-line cube**
+
+```python
+import skyplothelper as sph
+res = sph.channel_map('cube.fits', channels=9, cmap='sph.dusk')
+# a compact grid of velocity-labeled channel panels + one colorbar.
+```
+*Adjust:* moment0=True adds an integrated-intensity panel; beam=True, scalebar=<arcsec> add furniture.
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+**Moment maps (integrated intensity / velocity field / dispersion)**
+
+```python
+import skyplothelper as sph
+cube = sph.DataCube.from_fits('cube.fits')
+cube.moment0().plot()                       # integrated intensity
+cube.moment1(threshold=3*rms).plot()        # velocity field
+# moments 1/2 NEED a threshold (a few x RMS) or they are noise.
+```
+*Adjust:* MomentMap.plot() renders on an sph frame (diverging velocity field) and returns a result with .fig/.ax; the header beam draws automatically (beam=False to disable). MomentMap.from_fits(path, order=) wraps your own map.
+*Worked example:* [FITS Images & Quicklook](https://skyplothelper.readthedocs.io/en/latest/tutorials/fits_images.html)
+
+### interactive (plotly)
+
+**Interactive (plotly) all-sky figure**
+
+```python
+import skyplothelper.plotly as sphpl
+fig = sphpl.make_figure(projection='aitoff')
+sphpl.add_scatter(fig, lon, lat)
+fig.show()
+```
+*Adjust:* the plotly subpackage mirrors the matplotlib API for hoverable, zoomable HTML figures.
+*Worked example:* [Interactive Plotting with Plotly](https://skyplothelper.readthedocs.io/en/latest/tutorials/interactive_plotly.html)
+
+### cone (z-RA) frames
+
+**Redshift / velocity wedge (cone frame)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_cone_frame(111, angle_center=180, angle_half_width=60,
+                         r_min=0, r_max=0.1)
+sph.cone_scatter(ax, ra, redshift, s=8)   # angle=RA (deg), r=z
+```
+*Adjust:* make_cone_frame draws a redshift/velocity vs RA wedge; cone_hexbin / cone_pcolormesh for density.
+*Worked example:* [Cone & Bowtie Plots](https://skyplothelper.readthedocs.io/en/latest/tutorials/cone_bowtie.html)
+
+### markers
+
+**Mark a telescope/facility on a globe**
+
+```python
+import skyplothelper as sph
+ax = sph.make_planet_frame(111, body='earth', center_LONdeg=-70,
+                           center_LATdeg=-24)
+sph.add_telescope_marker(ax, (-70.4, -24.6))   # (lon, lat) deg
+```
+*Adjust:* also add_antenna_marker / add_dome_marker; aim_at= points the dish.
+*Worked example:* [Markers — Rotatable and Image Stamps](https://skyplothelper.readthedocs.io/en/latest/tutorials/markers.html)
+
+### insets
+
+**Zoom-in inset panel on a map/globe**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+inset = sph.reproject_inset_axes(ax, [0.05, 0.05, 0.3, 0.3],
+                                 projection='TAN', center=(180, 0),
+                                 size=20)   # 20 deg field
+```
+*Adjust:* draws a magnified WCS panel; drape data/rasters onto `inset` as usual.
+*Worked example:* [Insets and Zoom Axes](https://skyplothelper.readthedocs.io/en/latest/tutorials/insets_and_zoom.html)
+
+### adjusting & legibility
+
+**Set the coordinate grid spacing & style**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0,
+                        lon_spacing=30, lat_spacing=15,
+                        gridcolor='0.4', gridalpha=0.6)
+sph.style_grid(ax, color='0.4', alpha=0.6)     # or restyle post-hoc
+```
+*Adjust:* lon_spacing/lat_spacing in degrees (or 'auto'); style_grid also takes stroke_color=/stroke_lw= for legibility over busy backgrounds.
+*Worked example:* [Decorating Frames](https://skyplothelper.readthedocs.io/en/latest/tutorials/decorating_frames.html)
+
+**Format the coordinate tick labels**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+sph.format_ticklabels(ax, style='publication', lon_fmt='hh:mm')
+```
+*Adjust:* lon_fmt/lat_fmt control sexagesimal vs decimal; which='lon'/'lat'/'both' targets one axis; lon_sep sets the separators.
+*Worked example:* [Decorating Frames](https://skyplothelper.readthedocs.io/en/latest/tutorials/decorating_frames.html)
+
+**Add strokes (outlines) for legibility**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+# most sph text / marker / overlay helpers take stroke_color=/stroke_lw=:
+sph.add_reticle(ax, (180, 0), stroke_color='white', stroke_lw=2)
+sph.apply_frame_stroke(ax, stroke_color='white')      # stroke the frame
+sph.style_grid(ax, stroke_color='white', stroke_lw=1.5)  # stroke the grid
+```
+*Adjust:* a contrasting stroke keeps labels/lines readable over busy images; ~39 helpers accept the stroke_color=/stroke_lw= pair.
+*Worked example:* [Decorating Frames](https://skyplothelper.readthedocs.io/en/latest/tutorials/decorating_frames.html)
+
+**Add or customize a colorbar**
+
+```python
+import skyplothelper as sph
+res = sph.simpleimage_figure(image, header, cmap='sph.deepsky')
+sph.add_colorbar(res.image, ax=res.ax, label='Jy/beam', location='right')
+```
+*Adjust:* location='left'/'top'/'bottom'; mode='inset' for ImageGrid/channel_map panels (auto-falls back to inset when a divider can't be added).
+*Worked example:* [Decorating Frames](https://skyplothelper.readthedocs.io/en/latest/tutorials/decorating_frames.html)
+
+**Apply a publication theme / global style**
+
+```python
+import skyplothelper as sph
+sph.set_theme('publication')      # or a dict of rcParam overrides
+# then build frames/plots as usual; set_base_style('standard'|...) too.
+```
+*Worked example:* [Themes, Palettes & Fonts](https://skyplothelper.readthedocs.io/en/latest/tutorials/styling.html)
+
+## Docs
+
+- [Quickstart](https://skyplothelper.readthedocs.io/en/latest/quickstart.html)
+- [User guide](https://skyplothelper.readthedocs.io/en/latest/guide/index.html)
+- [API reference](https://skyplothelper.readthedocs.io/en/latest/api/index.html)
+- [Tutorials](https://skyplothelper.readthedocs.io/en/latest/tutorials/index.html)
+- [Example data & marker icons](https://github.com/pjcigan/skyplothelper/blob/main/examples/data/README.md) — the demo FITS, catalogs, Earth/planet textures, and imscatter marker icons the tutorials use (with sources, credits, and the icon rest angles). In the repo under `examples/data/`; not shipped in the wheel.

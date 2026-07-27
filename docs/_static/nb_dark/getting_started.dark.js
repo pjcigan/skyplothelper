@@ -1,0 +1,1 @@
+(window.__SPH_DARK = window.__SPH_DARK || {})["getting_started"] = ["3-your-first-frame", "4-your-first-all-sky-map", "the-full-family-of-shortcuts", "the-catalog-aware-step-up-plot-catalog", "5-your-first-globes", "7-working-with-coordinates", "or-let-the-plotting-call-convert-for-you", "8-a-first-taste-of-decoration", "9-themes-and-palettes"];

@@ -1,0 +1,10 @@
+{#- Persistent "API Reference" link pinned in the left sidebar on every
+    non-API page, below the in-section navigation. It points to the API
+    overview, where the theme's native navigation shows the full per-subsystem
+    tree (vertical, with expand arrows). On API pages it is omitted, since that
+    native tree is already shown there. -#}
+{% if not pagename.startswith('api/') %}
+<div class="bd-sidebar-api">
+  <a class="reference internal bd-sidebar-api__link" href="{{ pathto('api/index') }}">API Reference</a>
+</div>
+{% endif %}

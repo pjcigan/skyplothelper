@@ -1,0 +1,1 @@
+(window.__SPH_DARK = window.__SPH_DARK || {})["overlay_grids"] = ["overview", "1-the-one-call-overlay", "the-overlay-over-the-real-sky", "2-choosing-and-styling-the-gridlines", "3-tick-and-label-placement", "a-custom-boundary-box", "4-how-this-compares-to-astropy", "5-all-sky-maps-and-globes", "6-putting-it-together"];

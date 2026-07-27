@@ -1,0 +1,8 @@
+# Documentation build requirements (also mirrored as the [docs] extra in
+# pyproject.toml). Used by the ReadTheDocs build.
+sphinx>=8.0
+pydata-sphinx-theme>=0.15
+sphinx-design
+sphinx-copybutton
+myst-parser
+nbsphinx

@@ -1,0 +1,1 @@
+(window.__SPH_DARK = window.__SPH_DARK || {})["animations"] = ["first-orbit-filmstrip", "cube-filmstrip", "dipper-filmstrip", "gc-offsets-two-ways", "three-motions-arrows", "terminator-filmstrip", "sun-avoidance-filmstrip", "covisibility-filmstrip", "capstone-filmstrip"];

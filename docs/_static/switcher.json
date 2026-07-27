@@ -1,0 +1,13 @@
+[
+  {
+    "name": "stable",
+    "version": "stable",
+    "url": "https://skyplothelper.readthedocs.io/en/stable/",
+    "preferred": true
+  },
+  {
+    "name": "dev (latest)",
+    "version": "latest",
+    "url": "https://skyplothelper.readthedocs.io/en/latest/"
+  }
+]

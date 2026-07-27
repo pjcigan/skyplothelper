@@ -1,0 +1,3 @@
+# Manim render scratch (partial movie files, mp4s, draft gifs). The committed
+# GIF lives under docs/_static/; the committed inputs live in assets/.
+media/

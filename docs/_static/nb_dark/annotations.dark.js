@@ -1,0 +1,1 @@
+(window.__SPH_DARK = window.__SPH_DARK || {})["annotations"] = ["overview", "beams", "beams-2", "beams-3", "scale-bars", "band-labels", "band-labels-2", "compass-and-orientation", "compass-and-orientation-2", "instrument-markers", "plain-matplotlib-still-works", "what-a-bare-tuple-means", "reticles", "rulers", "rulers-2", "rulers-3", "3-putting-it-together"];

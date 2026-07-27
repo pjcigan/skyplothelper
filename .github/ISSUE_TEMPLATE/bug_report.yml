@@ -1,0 +1,75 @@
+name: Bug report
+description: Something behaves incorrectly, renders wrongly, or raises an unexpected error.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file this.
+
+        skyplothelper is maintained by a single developer with limited time, so
+        a reply may take a while — a **minimal reproducer** is by far the
+        biggest thing that speeds up a fix, since it removes the work of
+        confirming the problem.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you get instead?
+      placeholder: |
+        Expected: the region boundary to follow the curved frame edge.
+        Got: a straight line streaking across the map.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Minimal reproducer
+      description: >-
+        The shortest self-contained snippet that shows the problem — ideally
+        using bundled or synthetic data rather than a local file, so it runs
+        anywhere.
+      render: python
+      placeholder: |
+        import skyplothelper as sph
+
+        fig, ax = sph.allsky_figure(projection="AIT", center=180)
+        ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: |
+        Paste the output of:
+
+        ```
+        python -c "import sys, matplotlib, astropy, skyplothelper as sph; print(sys.version); print('matplotlib', matplotlib.__version__); print('astropy', astropy.__version__); print('skyplothelper', sph.__version__)"
+        ```
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Figure or traceback
+      description: >-
+        Optional but helpful — a screenshot of the wrong output, or the full
+        traceback if it raised.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for a duplicate.
+          required: false
+        - label: This is a bug report rather than a usage question.
+          required: false

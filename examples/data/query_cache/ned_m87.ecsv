@@ -1,0 +1,126 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - name: No.
+#   datatype: int32
+#   description: A sequential object number applicable to this list only.
+#   meta: !!omap
+#   - {ucd: meta.number}
+#   - {width: 4}
+# - name: Object Name
+#   datatype: string
+#   description: NED preferred name for the object
+#   meta: !!omap
+#   - {ucd: meta.id;meta.main}
+#   - {width: 30}
+#   - {_votable_string_dtype: char}
+# - name: RA
+#   unit: degrees
+#   datatype: float64
+#   format: '{!r:>10}'
+#   description: Right Ascension in degrees (Equatorial J2000.0)
+#   meta: !!omap
+#   - {ucd: pos.eq.ra;meta.main}
+#   - {width: 10}
+# - name: DEC
+#   unit: degrees
+#   datatype: float64
+#   format: '{!r:>10}'
+#   description: Declination in degrees (Equatorial J2000.0)
+#   meta: !!omap
+#   - {ucd: pos.eq.dec;meta.main}
+#   - {width: 10}
+# - name: Type
+#   datatype: string
+#   description: 'NED''s Preferred Object Type: G,GPair,GTrpl,GGroup,GClstr,QSO,AbLS,RadioS,IrS,EmLS,UvES,XrayS,SN'
+#   meta: !!omap
+#   - {ucd: src.class}
+#   - {width: 10}
+#   - {_votable_string_dtype: char}
+#   subtype: json
+# - name: Velocity
+#   unit: km / s
+#   datatype: float64
+#   format: '{!r:>10}'
+#   description: Velocity in km/sec, based on known heliocentric redshift
+#   meta: !!omap
+#   - {ucd: src.veloc.hc}
+#   - {width: 10}
+# - name: Redshift
+#   datatype: float64
+#   format: '{!r:>10}'
+#   description: Heliocentric redshift for the object, if it exists in NED
+#   meta: !!omap
+#   - {ucd: src.redshift}
+#   - {width: 10}
+# - name: Redshift Flag
+#   datatype: string
+#   description: Quality flag for known heliocentric redshift
+#   meta: !!omap
+#   - {ucd: meta.code;src.redshift}
+#   - {width: 5}
+#   - {_votable_string_dtype: char}
+#   subtype: json
+# - name: Magnitude and Filter
+#   datatype: string
+#   description: NED's Basic Data magnitude and filter, generally in an optical band.
+#   meta: !!omap
+#   - {ucd: meta.code;src.magnitude}
+#   - {width: 5}
+#   - {_votable_string_dtype: char}
+#   subtype: json
+# - name: Separation
+#   unit: arcmin
+#   datatype: float64
+#   format: '{!r:>10}'
+#   description: Angular separation of the object coordinates and the search coordinate.
+#   meta: !!omap
+#   - {ucd: pos.distance}
+#   - {width: 10}
+# - name: References
+#   datatype: int32
+#   description: Number of literature references in NED
+#   meta: !!omap
+#   - {ucd: meta.bib;meta.number}
+#   - {width: 5}
+# - name: Notes
+#   datatype: int32
+#   description: Number of catalog notes in NED
+#   meta: !!omap
+#   - {ucd: meta.note;meta.number}
+#   - {width: 5}
+# - name: Photometry Points
+#   datatype: int32
+#   description: Number of photometric data points stored by NED for the object
+#   meta: !!omap
+#   - {ucd: phot;meta.number}
+#   - {width: 5}
+# - name: Positions
+#   datatype: int32
+#   description: Number of position data points stored by NED for the object
+#   meta: !!omap
+#   - {ucd: pos;meta.number}
+#   - {width: 5}
+# - name: Redshift Points
+#   datatype: int32
+#   description: Number of redshift data points stored by NED for the object.
+#   meta: !!omap
+#   - {ucd: src.redshift;meta.number}
+#   - {width: 5}
+# - name: Diameter Points
+#   datatype: int32
+#   description: Number of diameter data points stored by NED for the object.
+#   meta: !!omap
+#   - {ucd: phys.size.diameter;meta.number}
+#   - {width: 5}
+# - name: Associations
+#   datatype: int32
+#   description: Number of NED associations for the object.
+#   meta: !!omap
+#   - {ucd: meta.id.assoc;meta.number}
+#   - {width: 5}
+# meta: {ID: NED_MainTable, description: Main information about object (Cone Search results), name: Main Information Table for MESSIER
+#     087}
+# schema: astropy-2.0
+No. "Object Name" RA DEC Type Velocity Redshift "Redshift Flag" "Magnitude and Filter" Separation References Notes "Photometry Points" Positions "Redshift Points" "Diameter Points" Associations
+1 "MESSIER 087" 187.70593 12.39112 """G""" 1284.0 0.004283 """UUN""" """9.59""" "" 3579 55 506 135 142 14 1

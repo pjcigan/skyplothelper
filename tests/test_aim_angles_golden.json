@@ -1,0 +1,2309 @@
+{
+"note": "regen via --regen only on an intended contract change",
+"cases": {
+"antenna|aimed|auto|default|9,9": {
+"rotation": -45.0,
+"dish_elev": 135.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|default|1,9": {
+"rotation": 45.0,
+"dish_elev": 45.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|default|1,1": {
+"rotation": 135.0,
+"dish_elev": -45.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|default|9,1": {
+"rotation": -135.0,
+"dish_elev": -135.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|default|5,9.5": {
+"rotation": 0.0,
+"dish_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|default|0.5,5": {
+"rotation": 90.0,
+"dish_elev": 0.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|default|5,0.2": {
+"rotation": 180.0,
+"dish_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|default|7.3,6.1": {
+"rotation": -64.4400348282,
+"dish_elev": 154.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"antenna|aimed|auto|30|9,9": {
+"rotation": 15.0,
+"dish_elev": 15.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|30|1,9": {
+"rotation": 105.0,
+"dish_elev": -75.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|30|1,1": {
+"rotation": -165.0,
+"dish_elev": -165.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|30|9,1": {
+"rotation": -75.0,
+"dish_elev": 105.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|30|5,9.5": {
+"rotation": 60.0,
+"dish_elev": -30.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|30|0.5,5": {
+"rotation": 150.0,
+"dish_elev": -120.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|30|5,0.2": {
+"rotation": -120.0,
+"dish_elev": 150.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|30|7.3,6.1": {
+"rotation": -4.4400348282,
+"dish_elev": 34.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"antenna|aimed|auto|45|9,9": {
+"rotation": 0.0,
+"dish_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|45|1,9": {
+"rotation": 90.0,
+"dish_elev": -45.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|45|1,1": {
+"rotation": 180.0,
+"dish_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|45|9,1": {
+"rotation": -90.0,
+"dish_elev": 135.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|45|5,9.5": {
+"rotation": 45.0,
+"dish_elev": 0.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|45|0.5,5": {
+"rotation": 135.0,
+"dish_elev": -90.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|45|5,0.2": {
+"rotation": -135.0,
+"dish_elev": 180.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|45|7.3,6.1": {
+"rotation": -19.4400348282,
+"dish_elev": 64.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"antenna|aimed|auto|60|9,9": {
+"rotation": -15.0,
+"dish_elev": 75.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|60|1,9": {
+"rotation": 75.0,
+"dish_elev": -15.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|60|1,1": {
+"rotation": 165.0,
+"dish_elev": -105.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|60|9,1": {
+"rotation": -105.0,
+"dish_elev": 165.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|60|5,9.5": {
+"rotation": 30.0,
+"dish_elev": 30.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|60|0.5,5": {
+"rotation": 120.0,
+"dish_elev": -60.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|60|5,0.2": {
+"rotation": -150.0,
+"dish_elev": -150.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|60|7.3,6.1": {
+"rotation": -34.4400348282,
+"dish_elev": 94.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"antenna|aimed|auto|90|9,9": {
+"rotation": -45.0,
+"dish_elev": 135.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|90|1,9": {
+"rotation": 45.0,
+"dish_elev": 45.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|90|1,1": {
+"rotation": 135.0,
+"dish_elev": -45.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|90|9,1": {
+"rotation": -135.0,
+"dish_elev": -135.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|90|5,9.5": {
+"rotation": 0.0,
+"dish_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|90|0.5,5": {
+"rotation": 90.0,
+"dish_elev": 0.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|90|5,0.2": {
+"rotation": 180.0,
+"dish_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|90|7.3,6.1": {
+"rotation": -64.4400348282,
+"dish_elev": 154.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"antenna|aimed|auto|120|9,9": {
+"rotation": -75.0,
+"dish_elev": -165.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|120|1,9": {
+"rotation": 15.0,
+"dish_elev": 105.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|120|1,1": {
+"rotation": 105.0,
+"dish_elev": 15.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|120|9,1": {
+"rotation": -165.0,
+"dish_elev": -75.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|120|5,9.5": {
+"rotation": -30.0,
+"dish_elev": 150.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|120|0.5,5": {
+"rotation": 60.0,
+"dish_elev": 60.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|120|5,0.2": {
+"rotation": 150.0,
+"dish_elev": -30.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"antenna|aimed|auto|120|7.3,6.1": {
+"rotation": -94.4400348282,
+"dish_elev": -145.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"antenna|planted|auto|default|9,9": {
+"rotation": 0.0,
+"dish_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|default|1,9": {
+"rotation": 0.0,
+"dish_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|default|1,1": {
+"rotation": 180.0,
+"dish_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|default|9,1": {
+"rotation": 180.0,
+"dish_elev": -45.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|default|5,9.5": {
+"rotation": 0.0,
+"dish_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|default|0.5,5": {
+"rotation": 0.0,
+"dish_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|default|5,0.2": {
+"rotation": 180.0,
+"dish_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|default|7.3,6.1": {
+"rotation": 0.0,
+"dish_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|30|9,9": {
+"rotation": 60.0,
+"dish_elev": -75.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|30|1,9": {
+"rotation": 60.0,
+"dish_elev": 15.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|30|1,1": {
+"rotation": -120.0,
+"dish_elev": 105.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|30|9,1": {
+"rotation": -120.0,
+"dish_elev": -165.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|30|5,9.5": {
+"rotation": 60.0,
+"dish_elev": -30.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|30|0.5,5": {
+"rotation": 60.0,
+"dish_elev": 60.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|30|5,0.2": {
+"rotation": -120.0,
+"dish_elev": 150.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|30|7.3,6.1": {
+"rotation": 60.0,
+"dish_elev": -94.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|45|9,9": {
+"rotation": 45.0,
+"dish_elev": -45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|45|1,9": {
+"rotation": 45.0,
+"dish_elev": 45.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|45|1,1": {
+"rotation": -135.0,
+"dish_elev": 135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|45|9,1": {
+"rotation": -135.0,
+"dish_elev": -135.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|45|5,9.5": {
+"rotation": 45.0,
+"dish_elev": 0.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|45|0.5,5": {
+"rotation": 45.0,
+"dish_elev": 90.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|45|5,0.2": {
+"rotation": -135.0,
+"dish_elev": 180.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|45|7.3,6.1": {
+"rotation": 45.0,
+"dish_elev": -64.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|60|9,9": {
+"rotation": 30.0,
+"dish_elev": -15.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|60|1,9": {
+"rotation": 30.0,
+"dish_elev": 75.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|60|1,1": {
+"rotation": -150.0,
+"dish_elev": 165.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|60|9,1": {
+"rotation": -150.0,
+"dish_elev": -105.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|60|5,9.5": {
+"rotation": 30.0,
+"dish_elev": 30.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|60|0.5,5": {
+"rotation": 30.0,
+"dish_elev": 120.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|60|5,0.2": {
+"rotation": -150.0,
+"dish_elev": -150.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|60|7.3,6.1": {
+"rotation": 30.0,
+"dish_elev": -34.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|90|9,9": {
+"rotation": 0.0,
+"dish_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|90|1,9": {
+"rotation": 0.0,
+"dish_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|90|1,1": {
+"rotation": 180.0,
+"dish_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|90|9,1": {
+"rotation": 180.0,
+"dish_elev": -45.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|90|5,9.5": {
+"rotation": 0.0,
+"dish_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|90|0.5,5": {
+"rotation": 0.0,
+"dish_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|90|5,0.2": {
+"rotation": 180.0,
+"dish_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|90|7.3,6.1": {
+"rotation": 0.0,
+"dish_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|120|9,9": {
+"rotation": -30.0,
+"dish_elev": 105.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|120|1,9": {
+"rotation": -30.0,
+"dish_elev": -165.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|120|1,1": {
+"rotation": 150.0,
+"dish_elev": -75.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|120|9,1": {
+"rotation": 150.0,
+"dish_elev": 15.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|120|5,9.5": {
+"rotation": -30.0,
+"dish_elev": 150.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|120|0.5,5": {
+"rotation": -30.0,
+"dish_elev": -120.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|120|5,0.2": {
+"rotation": 150.0,
+"dish_elev": -30.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|auto|120|7.3,6.1": {
+"rotation": -30.0,
+"dish_elev": 85.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|True|default|9,9": {
+"rotation": 180.0,
+"dish_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|default|1,9": {
+"rotation": 180.0,
+"dish_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|default|1,1": {
+"rotation": 180.0,
+"dish_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|default|9,1": {
+"rotation": 180.0,
+"dish_elev": -45.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|default|5,9.5": {
+"rotation": 180.0,
+"dish_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|default|0.5,5": {
+"rotation": 180.0,
+"dish_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|default|5,0.2": {
+"rotation": 180.0,
+"dish_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|default|7.3,6.1": {
+"rotation": 180.0,
+"dish_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|True|30|9,9": {
+"rotation": -120.0,
+"dish_elev": -75.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|30|1,9": {
+"rotation": -120.0,
+"dish_elev": 15.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|30|1,1": {
+"rotation": -120.0,
+"dish_elev": 105.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|30|9,1": {
+"rotation": -120.0,
+"dish_elev": -165.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|30|5,9.5": {
+"rotation": -120.0,
+"dish_elev": -30.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|30|0.5,5": {
+"rotation": -120.0,
+"dish_elev": 60.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|30|5,0.2": {
+"rotation": -120.0,
+"dish_elev": 150.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|30|7.3,6.1": {
+"rotation": -120.0,
+"dish_elev": -94.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|True|45|9,9": {
+"rotation": -135.0,
+"dish_elev": -45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|45|1,9": {
+"rotation": -135.0,
+"dish_elev": 45.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|45|1,1": {
+"rotation": -135.0,
+"dish_elev": 135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|45|9,1": {
+"rotation": -135.0,
+"dish_elev": -135.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|45|5,9.5": {
+"rotation": -135.0,
+"dish_elev": 0.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|45|0.5,5": {
+"rotation": -135.0,
+"dish_elev": 90.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|45|5,0.2": {
+"rotation": -135.0,
+"dish_elev": 180.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|45|7.3,6.1": {
+"rotation": -135.0,
+"dish_elev": -64.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|True|60|9,9": {
+"rotation": -150.0,
+"dish_elev": -15.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|60|1,9": {
+"rotation": -150.0,
+"dish_elev": 75.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|60|1,1": {
+"rotation": -150.0,
+"dish_elev": 165.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|60|9,1": {
+"rotation": -150.0,
+"dish_elev": -105.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|60|5,9.5": {
+"rotation": -150.0,
+"dish_elev": 30.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|60|0.5,5": {
+"rotation": -150.0,
+"dish_elev": 120.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|60|5,0.2": {
+"rotation": -150.0,
+"dish_elev": -150.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|60|7.3,6.1": {
+"rotation": -150.0,
+"dish_elev": -34.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|True|90|9,9": {
+"rotation": 180.0,
+"dish_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|90|1,9": {
+"rotation": 180.0,
+"dish_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|90|1,1": {
+"rotation": 180.0,
+"dish_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|90|9,1": {
+"rotation": 180.0,
+"dish_elev": -45.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|90|5,9.5": {
+"rotation": 180.0,
+"dish_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|90|0.5,5": {
+"rotation": 180.0,
+"dish_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|90|5,0.2": {
+"rotation": 180.0,
+"dish_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|90|7.3,6.1": {
+"rotation": 180.0,
+"dish_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|True|120|9,9": {
+"rotation": 150.0,
+"dish_elev": 105.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|120|1,9": {
+"rotation": 150.0,
+"dish_elev": -165.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|120|1,1": {
+"rotation": 150.0,
+"dish_elev": -75.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|120|9,1": {
+"rotation": 150.0,
+"dish_elev": 15.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|120|5,9.5": {
+"rotation": 150.0,
+"dish_elev": 150.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|120|0.5,5": {
+"rotation": 150.0,
+"dish_elev": -120.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|120|5,0.2": {
+"rotation": 150.0,
+"dish_elev": -30.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|True|120|7.3,6.1": {
+"rotation": 150.0,
+"dish_elev": 85.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|False|default|9,9": {
+"rotation": 0.0,
+"dish_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|default|1,9": {
+"rotation": 0.0,
+"dish_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|default|1,1": {
+"rotation": 0.0,
+"dish_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|default|9,1": {
+"rotation": 0.0,
+"dish_elev": -45.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|default|5,9.5": {
+"rotation": 0.0,
+"dish_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|default|0.5,5": {
+"rotation": 0.0,
+"dish_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|default|5,0.2": {
+"rotation": 0.0,
+"dish_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|default|7.3,6.1": {
+"rotation": 0.0,
+"dish_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|False|30|9,9": {
+"rotation": 60.0,
+"dish_elev": -75.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|30|1,9": {
+"rotation": 60.0,
+"dish_elev": 15.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|30|1,1": {
+"rotation": 60.0,
+"dish_elev": 105.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|30|9,1": {
+"rotation": 60.0,
+"dish_elev": -165.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|30|5,9.5": {
+"rotation": 60.0,
+"dish_elev": -30.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|30|0.5,5": {
+"rotation": 60.0,
+"dish_elev": 60.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|30|5,0.2": {
+"rotation": 60.0,
+"dish_elev": 150.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|30|7.3,6.1": {
+"rotation": 60.0,
+"dish_elev": -94.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|False|45|9,9": {
+"rotation": 45.0,
+"dish_elev": -45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|45|1,9": {
+"rotation": 45.0,
+"dish_elev": 45.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|45|1,1": {
+"rotation": 45.0,
+"dish_elev": 135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|45|9,1": {
+"rotation": 45.0,
+"dish_elev": -135.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|45|5,9.5": {
+"rotation": 45.0,
+"dish_elev": 0.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|45|0.5,5": {
+"rotation": 45.0,
+"dish_elev": 90.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|45|5,0.2": {
+"rotation": 45.0,
+"dish_elev": 180.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|45|7.3,6.1": {
+"rotation": 45.0,
+"dish_elev": -64.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|False|60|9,9": {
+"rotation": 30.0,
+"dish_elev": -15.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|60|1,9": {
+"rotation": 30.0,
+"dish_elev": 75.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|60|1,1": {
+"rotation": 30.0,
+"dish_elev": 165.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|60|9,1": {
+"rotation": 30.0,
+"dish_elev": -105.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|60|5,9.5": {
+"rotation": 30.0,
+"dish_elev": 30.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|60|0.5,5": {
+"rotation": 30.0,
+"dish_elev": 120.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|60|5,0.2": {
+"rotation": 30.0,
+"dish_elev": -150.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|60|7.3,6.1": {
+"rotation": 30.0,
+"dish_elev": -34.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|False|90|9,9": {
+"rotation": 0.0,
+"dish_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|90|1,9": {
+"rotation": 0.0,
+"dish_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|90|1,1": {
+"rotation": 0.0,
+"dish_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|90|9,1": {
+"rotation": 0.0,
+"dish_elev": -45.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|90|5,9.5": {
+"rotation": 0.0,
+"dish_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|90|0.5,5": {
+"rotation": 0.0,
+"dish_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|90|5,0.2": {
+"rotation": 0.0,
+"dish_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|90|7.3,6.1": {
+"rotation": 0.0,
+"dish_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"antenna|planted|False|120|9,9": {
+"rotation": -30.0,
+"dish_elev": 105.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|120|1,9": {
+"rotation": -30.0,
+"dish_elev": -165.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|120|1,1": {
+"rotation": -30.0,
+"dish_elev": -75.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|120|9,1": {
+"rotation": -30.0,
+"dish_elev": 15.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|120|5,9.5": {
+"rotation": -30.0,
+"dish_elev": 150.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|120|0.5,5": {
+"rotation": -30.0,
+"dish_elev": -120.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|120|5,0.2": {
+"rotation": -30.0,
+"dish_elev": -30.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"antenna|planted|False|120|7.3,6.1": {
+"rotation": -30.0,
+"dish_elev": 85.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|aimed|auto|default|9,9": {
+"rotation": -45.0,
+"tube_elev": 90.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|default|1,9": {
+"rotation": 45.0,
+"tube_elev": 90.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|default|1,1": {
+"rotation": 135.0,
+"tube_elev": 90.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|default|9,1": {
+"rotation": -135.0,
+"tube_elev": 90.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|default|5,9.5": {
+"rotation": 0.0,
+"tube_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|default|0.5,5": {
+"rotation": 90.0,
+"tube_elev": 90.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|default|5,0.2": {
+"rotation": 180.0,
+"tube_elev": 90.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|default|7.3,6.1": {
+"rotation": -64.4400348282,
+"tube_elev": 90.0,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"telescope|aimed|auto|30|9,9": {
+"rotation": 15.0,
+"tube_elev": 30.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|30|1,9": {
+"rotation": 105.0,
+"tube_elev": 30.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|30|1,1": {
+"rotation": -165.0,
+"tube_elev": 30.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|30|9,1": {
+"rotation": -75.0,
+"tube_elev": 30.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|30|5,9.5": {
+"rotation": 60.0,
+"tube_elev": 30.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|30|0.5,5": {
+"rotation": 150.0,
+"tube_elev": 30.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|30|5,0.2": {
+"rotation": -120.0,
+"tube_elev": 30.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|30|7.3,6.1": {
+"rotation": -4.4400348282,
+"tube_elev": 30.0,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"telescope|aimed|auto|45|9,9": {
+"rotation": 0.0,
+"tube_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|45|1,9": {
+"rotation": 90.0,
+"tube_elev": 45.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|45|1,1": {
+"rotation": 180.0,
+"tube_elev": 45.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|45|9,1": {
+"rotation": -90.0,
+"tube_elev": 45.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|45|5,9.5": {
+"rotation": 45.0,
+"tube_elev": 45.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|45|0.5,5": {
+"rotation": 135.0,
+"tube_elev": 45.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|45|5,0.2": {
+"rotation": -135.0,
+"tube_elev": 45.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|45|7.3,6.1": {
+"rotation": -19.4400348282,
+"tube_elev": 45.0,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"telescope|aimed|auto|60|9,9": {
+"rotation": -15.0,
+"tube_elev": 60.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|60|1,9": {
+"rotation": 75.0,
+"tube_elev": 60.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|60|1,1": {
+"rotation": 165.0,
+"tube_elev": 60.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|60|9,1": {
+"rotation": -105.0,
+"tube_elev": 60.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|60|5,9.5": {
+"rotation": 30.0,
+"tube_elev": 60.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|60|0.5,5": {
+"rotation": 120.0,
+"tube_elev": 60.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|60|5,0.2": {
+"rotation": -150.0,
+"tube_elev": 60.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|60|7.3,6.1": {
+"rotation": -34.4400348282,
+"tube_elev": 60.0,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"telescope|aimed|auto|90|9,9": {
+"rotation": -45.0,
+"tube_elev": 90.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|90|1,9": {
+"rotation": 45.0,
+"tube_elev": 90.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|90|1,1": {
+"rotation": 135.0,
+"tube_elev": 90.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|90|9,1": {
+"rotation": -135.0,
+"tube_elev": 90.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|90|5,9.5": {
+"rotation": 0.0,
+"tube_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|90|0.5,5": {
+"rotation": 90.0,
+"tube_elev": 90.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|90|5,0.2": {
+"rotation": 180.0,
+"tube_elev": 90.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|90|7.3,6.1": {
+"rotation": -64.4400348282,
+"tube_elev": 90.0,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"telescope|aimed|auto|120|9,9": {
+"rotation": -75.0,
+"tube_elev": 120.0,
+"aim_angle": 45.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|120|1,9": {
+"rotation": 15.0,
+"tube_elev": 120.0,
+"aim_angle": 135.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|120|1,1": {
+"rotation": 105.0,
+"tube_elev": 120.0,
+"aim_angle": 225.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|120|9,1": {
+"rotation": -165.0,
+"tube_elev": 120.0,
+"aim_angle": 315.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|120|5,9.5": {
+"rotation": -30.0,
+"tube_elev": 120.0,
+"aim_angle": 90.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|120|0.5,5": {
+"rotation": 60.0,
+"tube_elev": 120.0,
+"aim_angle": 180.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|120|5,0.2": {
+"rotation": 150.0,
+"tube_elev": 120.0,
+"aim_angle": 270.0,
+"radial_angle": null
+},
+"telescope|aimed|auto|120|7.3,6.1": {
+"rotation": -94.4400348282,
+"tube_elev": 120.0,
+"aim_angle": 25.5599651718,
+"radial_angle": null
+},
+"telescope|planted|auto|default|9,9": {
+"rotation": 0.0,
+"tube_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|default|1,9": {
+"rotation": 0.0,
+"tube_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|default|1,1": {
+"rotation": 180.0,
+"tube_elev": 45.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|default|9,1": {
+"rotation": 180.0,
+"tube_elev": 135.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|default|5,9.5": {
+"rotation": 0.0,
+"tube_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|default|0.5,5": {
+"rotation": 0.0,
+"tube_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|default|5,0.2": {
+"rotation": 180.0,
+"tube_elev": 90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|default|7.3,6.1": {
+"rotation": 0.0,
+"tube_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|30|9,9": {
+"rotation": 60.0,
+"tube_elev": -15.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|30|1,9": {
+"rotation": 60.0,
+"tube_elev": 75.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|30|1,1": {
+"rotation": -120.0,
+"tube_elev": -15.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|30|9,1": {
+"rotation": -120.0,
+"tube_elev": 75.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|30|5,9.5": {
+"rotation": 60.0,
+"tube_elev": 30.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|30|0.5,5": {
+"rotation": 60.0,
+"tube_elev": 120.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|30|5,0.2": {
+"rotation": -120.0,
+"tube_elev": 30.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|30|7.3,6.1": {
+"rotation": 60.0,
+"tube_elev": -34.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|45|9,9": {
+"rotation": 45.0,
+"tube_elev": 0.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|45|1,9": {
+"rotation": 45.0,
+"tube_elev": 90.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|45|1,1": {
+"rotation": -135.0,
+"tube_elev": 0.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|45|9,1": {
+"rotation": -135.0,
+"tube_elev": 90.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|45|5,9.5": {
+"rotation": 45.0,
+"tube_elev": 45.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|45|0.5,5": {
+"rotation": 45.0,
+"tube_elev": 135.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|45|5,0.2": {
+"rotation": -135.0,
+"tube_elev": 45.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|45|7.3,6.1": {
+"rotation": 45.0,
+"tube_elev": -19.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|60|9,9": {
+"rotation": 30.0,
+"tube_elev": 15.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|60|1,9": {
+"rotation": 30.0,
+"tube_elev": 105.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|60|1,1": {
+"rotation": -150.0,
+"tube_elev": 15.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|60|9,1": {
+"rotation": -150.0,
+"tube_elev": 105.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|60|5,9.5": {
+"rotation": 30.0,
+"tube_elev": 60.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|60|0.5,5": {
+"rotation": 30.0,
+"tube_elev": 150.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|60|5,0.2": {
+"rotation": -150.0,
+"tube_elev": 60.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|60|7.3,6.1": {
+"rotation": 30.0,
+"tube_elev": -4.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|90|9,9": {
+"rotation": 0.0,
+"tube_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|90|1,9": {
+"rotation": 0.0,
+"tube_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|90|1,1": {
+"rotation": 180.0,
+"tube_elev": 45.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|90|9,1": {
+"rotation": 180.0,
+"tube_elev": 135.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|90|5,9.5": {
+"rotation": 0.0,
+"tube_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|90|0.5,5": {
+"rotation": 0.0,
+"tube_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|90|5,0.2": {
+"rotation": 180.0,
+"tube_elev": 90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|90|7.3,6.1": {
+"rotation": 0.0,
+"tube_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|120|9,9": {
+"rotation": -30.0,
+"tube_elev": 75.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|120|1,9": {
+"rotation": -30.0,
+"tube_elev": 165.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|120|1,1": {
+"rotation": 150.0,
+"tube_elev": 75.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|120|9,1": {
+"rotation": 150.0,
+"tube_elev": 165.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|120|5,9.5": {
+"rotation": -30.0,
+"tube_elev": 120.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|120|0.5,5": {
+"rotation": -30.0,
+"tube_elev": -150.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|120|5,0.2": {
+"rotation": 150.0,
+"tube_elev": 120.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|auto|120|7.3,6.1": {
+"rotation": -30.0,
+"tube_elev": 55.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|True|default|9,9": {
+"rotation": 180.0,
+"tube_elev": -135.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|default|1,9": {
+"rotation": 180.0,
+"tube_elev": -45.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|default|1,1": {
+"rotation": 180.0,
+"tube_elev": 45.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|default|9,1": {
+"rotation": 180.0,
+"tube_elev": 135.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|default|5,9.5": {
+"rotation": 180.0,
+"tube_elev": -90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|default|0.5,5": {
+"rotation": 180.0,
+"tube_elev": 0.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|default|5,0.2": {
+"rotation": 180.0,
+"tube_elev": 90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|default|7.3,6.1": {
+"rotation": 180.0,
+"tube_elev": -154.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|True|30|9,9": {
+"rotation": -120.0,
+"tube_elev": 165.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|30|1,9": {
+"rotation": -120.0,
+"tube_elev": -105.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|30|1,1": {
+"rotation": -120.0,
+"tube_elev": -15.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|30|9,1": {
+"rotation": -120.0,
+"tube_elev": 75.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|30|5,9.5": {
+"rotation": -120.0,
+"tube_elev": -150.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|30|0.5,5": {
+"rotation": -120.0,
+"tube_elev": -60.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|30|5,0.2": {
+"rotation": -120.0,
+"tube_elev": 30.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|30|7.3,6.1": {
+"rotation": -120.0,
+"tube_elev": 145.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|True|45|9,9": {
+"rotation": -135.0,
+"tube_elev": 180.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|45|1,9": {
+"rotation": -135.0,
+"tube_elev": -90.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|45|1,1": {
+"rotation": -135.0,
+"tube_elev": 0.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|45|9,1": {
+"rotation": -135.0,
+"tube_elev": 90.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|45|5,9.5": {
+"rotation": -135.0,
+"tube_elev": -135.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|45|0.5,5": {
+"rotation": -135.0,
+"tube_elev": -45.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|45|5,0.2": {
+"rotation": -135.0,
+"tube_elev": 45.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|45|7.3,6.1": {
+"rotation": -135.0,
+"tube_elev": 160.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|True|60|9,9": {
+"rotation": -150.0,
+"tube_elev": -165.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|60|1,9": {
+"rotation": -150.0,
+"tube_elev": -75.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|60|1,1": {
+"rotation": -150.0,
+"tube_elev": 15.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|60|9,1": {
+"rotation": -150.0,
+"tube_elev": 105.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|60|5,9.5": {
+"rotation": -150.0,
+"tube_elev": -120.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|60|0.5,5": {
+"rotation": -150.0,
+"tube_elev": -30.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|60|5,0.2": {
+"rotation": -150.0,
+"tube_elev": 60.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|60|7.3,6.1": {
+"rotation": -150.0,
+"tube_elev": 175.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|True|90|9,9": {
+"rotation": 180.0,
+"tube_elev": -135.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|90|1,9": {
+"rotation": 180.0,
+"tube_elev": -45.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|90|1,1": {
+"rotation": 180.0,
+"tube_elev": 45.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|90|9,1": {
+"rotation": 180.0,
+"tube_elev": 135.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|90|5,9.5": {
+"rotation": 180.0,
+"tube_elev": -90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|90|0.5,5": {
+"rotation": 180.0,
+"tube_elev": 0.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|90|5,0.2": {
+"rotation": 180.0,
+"tube_elev": 90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|90|7.3,6.1": {
+"rotation": 180.0,
+"tube_elev": -154.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|True|120|9,9": {
+"rotation": 150.0,
+"tube_elev": -105.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|120|1,9": {
+"rotation": 150.0,
+"tube_elev": -15.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|120|1,1": {
+"rotation": 150.0,
+"tube_elev": 75.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|120|9,1": {
+"rotation": 150.0,
+"tube_elev": 165.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|120|5,9.5": {
+"rotation": 150.0,
+"tube_elev": -60.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|120|0.5,5": {
+"rotation": 150.0,
+"tube_elev": 30.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|120|5,0.2": {
+"rotation": 150.0,
+"tube_elev": 120.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|True|120|7.3,6.1": {
+"rotation": 150.0,
+"tube_elev": -124.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|False|default|9,9": {
+"rotation": 0.0,
+"tube_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|default|1,9": {
+"rotation": 0.0,
+"tube_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|default|1,1": {
+"rotation": 0.0,
+"tube_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|default|9,1": {
+"rotation": 0.0,
+"tube_elev": -45.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|default|5,9.5": {
+"rotation": 0.0,
+"tube_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|default|0.5,5": {
+"rotation": 0.0,
+"tube_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|default|5,0.2": {
+"rotation": 0.0,
+"tube_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|default|7.3,6.1": {
+"rotation": 0.0,
+"tube_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|False|30|9,9": {
+"rotation": 60.0,
+"tube_elev": -15.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|30|1,9": {
+"rotation": 60.0,
+"tube_elev": 75.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|30|1,1": {
+"rotation": 60.0,
+"tube_elev": 165.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|30|9,1": {
+"rotation": 60.0,
+"tube_elev": -105.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|30|5,9.5": {
+"rotation": 60.0,
+"tube_elev": 30.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|30|0.5,5": {
+"rotation": 60.0,
+"tube_elev": 120.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|30|5,0.2": {
+"rotation": 60.0,
+"tube_elev": -150.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|30|7.3,6.1": {
+"rotation": 60.0,
+"tube_elev": -34.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|False|45|9,9": {
+"rotation": 45.0,
+"tube_elev": 0.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|45|1,9": {
+"rotation": 45.0,
+"tube_elev": 90.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|45|1,1": {
+"rotation": 45.0,
+"tube_elev": 180.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|45|9,1": {
+"rotation": 45.0,
+"tube_elev": -90.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|45|5,9.5": {
+"rotation": 45.0,
+"tube_elev": 45.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|45|0.5,5": {
+"rotation": 45.0,
+"tube_elev": 135.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|45|5,0.2": {
+"rotation": 45.0,
+"tube_elev": -135.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|45|7.3,6.1": {
+"rotation": 45.0,
+"tube_elev": -19.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|False|60|9,9": {
+"rotation": 30.0,
+"tube_elev": 15.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|60|1,9": {
+"rotation": 30.0,
+"tube_elev": 105.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|60|1,1": {
+"rotation": 30.0,
+"tube_elev": -165.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|60|9,1": {
+"rotation": 30.0,
+"tube_elev": -75.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|60|5,9.5": {
+"rotation": 30.0,
+"tube_elev": 60.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|60|0.5,5": {
+"rotation": 30.0,
+"tube_elev": 150.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|60|5,0.2": {
+"rotation": 30.0,
+"tube_elev": -120.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|60|7.3,6.1": {
+"rotation": 30.0,
+"tube_elev": -4.4400348282,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|False|90|9,9": {
+"rotation": 0.0,
+"tube_elev": 45.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|90|1,9": {
+"rotation": 0.0,
+"tube_elev": 135.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|90|1,1": {
+"rotation": 0.0,
+"tube_elev": -135.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|90|9,1": {
+"rotation": 0.0,
+"tube_elev": -45.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|90|5,9.5": {
+"rotation": 0.0,
+"tube_elev": 90.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|90|0.5,5": {
+"rotation": 0.0,
+"tube_elev": 180.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|90|5,0.2": {
+"rotation": 0.0,
+"tube_elev": -90.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|90|7.3,6.1": {
+"rotation": 0.0,
+"tube_elev": 25.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+},
+"telescope|planted|False|120|9,9": {
+"rotation": -30.0,
+"tube_elev": 75.0,
+"aim_angle": 45.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|120|1,9": {
+"rotation": -30.0,
+"tube_elev": 165.0,
+"aim_angle": 135.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|120|1,1": {
+"rotation": -30.0,
+"tube_elev": -105.0,
+"aim_angle": 225.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|120|9,1": {
+"rotation": -30.0,
+"tube_elev": -15.0,
+"aim_angle": 315.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|120|5,9.5": {
+"rotation": -30.0,
+"tube_elev": 120.0,
+"aim_angle": 90.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|120|0.5,5": {
+"rotation": -30.0,
+"tube_elev": -150.0,
+"aim_angle": 180.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|120|5,0.2": {
+"rotation": -30.0,
+"tube_elev": -60.0,
+"aim_angle": 270.0,
+"radial_angle": 90.0
+},
+"telescope|planted|False|120|7.3,6.1": {
+"rotation": -30.0,
+"tube_elev": 55.5599651718,
+"aim_angle": 25.5599651718,
+"radial_angle": 90.0
+}
+}
+}

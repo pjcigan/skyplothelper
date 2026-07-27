@@ -1,0 +1,58 @@
+cff-version: 1.2.0
+message: "If you use skyplothelper in your work, please cite it as below."
+title: "skyplothelper"
+abstract: >
+  Astronomy visualization toolkit: WCS frames, spherical geometry,
+  tilted globes, and cone (z-RA) wedge frames built on top of
+  matplotlib and astropy.
+type: software
+authors:
+  - family-names: "Cigan"
+    given-names: "Phil"
+repository-code: "https://github.com/pjcigan/skyplothelper"
+url: "https://github.com/pjcigan/skyplothelper"
+license: BSD-3-Clause
+version: "1.0.0"
+date-released: "2026-06-11"
+keywords:
+  - astronomy
+  - visualization
+  - matplotlib
+  - wcs
+  - healpix
+# A DOI / Zenodo / journal reference will be added in a later release.
+
+references:
+  - type: data
+    title: "Outlines of the IAU Constellations"
+    authors:
+      - family-names: "Davenhall"
+        given-names: "A.C."
+      - family-names: "Leggett"
+        given-names: "S.K."
+    year: 1989
+    notes: >
+      Bundled IAU constellation boundary corners
+      (skyplothelper/data/constellation_corners.npz) are sourced from
+      this catalog (Vizier VI/49, table bound_18) and precessed from
+      B1875 to ICRS with astropy. The underlying boundary definition
+      is the IAU 1930 (Delporte) post-revision.
+    url: "https://cdsarc.cds.unistra.fr/viz-bin/cat/VI/49"
+
+  - type: data
+    title: "d3-celestial — Constellation asterism lines"
+    authors:
+      - family-names: "Frohn"
+        given-names: "Olaf"
+    year: 2015
+    license: BSD-3-Clause
+    notes: >
+      Bundled IAU asterism (connect-the-dots) line data
+      (skyplothelper/data/constellation_lines.npz) is derived from
+      d3-celestial's constellations.lines.json, which in turn is drawn
+      from the IAU's Constellation page with minor line modifications
+      and cleanup by Olaf Frohn. The IAU itself does not publish a
+      single canonical asterism dataset distinct from the boundary
+      definitions; this is the de-facto IAU-derived, BSD-redistributable
+      reference.
+    url: "https://github.com/ofrohn/d3-celestial"

@@ -1,6 +1,6 @@
 """Emit the data + the real sph render that the star-type-morph demo (E) uses.
 
-This is the sph side of demo E (see ``.claude/MANIM_DEMO_BRIEFS.md`` §E and §4).
+This is the sph side of demo E.
 It draws no animation. It produces:
 
 * ``assets/startype_stops.json`` — a dense log-temperature sweep from O to M.

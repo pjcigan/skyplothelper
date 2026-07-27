@@ -1,5 +1,5 @@
 """Render the *real* skyplothelper regions that the set-algebra manim demo
-cross-fades into (tutorial #7, demo B — see ``.claude/MANIM_DEMO_BRIEFS.md`` §B).
+cross-fades into (tutorial #7, demo B).
 
 This is the sph side of the pipeline. It draws no animation — it produces the
 genuine ``CompoundRegion`` PNGs that ``regions_setalgebra.py`` dissolves the

@@ -14,8 +14,7 @@ This is the manim side only. It draws *no* science map: every "real map" beat is
 a genuine sph render imported as an ``ImageMobject`` (``assets/tan_orion.png``,
 ``assets/allsky_aitoff.png``), and the star directions, colors, and distances
 come from ``assets/orion_stars.json`` — all produced by
-``make_projection_assets.py`` in the astropy env. See
-``.claude/MANIM_DEMO_BRIEFS.md`` §A / §4 and ``README.md``.
+``make_projection_assets.py`` in the astropy env. See ``README.md``.
 
 Build (in the optional ManimCE env, from the repo root)::
 

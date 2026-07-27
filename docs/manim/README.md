@@ -6,8 +6,7 @@ asset generators* in the same spirit as `docs/make_readme_assets.py` and
 `docs/make_tutorial_dark_figs.py` — run by hand, never by the notebook-execution
 or dark-figure pipelines, and never a runtime dependency of the package.
 
-See `.claude/MANIM_DEMO_BRIEFS.md` for the full scoping doc (which notebook each
-demo belongs to, storyboard, and the shared production model). The cardinal rule:
+The cardinal rule:
 **skyplothelper is the source of scientific truth; manim is only the camera and
 typographer.** Anything that looks like a sky map is a *real* sph render saved to
 `assets/`, imported into the scene as an `ImageMobject` and cross-faded — never a

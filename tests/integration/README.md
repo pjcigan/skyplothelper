@@ -1,9 +1,7 @@
-# Merge verification tests
+# Integration tests
 
-These tests exist to verify that the four-source merge (sph_dev_v5,
-wcs_geometry_v7, wcs_tilted_globe, cone_frame → skyplothelper 1.0.0)
-preserved the **expected runtime behavior** of every public plotting
-function, decoration, annotation, and rendering helper.
+These integration tests verify the **expected runtime behavior** of every
+public plotting function, decoration, annotation, and rendering helper.
 
 ## What these tests are
 
@@ -30,7 +28,7 @@ This directory is **temporary**. Once Phil is satisfied that the merge
 is clean and we move on to writing the long-term test suite, these
 files can be:
 
-1. **Deleted wholesale** (`rm -rf tests/merge_verification`) — the
+1. **Deleted wholesale** (`rm -rf tests/integration`) — the
    canonical test suite remains intact, the verification tests retire.
 2. **Promoted selectively** by moving useful checks into the canonical
    `tests/test_<module>.py` files.
@@ -43,7 +41,7 @@ exist. Keep the verification tests self-contained.
 Flat. One test file per (module, area) pair:
 
 ```
-tests/merge_verification/
+tests/integration/
 ├── README.md                  (this file)
 ├── __init__.py                (empty)
 ├── test_plotting_globe.py     (Group 1a)
@@ -58,10 +56,10 @@ tests/merge_verification/
 
 ```bash
 # Just the verification tests
-pytest tests/merge_verification -v
+pytest tests/integration -v
 
 # Everything except verification
-pytest --ignore=tests/merge_verification
+pytest --ignore=tests/integration
 
 # Full suite (default)
 pytest

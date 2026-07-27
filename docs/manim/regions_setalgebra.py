@@ -17,8 +17,7 @@ build-up frame is a genuine sph render imported as an ``ImageMobject``
 (``assets/trio_globe.png``, ``assets/build_*.png``, ``assets/{band,hole}_zone.png``),
 all produced by ``make_regions_assets.py`` in the astropy env. The abstract Venn
 shapes are manim's own ``Union``/``Intersection``/``Difference`` of two circles —
-pure typography, not a sky map. See ``.claude/MANIM_DEMO_BRIEFS.md`` §B / §4 and
-``README.md``.
+pure typography, not a sky map. See ``README.md``.
 
 Build (in the optional ManimCE env, from the repo root)::
 

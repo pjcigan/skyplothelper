@@ -149,7 +149,7 @@ html_static_path = ["_static"]
 # Serve the agent-facing map + recipe corpus at the site root, per the llms.txt
 # convention (agents fetch https://<site>/llms.txt). Both are generated from
 # skyplothelper/_overview.py by scripts/make_llms_txt.py — regenerate them,
-# never hand-edit (see .claude/DOCS_RESWEEP_PLAYBOOK.md).
+# never hand-edit.
 html_extra_path = ["../llms.txt", "../llms-full.txt"]
 html_css_files = ["custom.css"]
 # fontawesome-config.js disables FontAwesome's document-wide MutationObserver,

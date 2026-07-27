@@ -2169,7 +2169,7 @@ def test_skyplothelper_projector_globe_frame_polygon_is_not_degenerate():
 
 
 def test_compound_region_circle_renders_on_sin_globe():
-    """The paste-back repro: a compact near-side circle on a SIN globe used to
+    """A compact near-side circle on a SIN globe used to
     come out empty because the frame collapsed."""
     fig = sphpl.make_figure(projection='SIN', center=266.4, lat_center=-29)
     region = sphpl.make_compound_region(fig).add_circle(266.4, -29, 18)

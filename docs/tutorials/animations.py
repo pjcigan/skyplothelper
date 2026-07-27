@@ -99,7 +99,7 @@ GLOW = [pe.withStroke(linewidth=2.6, foreground="#0E1117")]   # dark stroke for 
 # notebook's conventions (a crispness bump and a size report).
 SIZE_BUMP = 1.18               # ~18% larger canvas for crisper rendering; dial back per clip if a file runs heavy
 OUTPUT_FORMAT = "webp"         # docs default; set "gif"/"mp4" to regenerate the legacy archive instead
-LEGACY_DIR = "../../hidden/animations_legacy"  # the hidden/ tree is gitignored: pre-webp gif/mp4 originals
+LEGACY_DIR = "legacy_animations"  # local dir for regenerated pre-webp gif/mp4 originals
 
 
 def save_anim(ani, fig, slug, fps=10, dpi=80, lossless=False, bg="transparent",

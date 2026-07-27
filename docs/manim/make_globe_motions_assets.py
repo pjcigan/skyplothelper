@@ -1,6 +1,5 @@
 """Render the *real* skyplothelper globes that the #11 globe-motion manim demos
-cross-fade into (demos C "the Euler trio" and D "spin, nutation & precession";
-see ``.claude/MANIM_DEMO_BRIEFS.md`` §C/§D and §4).
+cross-fade into (demos C "the Euler trio" and D "spin, nutation & precession").
 
 This is the sph side only — it draws no animation, just the genuine posed-globe
 PNGs the manim scenes dissolve their schematic 3-D geometry into. The division of

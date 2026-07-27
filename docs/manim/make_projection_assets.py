@@ -1,8 +1,7 @@
 """Render the *real* skyplothelper frames that the projection manim demo
 cross-fades into.
 
-This is the sph side of the demo A pipeline (see
-``.claude/MANIM_DEMO_BRIEFS.md`` §A and §4). It draws no animation — it just
+This is the sph side of the demo A pipeline. It draws no animation — it just
 produces the genuine sph PNGs that ``projection.py`` imports as
 ``ImageMobject``s and dissolves the 3-D geometry into. The division of labor is
 the whole point: skyplothelper is the source of scientific truth (these charts),

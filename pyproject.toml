@@ -201,7 +201,7 @@ no_implicit_optional = true
 # Coverage is opt-in (not in pytest addopts) so the default suite stays fast
 # and the visual-baseline exclusion isn't disturbed. Measure with:
 #   pytest tests/ --cov=skyplothelper --cov-report=term-missing
-# See the release checklist in .claude/POST_MERGE_TODOS.md (Tier 1, coverage).
+# Coverage is opt-in — enable with --cov (see [tool.coverage.*] below).
 [tool.coverage.run]
 source = ["skyplothelper"]
 branch = true

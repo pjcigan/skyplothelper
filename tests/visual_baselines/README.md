@@ -1,9 +1,8 @@
 # Visual regression suite (pytest-mpl)
 
 Local-only suite of pytest-mpl tests that compare gallery panels
-against reference PNGs. Used as a regression guard during the
-region-renderer API rename + default-flip work (see
-[REGION_API_PROPOSAL.md](../../.claude/REGION_API_PROPOSAL.md)).
+against reference PNGs. Used as a regression guard for the
+region-renderer and plotting API.
 
 **Excluded from the default `pytest` run** by the
 `addopts = "--ignore=tests/visual_baselines"` line in
@@ -43,7 +42,7 @@ is known to be sub-pixel-noisy (e.g. anti-aliased text labels).
 ## Adding a new test
 
 Each test wraps a figure-builder from one of the
-`tests/merge_verification/visual/render_*.py` scripts. The render
+`tests/integration/visual/render_*.py` scripts. The render
 script must expose a `PANELS = {name: builder, ...}` dictionary
 where each builder is a no-arg function returning a `Figure`. Then
 in this directory:

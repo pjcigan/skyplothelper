@@ -21,12 +21,10 @@ Styling: the renderer sets the package's own annotation palettes
 data cycle, so `C0`–`C9` resolve to in-house colors in both modes. Use
 those cycle indices for accents and the bundled `sph.*` colormaps for
 image/density maps — not `tab:*` or bare `magma`/`viridis`. The full
-capability inventory and novelty tiers live in
-`hidden/paper/CAPABILITIES.md`; features held back from this curated
-pass (nightshade / tilted-textured globes, co-visibility regions,
-image-stamp markers, RGB composites, symmetric-log, data cubes, zoom
-insets, quicklook, more tick/label knobs) are catalogued in
-`.claude/PLOT_FEATURES_CATALOG.md` for a later expansion.
+features held back from this curated pass (nightshade / tilted-textured
+globes, co-visibility regions, image-stamp markers, RGB composites,
+symmetric-log, data cubes, zoom insets, quicklook, more tick/label knobs)
+may be added in a later expansion.
 
 ## All-sky maps
 

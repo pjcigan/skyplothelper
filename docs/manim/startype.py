@@ -14,8 +14,7 @@ computed in-scene; the fill uses a luminance-even wavelength LUT from the JSON. 
 coda dissolves into the notebook's real perceived-color all-sky chart
 (``assets/startype_allsky.jpg``). Both assets come from
 ``make_startype_assets.py`` in the astropy env. A skyplothelper wordmark sits in
-the corner for attribution if the file is reused. See
-``.claude/MANIM_DEMO_BRIEFS.md`` §E / §4 and ``README.md``.
+the corner for attribution if the file is reused. See ``README.md``.
 
 Build (in the ManimCE env, from the repo root)::
 

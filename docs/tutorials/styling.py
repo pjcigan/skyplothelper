@@ -866,7 +866,7 @@ _FONT_DIRS = ["/usr/share/texmf/fonts/opentype/public/tex-gyre",
               "/usr/share/texmf/fonts/opentype/public/lm"]
 # The downloaded faces live relative to this notebook — try both spellings so the
 # lookup works whatever directory the kernel happens to run from.
-for _cand in ("hidden/scratchpad/fonts", "../../hidden/scratchpad/fonts"):
+for _cand in ("fonts", "../fonts"):
     if os.path.isdir(_cand):
         _FONT_DIRS.append(_cand)
         break

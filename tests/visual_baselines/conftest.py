@@ -25,11 +25,11 @@ import matplotlib
 matplotlib.use("Agg")
 
 # Make the merge-verification render scripts importable. They live
-# under ``tests/merge_verification/visual/`` and use a
+# under ``tests/integration/visual/`` and use a
 # sys.path-relative ``from _common import ...`` pattern; the suite
 # imports the figure-builders from those modules.
 _RENDER_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "merge_verification",
+    os.path.join(os.path.dirname(__file__), "..", "integration",
                  "visual"))
 if _RENDER_DIR not in sys.path:
     sys.path.insert(0, _RENDER_DIR)

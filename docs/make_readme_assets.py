@@ -31,8 +31,8 @@ colors, ``sph.deepsky`` / ``sph.dusk`` colormaps).
 
 Non-bundled data (background images, catalogs) is read through the ``DATA`` dict
 near the top via ``optional_path`` — keep the committed copy's paths as
-PLACEHOLDERS (your real local paths stay in a private copy, e.g. under
-``hidden/``); missing files are skipped so panels fall back to synthetic data.
+PLACEHOLDERS (your real local paths stay in a private copy); missing files
+are skipped so panels fall back to synthetic data.
 """
 import base64
 import io
@@ -58,7 +58,7 @@ os.makedirs(OUT, exist_ok=True)
 # Panels may want background images / catalogs that are NOT bundled with the
 # package. Keep the committed copy's entries as PLACEHOLDERS so no
 # machine-specific paths ever ship — put your real local paths in a private
-# copy of this file (e.g. under hidden/). Missing files are simply skipped
+# copy of this file. Missing files are simply skipped
 # (panels fall back to synthetic data), so this committed script still runs
 # anywhere and produces a valid hero.
 DATA = {

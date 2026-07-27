@@ -1,11 +1,4 @@
-# ── Development context — EXCLUDED from the public repo ─────────────
-# Dev-only: internal planning docs, agent instructions, scratch. Still
-# TRACKED in the local dev git (deliberately, for development history);
-# these whole-folder ignores take effect at the fresh public `git init`,
-# which starts clean and never adds them. NOTE: the working-tree
-# .gitignore is read live, so in the interim these also stop NEW files
-# in these paths from being tracked — already-tracked dev docs stay
-# committable by explicit path (`git commit <path>` / `git add -f`).
+# Local development / scratch — not part of the distributed project.
 hidden/
 .claude/
 CLAUDE.md
@@ -77,8 +70,8 @@ venv/
 env/
 
 # Merge-verification visual gallery (regenerable)
-tests/merge_verification/visual/output/*.png
-tests/merge_verification/visual/output/*.html
+tests/integration/visual/output/*.png
+tests/integration/visual/output/*.html
 
 # pytest-mpl visual regression baselines (local-only — see
 # tests/visual_baselines/README.md for regen instructions)

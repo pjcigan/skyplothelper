@@ -9,7 +9,7 @@ import sys
 # ``skyplothelper.py`` single-file module but no companion
 # ``skyplothelper/`` package directory.
 #
-# Some setups (e.g. a legacy ``PATHmodules`` dir on ``PYTHONPATH``)
+# Some setups (e.g. a directory earlier on ``PYTHONPATH``)
 # ship a single-file ``skyplothelper.py`` that shadows the installed
 # package. When that shadow wins, ``import skyplothelper.overlays``
 # fails with the very confusing

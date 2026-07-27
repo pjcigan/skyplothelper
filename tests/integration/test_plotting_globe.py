@@ -5,7 +5,7 @@ Verifies that the globe plotting helpers (``plot_scatter_globe``,
 ``imscatter`` / ``imscatter_rotated``) return the right kind of artist
 with the right contents after the merge.
 
-See ``tests/merge_verification/README.md`` for context.
+See ``tests/integration/README.md`` for context.
 """
 
 import matplotlib

@@ -9,14 +9,14 @@ version + key library versions) at the start.
 Usage
 -----
     # From the repo root, for each conda env:
-    bash -ic 'cenv && python tests/merge_verification/visual/render_all.py'
-    bash -ic 'cenv && conda activate py312 && python tests/merge_verification/visual/render_all.py'
+    bash -ic 'cenv && python tests/integration/visual/render_all.py'
+    bash -ic 'cenv && conda activate py312 && python tests/integration/visual/render_all.py'
 
     # Optionally clear the output dir before re-rendering:
-    python tests/merge_verification/visual/render_all.py --clean
+    python tests/integration/visual/render_all.py --clean
 
     # Filter to a subset (regex match against script stem):
-    python tests/merge_verification/visual/render_all.py --filter "ticks|wcs"
+    python tests/integration/visual/render_all.py --filter "ticks|wcs"
 
 Notes
 -----
@@ -122,8 +122,8 @@ def main() -> int:
     n_pngs_before = len(list(_OUTPUT_DIR.glob("*.png")))
 
     # Subprocess env: ensure cwd is the repo root so the package import
-    # resolves to the local skyplothelper rather than a PATHmodules
-    # shadow file. Pass-through environment otherwise.
+    # resolves to the local skyplothelper rather than a stray shadowing
+    # module file. Pass-through environment otherwise.
     env = dict(os.environ)
 
     print("=" * 70)

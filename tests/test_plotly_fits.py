@@ -3,7 +3,7 @@
 Self-contained: builds tiny synthetic astropy WCS objects (no FITS file, no
 matplotlib figure), so the suite never depends on the example MOJAVE image.
 Visual eyeballing lives in the gitignored HTML gallery
-(tests/merge_verification/visual/render_fits.py), not pytest-mpl — a plotly
+(tests/integration/visual/render_fits.py), not pytest-mpl — a plotly
 Heatmap is not a matplotlib artifact.
 """
 

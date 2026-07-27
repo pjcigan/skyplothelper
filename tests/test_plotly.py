@@ -3086,7 +3086,7 @@ def test_galactic_plane_is_curved_on_an_equatorial_figure():
     """The control: cross-frame really must bend."""
     fig = sphpl.make_figure(projection="AIT", frame="icrs")
     y = _new_trace_y(fig, lambda f: sphpl.add_great_circle(f, frame="galactic"))
-    assert y.ptp() > 50.0
+    assert np.ptp(y) > 50.0  # np.ptp, not ndarray.ptp() (removed in numpy 2.0)
 
 
 def test_undeclared_figure_still_behaves_as_equatorial():

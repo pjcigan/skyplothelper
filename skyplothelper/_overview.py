@@ -531,6 +531,7 @@ def _llms_recipes() -> str:
 def _llms_signatures() -> str:
     """A best-effort signature reference for every function the recipes use."""
     import inspect
+    import re
 
     import skyplothelper as sph
     names: list[str] = []
@@ -546,7 +547,13 @@ def _llms_signatures() -> str:
             if obj is None:
                 break
         try:
-            out.append(f"- `{name}{inspect.signature(obj)}`")
+            # Python 3.14's inspect wraps unresolved string annotations as
+            # ``ForwardRef('X')``; strip that back to ``X`` so the rendered
+            # signatures are identical across interpreter versions (keeps the
+            # committed llms*.txt in sync on every CI Python).
+            sig = re.sub(r"ForwardRef\('([^']*)'\)", r"\1",
+                         str(inspect.signature(obj)))
+            out.append(f"- `{name}{sig}`")
         except (TypeError, ValueError):
             if obj is not None:
                 out.append(f"- `{name}` ({type(obj).__name__})")

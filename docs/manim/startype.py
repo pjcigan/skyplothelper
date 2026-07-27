@@ -199,7 +199,7 @@ class StarType(Scene):
 
         def stimuli(T):
             B = planck_norm(wl_grid, T)[vis_mask]
-            s = np.array([np.trapz(B * _bell(vwl, mu, sig), vwl)
+            s = np.array([getattr(np, 'trapezoid', np.trapz)(B * _bell(vwl, mu, sig), vwl)
                           for mu, sig, _ in RGB_RESP])
             return s / s.max()                     # relative balance (color = ratios)
 

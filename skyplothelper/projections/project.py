@@ -24,6 +24,7 @@ downstream code is expected to set axis limits per-projection.
 
 from __future__ import annotations
 
+import functools
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -159,6 +160,40 @@ def _wrap_lon(lons: npt.ArrayLike, center: float) -> npt.NDArray[np.float64]:
     projection center)."""
     lons = np.asarray(lons, dtype=float)
     return ((lons - center + 180.0) % 360.0) - 180.0
+
+
+@functools.lru_cache(maxsize=128)
+def _cached_projection_wcs(proj_upper: str, center: float, lat_center: float,
+                           pv2_1: float | None, pv2_2: float | None) -> Any:
+    """Build (and memoize) the astropy WCS for a projection's parameters.
+
+    The WCS + its FITS header depend only on the projection and center, NOT on
+    the coordinates being projected, so callers that ``project()`` many small
+    batches against the same frame (e.g. per-segment constellation boundaries,
+    wrap-splitting) reuse one WCS instead of rebuilding a header + WCS tens of
+    thousands of times. ``wcs_world2pix`` is read-only, so sharing the cached
+    object across calls is safe.
+
+    Lazy imports dodge the circular dependency through ``wcs_frame`` (which
+    pulls ticks → projections.frames) and keep the entry point cheap to import.
+    """
+    from astropy.wcs import WCS
+
+    from ..wcs_frame import dummy_allsky_hdr, dummy_ortho_hdr
+
+    # For zenithal projections we force ``LONPOLE=180`` (the FITS standard for
+    # non-pole CRVAL2 with ``delta_0 < theta_0``), matching ``make_wcs_frame``'s
+    # SIN orientation. (This differs from ``make_globe_frame``'s ``lonpole=0``,
+    # which rotates the orthographic disk — a tilted-earth view, not the default
+    # ``project()`` behavior.) Conic / Bonne codes route through the else branch
+    # and need a standard parallel, which ``dummy_allsky_hdr`` supplies (45°).
+    if proj_upper in _ZENITHAL_FITS_CODES:
+        hdr = dummy_ortho_hdr(center_LONdeg=center, center_LATdeg=lat_center,
+                              projection=proj_upper, lonpole=180.0)
+    else:
+        hdr = dummy_allsky_hdr(center_LONdeg=center, projection=proj_upper,
+                               pv2_1=pv2_1, pv2_2=pv2_2)
+    return WCS(hdr)
 
 
 def project(lons: SkyCoord | npt.ArrayLike, lats: npt.ArrayLike | None = None, projection: str = 'AIT',
@@ -336,37 +371,15 @@ def project(lons: SkyCoord | npt.ArrayLike, lats: npt.ArrayLike | None = None, p
                 np.asarray(y_nat) * scale)
 
     # ----- FITS WCS path -----
-    # Lazy imports to dodge the circular dependency through wcs_frame
-    # (which itself pulls ticks → projections.frames) and to keep the
-    # top-level entry point cheap for callers that re-import.
-    from astropy.wcs import WCS
-
-    from ..wcs_frame import dummy_allsky_hdr, dummy_ortho_hdr
-
-    # Build a transient dummy header. The dummy header's CDELT picks
-    # the pixel scale; we'll convert pixel → intermediate-world (deg)
-    # below so output is independent of NAXIS / CDELT.
-    #
-    # For zenithal projections, we force ``LONPOLE=180`` (the FITS
-    # standard for non-pole CRVAL2 with ``delta_0 < theta_0``), which
-    # matches ``make_wcs_frame``'s SIN orientation. Note: this differs
-    # from ``make_globe_frame``'s default ``lonpole=0``, which produces
-    # an in-plane rotation of the orthographic disk — relevant for
-    # users explicitly asking for a tilted-earth view but not the
-    # default ``project()`` behavior.
-    if proj_upper in _ZENITHAL_FITS_CODES:
-        hdr = dummy_ortho_hdr(center_LONdeg=center,
-                              center_LATdeg=lat_center,
-                              projection=proj_upper,
-                              lonpole=180.0)
-    else:
-        # The conic / Bonne codes route through here and need a standard
-        # parallel; dummy_allsky_hdr supplies the shared 45° default.
-        hdr = dummy_allsky_hdr(center_LONdeg=center,
-                                projection=proj_upper,
-                                pv2_1=pv2_1, pv2_2=pv2_2)
-
-    wcs = WCS(hdr)
+    # The FITS header + WCS depend only on (projection, center, lat_center,
+    # pv2_*), NOT on the data being projected — so they're memoized. Callers
+    # that project() many small batches against the same frame (per-segment
+    # constellation boundaries, wrap-splitting) then reuse one WCS instead of
+    # rebuilding a header + WCS on every call. The dummy header's CDELT sets the
+    # pixel scale; we convert pixel → intermediate-world (deg) below, so output
+    # is independent of NAXIS / CDELT.
+    wcs = _cached_projection_wcs(proj_upper, float(center), float(lat_center),
+                                 pv2_1, pv2_2)
     coords = np.column_stack([lons.ravel(), lats.ravel()])
     pix = wcs.wcs_world2pix(coords, 0)
     # Convert pixel coords to intermediate-world (projection-plane

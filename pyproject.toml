@@ -169,7 +169,13 @@ testpaths = ["tests"]
 # Visual regression tests (pytest-mpl) are local-only and excluded from
 # the default run. To run them: pytest tests/visual_baselines --mpl
 # To regen baselines: see tests/visual_baselines/README.md
-addopts = "--ignore=tests/visual_baselines"
+#
+# -p no:filter_subpackage / no:doctestplus: these astropy-stack plugins ship
+# with the test deps but the installed pytest-filter-subpackage is too old for
+# modern pytest — its pytest_ignore_collect hook fails validation at COLLECTION
+# time, taking down the whole run. We don't use either plugin, so disable them
+# here (in addopts, so it applies to CI's bare `pytest` too, not just locally).
+addopts = "--ignore=tests/visual_baselines -p no:filter_subpackage -p no:doctestplus"
 
 [tool.mypy]
 # No explicit python_version: mypy follows the interpreter it runs under (the

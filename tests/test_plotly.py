@@ -3426,8 +3426,8 @@ def test_add_region_slider_default_label_is_kv_params():
 def test_region_slider_catalog_skycoord_respects_frame():
     """A galactic-frame SkyCoord catalog is classified in its own frame, so a
     thin galactic band around b=0 captures the low-|b| sources."""
-    from astropy.coordinates import SkyCoord
     import astropy.units as u
+    from astropy.coordinates import SkyCoord
     fig = sphpl.make_figure(projection='AIT', center=180, frame='galactic')
     rng = np.random.default_rng(3)
     gl = rng.uniform(0, 360, 400)
@@ -3447,9 +3447,8 @@ def test_region_slider_catalog_skycoord_respects_frame():
 
 def test_region_outline_path_is_open_polylines():
     """The outline path strokes open polylines (no Z), unlike the fill."""
-    from skyplothelper.plotly.core import (_region_outline_path,
-                                           _shapely_to_svg_path)
     from skyplothelper.plotly import make_compound_region
+    from skyplothelper.plotly.core import _region_outline_path, _shapely_to_svg_path
     fig = sphpl.make_figure(projection='AIT', center=180)
     region = make_compound_region(fig).add_circle(90.0, 0.0, 20.0)
     frame_poly = region.projector.frame_polygon

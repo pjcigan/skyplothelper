@@ -45,7 +45,11 @@ jobs:
         run: mypy
 
       - name: Tests
-        run: pytest tests/ -q
+        # -n auto: parallelize across the runner's cores (pytest-xdist, from
+        # the dev extra). The suite is render-bound and independent, so this
+        # roughly halves wall-clock. Visual-baseline tests are excluded via
+        # addopts, so there's no pytest-mpl/worker interaction.
+        run: pytest tests/ -q -n auto
 
   # Informational: newest deps (astropy 8 / matplotlib 3.11 / numpy 2.x, latest
   # ruff/mypy) across the newest Python runtimes (incl. 3.13 / 3.14, which the
@@ -84,7 +88,11 @@ jobs:
         run: mypy
 
       - name: Tests
-        run: pytest tests/ -q
+        # -n auto: parallelize across the runner's cores (pytest-xdist, from
+        # the dev extra). The suite is render-bound and independent, so this
+        # roughly halves wall-clock. Visual-baseline tests are excluded via
+        # addopts, so there's no pytest-mpl/worker interaction.
+        run: pytest tests/ -q -n auto
 
   # Packaging: the sdist/wheel build and metadata must stay valid before any
   # publish.

@@ -25,6 +25,10 @@ fi
 if python -c "import pytest_filter_subpackage" 2>/dev/null; then
     PYTEST_FLAGS="$PYTEST_FLAGS -p no:filter_subpackage"
 fi
+# Parallelize when pytest-xdist is available (CI does; matches `-n auto` there).
+if python -c "import xdist" 2>/dev/null; then
+    PYTEST_FLAGS="$PYTEST_FLAGS -n auto"
+fi
 
 run_checks() {
     echo "== ruff =="
@@ -44,7 +48,7 @@ if [[ "${1:-}" == "--clean" ]]; then
         -c ci/constraints-baseline.txt -q
     echo ">> Running CI checks in '$ENV'…"
     conda run -n "$ENV" bash -c "cd '$PWD' && \
-        ruff check skyplothelper tests && mypy && pytest tests/ -q"
+        ruff check skyplothelper tests && mypy && pytest tests/ -q -n auto"
     echo ">> Done. Remove the env with:  conda env remove -n $ENV"
 else
     run_checks

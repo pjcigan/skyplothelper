@@ -90,6 +90,7 @@ dev = [
     "pytest",
     "pytest-mpl",
     "pytest-cov",
+    "pytest-xdist",   # parallel test runner (`pytest -n auto`); CI uses it
     "ruff",
     "mypy",
 ]

@@ -12,8 +12,8 @@ authors:
 repository-code: "https://github.com/pjcigan/skyplothelper"
 url: "https://github.com/pjcigan/skyplothelper"
 license: BSD-3-Clause
-version: "1.0.0"
-date-released: "2026-06-11"
+version: "1.0.1"
+date-released: "2026-07-27"
 keywords:
   - astronomy
   - visualization

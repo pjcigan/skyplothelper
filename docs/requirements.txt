@@ -6,3 +6,4 @@ sphinx-design
 sphinx-copybutton
 myst-parser
 nbsphinx
+ipython  # provides the `ipython3` Pygments lexer nbsphinx uses to highlight notebook code cells

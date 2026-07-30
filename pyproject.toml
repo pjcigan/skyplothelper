@@ -115,6 +115,7 @@ docs = [
     "sphinx-copybutton",
     "myst-parser",
     "nbsphinx",
+    "ipython",  # provides the `ipython3` Pygments lexer for notebook code-cell highlighting
 ]
 
 [project.urls]

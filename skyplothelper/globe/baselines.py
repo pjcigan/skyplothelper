@@ -489,10 +489,14 @@ def plot_baselines(ax: Any, sites: Any, pairs: Any = 'all',
         # an annotation text artist placed at NaN makes matplotlib log
         # "posx and posy should be finite values". Skip those labels — same
         # culling the markers get. (Plain non-WCS axes are always finite.)
-        if has_world:
+        # A globe's WCS maps back-hemisphere sites to NaN, so we skip those
+        # labels. Non-FITS projections (Robinson & co.) have no WCS object but
+        # also no hidden far side, so every label is valid there.
+        _wcs = getattr(ax, 'wcs', None)
+        if has_world and _wcs is not None:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                px, py = ax.wcs.world_to_pixel_values(
+                px, py = _wcs.world_to_pixel_values(
                     [lo for _, lo, _ in sites_list],
                     [la for _, _, la in sites_list])
             label_ok = np.isfinite(px) & np.isfinite(py)

@@ -332,7 +332,7 @@ def split_segments(data: npt.ArrayLike) -> list[np.ndarray]:
 
 
 def plot_boundaries_globe(ax: Any, data: npt.ArrayLike, wcs: Any = None,
-                          hemisphere_only: bool = True,
+                          hemisphere_only: bool | None = None,
                           center_lon: float | None = None,
                           center_lat: float | None = None,
                           densify: bool = True, n_interp: int = 3,
@@ -348,9 +348,11 @@ def plot_boundaries_globe(ax: Any, data: npt.ArrayLike, wcs: Any = None,
     data : ndarray, shape (N, 2)
         NaN-separated [lon, lat] boundary data (degrees).
     wcs : WCS or None
-        If None, extracted from ax.wcs.
-    hemisphere_only : bool
-        Cull back-hemisphere segments.
+        If None, extracted from ax.wcs (None for non-FITS projections).
+    hemisphere_only : bool or None
+        Cull back-hemisphere segments. Default None auto-detects: cull on a
+        real globe (orthographic/zenithal), show the whole surface on a flat
+        planet map (CAR, Robinson, …).
     center_lon, center_lat : float or None
         Projection center.
     densify : bool
@@ -365,12 +367,22 @@ def plot_boundaries_globe(ax: Any, data: npt.ArrayLike, wcs: Any = None,
     lines : list of Line2D
     """
     segments = split_segments(data)
+    if hemisphere_only is None:
+        # Only a real globe (orthographic/zenithal) has a hidden far side to
+        # cull; a flat planet map (CAR, Robinson, …) shows the whole surface.
+        hemisphere_only = _is_globe_axes(ax)
     if wcs is None:
-        wcs = ax.wcs
-    if center_lon is None:
-        center_lon = wcs.wcs.crval[0]
-    if center_lat is None:
-        center_lat = wcs.wcs.crval[1]
+        wcs = getattr(ax, 'wcs', None)
+    # The projection center is only needed to cull the back hemisphere on a
+    # globe. Non-FITS projections (Robinson & co.) have no WCS object, but they
+    # are never globes, so the crval lookup is never reached for them.
+    if hemisphere_only and wcs is not None:
+        if center_lon is None:
+            center_lon = wcs.wcs.crval[0]
+        if center_lat is None:
+            center_lat = wcs.wcs.crval[1]
+    elif hemisphere_only and wcs is None:
+        hemisphere_only = False  # no WCS to derive a center from; nothing to cull
 
     kwargs.setdefault('transform', ax.get_transform('world'))
     all_lines = []

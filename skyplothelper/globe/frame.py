@@ -820,7 +820,8 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
 
 def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
                       center_LONdeg: float = 0.,
-                      center_LATdeg: float = 0., radesys: str | None = None,
+                      center_LATdeg: float = 0., projection: str = 'SIN',
+                      radesys: str | None = None,
                       **kwargs: Any) -> Any:
     """Globe frame for a planetary body, viewed from outside.
 
@@ -859,13 +860,26 @@ def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
         here; the orientation and body-fixed frame are what it sets up.
     center_LONdeg, center_LATdeg : float
         Sub-observer longitude / latitude (degrees).
+    projection : str
+        FITS or friendly projection code. Default ``'SIN'`` — a true
+        orthographic **globe** (one hemisphere, viewed from outside); its
+        behavior is unchanged from earlier releases and keeps the dedicated
+        globe builder. Any **other** projection makes a **flat** planet map
+        instead of a globe — ``'CAR'`` / ``'plate_carree'``, ``'MOL'``,
+        ``'robinson'``, etc. — routed through :func:`make_wcs_frame` so the full
+        projection registry (including non-FITS projections like Robinson) is
+        available for body-surface maps. Use a flat projection for regional or
+        whole-world station / baseline maps that want the sph machinery (lon/lat
+        coordinate input, regions, overlays) rather than plain matplotlib axes.
     radesys : str, optional
         Override the coordinate frame. Defaults to ``'ITRS'`` (body-fixed
         lon/lat). Rarely needed.
     **kwargs
-        Forwarded to :func:`make_globe_frame` (``projection``, ``lonpole`` /
-        ``latpole`` for tilt, ``obstime``, ``grid``, ``direction`` to override
-        the geographic default, etc.).
+        Forwarded to the underlying builder (``lonpole`` / ``latpole`` for
+        tilt, ``obstime``, ``grid``, ``direction`` to override the geographic
+        default, etc.). Note the globe-only features (nightshade, back-
+        hemisphere culling) apply to the ``SIN`` globe; on a flat projection the
+        whole surface is shown.
 
     Returns
     -------
@@ -885,13 +899,39 @@ def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
     Mars surface globe (generic body-fixed lon/lat)::
 
         ax = make_planet_frame(111, body='mars', center_LONdeg=0)
+
+    Flat whole-world VLBI baseline map on a Robinson projection::
+
+        ax = make_planet_frame(111, projection='robinson', center_LONdeg=-100)
+        plot_baselines(ax, vlbi_sites)
     """
     kwargs.setdefault('direction', 'geographic')
     if radesys is None:
         radesys = 'ITRS'
-    return make_globe_frame(subplot_number, center_LONdeg=center_LONdeg,
-                            center_LATdeg=center_LATdeg, radesys=radesys,
-                            **kwargs)
+
+    # SIN is a true orthographic globe (one hemisphere visible from outside) and
+    # keeps the dedicated, battle-tested globe builder — the default, behavior
+    # unchanged. Any OTHER projection is a flat world map, so route it through
+    # make_wcs_frame, which is registry-driven and can express the non-FITS
+    # projections (Robinson & co.) that make_globe_frame's hand-rolled SIN
+    # header cannot. The body-fixed frame (radesys/ITRS) and geographic
+    # longitude direction carry over identically; only the projection geometry
+    # and frame shape differ.
+    from ..projections.registry import _resolve_projection
+    proj_key, _ = _resolve_projection(projection)
+    if proj_key == 'sin':
+        return make_globe_frame(subplot_number, center_LONdeg=center_LONdeg,
+                                center_LATdeg=center_LATdeg, radesys=radesys,
+                                projection=projection, **kwargs)
+
+    from ..wcs_frame import make_wcs_frame
+    # The two builders diverge on a couple of kwarg names (make_globe_frame
+    # predates make_wcs_frame); translate the one that commonly gets forwarded.
+    if 'return_header' in kwargs:
+        kwargs['return_hdr'] = kwargs.pop('return_header')
+    return make_wcs_frame(subplot_number, projection=projection,
+                          center_lon=center_LONdeg, center_lat=center_LATdeg,
+                          frame=radesys, **kwargs)
 
 
 # =============================================================================

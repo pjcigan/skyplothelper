@@ -26,8 +26,9 @@ from skyplothelper.globe.baselines import _normalize_sites, plot_baselines
 from skyplothelper.globe.boundaries import (
     _find_data_file,
     fetch_boundary_data,
+    plot_coastlines,
 )
-from skyplothelper.globe.frame import make_globe_frame
+from skyplothelper.globe.frame import make_globe_frame, make_planet_frame
 from skyplothelper.globe.insets import (
     connect_inset_axes,
     mark_inset_axes,
@@ -549,3 +550,63 @@ def test_baseline_markers_resolve_scatter_ink_explicitly():
     plt.close(ax.figure)
     matplotlib.rcdefaults()
     sph.set_style(base="standard")
+
+
+# ============================================================
+# make_planet_frame(projection=...) — flat (non-SIN) planet maps
+# (F1: FITS + non-FITS planet frames; geo helpers must not assume a WCS)
+# ============================================================
+
+_PLANET_SITES = {"VLA": (-107.6, 34.1), "GBT": (-79.8, 38.4),
+                 "EVN": (6.6, 53.0), "ATCA": (149.6, -30.3)}
+
+
+def test_make_planet_frame_car_is_fits_wcsaxes():
+    """A FITS-code projection planet frame keeps a real WCS object."""
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    assert isinstance(ax, WCSAxes)
+    assert getattr(ax, "wcs", None) is not None
+    plt.close(ax.figure)
+
+
+def test_make_planet_frame_robinson_is_nonfits_and_body_fixed():
+    """A non-FITS projection planet frame is a CurvedTransform WCSAxes with no
+    FITS WCS object, and its ITRS body-fixed frame is preserved (so axes read
+    Longitude/Latitude, not RA/Dec)."""
+    ax = make_planet_frame(111, projection="robinson", center_LONdeg=0)
+    assert isinstance(ax, WCSAxes)
+    assert getattr(ax, "wcs", None) is None
+    assert getattr(ax, "_sph_frame", None) == "itrs"
+    plt.close(ax.figure)
+
+
+def test_make_planet_frame_default_sin_unchanged():
+    """The default projection stays SIN and routes through the dedicated globe
+    builder (real WCS globe) -- behavior unchanged from earlier releases."""
+    ax = make_planet_frame(111, center_LONdeg=0, center_LATdeg=0)
+    assert getattr(ax, "wcs", None) is not None
+    plt.close(ax.figure)
+
+
+@pytest.mark.parametrize("projection", ["CAR", "robinson"])
+def test_geo_overlays_on_flat_planet_frame_no_raise(projection):
+    """plot_coastlines + plot_baselines render on a flat planet frame (FITS and
+    non-FITS) without reaching for a possibly-None ax.wcs."""
+    ax = make_planet_frame(111, projection=projection, center_LONdeg=0)
+    plot_coastlines(ax, color="0.6", lw=0.5)  # must not raise on ax.wcs is None
+    res = plot_baselines(ax, _PLANET_SITES, back_hemisphere_linestyle=":")
+    assert res["arcs"]
+    plt.close(ax.figure)
+
+
+def test_flat_planet_frame_not_hemisphere_culled():
+    """hemisphere_only auto-detects: a flat map shows the whole surface (no
+    back-hemisphere NaN cull), unlike an orthographic globe."""
+    import numpy as np
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    lines = plot_coastlines(ax, color="0.6", lw=0.5)
+    finite_frac = np.mean(
+        [np.isfinite(np.asarray(ln.get_ydata(), dtype=float)).mean()
+         for ln in lines])
+    assert finite_frac > 0.98  # essentially nothing culled on a flat map
+    plt.close(ax.figure)

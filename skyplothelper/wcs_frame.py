@@ -2090,9 +2090,18 @@ def make_wcs_frame(subplotnumber: Any = 111, projection: str = 'AIT',
         ax.coords[0].set_axislabel(' ')
         ax.coords[1].set_axislabel(' ')
 
-        # Store metadata for helper functions that normally read from WCS
-        ax._sph_frame = frame.lower() if frame.lower() in (
-            'galactic', 'supergalactic', 'ecliptic') else 'icrs'
+        # Store metadata for helper functions that normally read from WCS.
+        # This is what _detect_frame returns for a non-FITS axes (there is no
+        # WCS for it to inspect), and it drives the axis-label text. Equatorial
+        # frames collapse to 'icrs' (the custom transform carries no equinox);
+        # galactic/supergalactic/ecliptic keep their name; body-fixed /
+        # geographic frames (ITRS, planet lon/lat) keep theirs too, so their
+        # axis labels read "Longitude / Latitude" rather than "RA / Dec".
+        _f = frame.lower()
+        if _f in ('icrs', 'fk5', 'fk4'):
+            ax._sph_frame = 'icrs'
+        else:
+            ax._sph_frame = _f
         ax._sph_center_lon = center_lon
         ax._sph_center_lat = center_lat
         ax._sph_proj_key = proj_key

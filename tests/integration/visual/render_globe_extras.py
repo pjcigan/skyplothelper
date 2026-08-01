@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from _common import banner, save_or_show
 
 from skyplothelper.globe.baselines import plot_baselines
+from skyplothelper.globe.boundaries import plot_coastlines
 from skyplothelper.globe.frame import make_planet_frame
 from skyplothelper.globe.insets import (
     connect_inset_axes,
@@ -211,6 +212,40 @@ def render_curvature_sweep():
                   "(positive = outward Bezier; negative = inward)",
                   fontsize=12)
     fig.subplots_adjust(top=0.92, hspace=0.25, wspace=0.15)
+    return fig
+
+
+@_panel("globe_ext_09_planet_car_baselines")
+def render_planet_car_baselines():
+    """Flat (non-globe) planet frame via make_planet_frame(projection='CAR'):
+    a whole-world VLBI network with coastlines and full great-circle
+    baselines — the FITS-projection path (ax.wcs present). Exercises the
+    hemisphere_only auto-detect (whole surface shown, not culled)."""
+    fig = plt.figure(figsize=(9, 5))
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    plot_coastlines(ax, color="0.6", lw=0.5)
+    plot_baselines(ax, _VLBI_SITES, pairs="all", color="C0", linewidth=0.6,
+                   alpha=0.8, marker_color="C3", show_site_labels=True,
+                   site_label_fontsize=7)
+    ax.set_title("make_planet_frame(projection='CAR') — flat VLBI baseline map",
+                 fontsize=11)
+    return fig
+
+
+@_panel("globe_ext_10_planet_robinson_baselines")
+def render_planet_robinson_baselines():
+    """Flat planet frame on a NON-FITS projection
+    (make_planet_frame(projection='robinson'), ax.wcs is None): coastlines +
+    baselines must render without reaching for ax.wcs, and the ITRS axes must
+    read 'Longitude'/'Latitude' (not 'RA/Dec')."""
+    fig = plt.figure(figsize=(9, 5))
+    ax = make_planet_frame(111, projection="robinson", center_LONdeg=0)
+    plot_coastlines(ax, color="0.6", lw=0.5)
+    plot_baselines(ax, _VLBI_SITES, pairs="all", color="C0", linewidth=0.6,
+                   alpha=0.8, marker_color="C3", show_site_labels=True,
+                   site_label_fontsize=7)
+    ax.set_title("make_planet_frame(projection='robinson') — non-FITS planet map",
+                 fontsize=11)
     return fig
 
 

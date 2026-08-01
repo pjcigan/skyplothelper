@@ -4,6 +4,19 @@ All notable changes to skyplothelper are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2]
+
+### Fixed
+- Tutorial notebook code cells now syntax-highlight in the ReadTheDocs build.
+  The notebooks use the `ipython3` Pygments lexer, which ships with IPython
+  (not bundled in Pygments); `ipython` was missing from the docs build
+  environment, so those cells fell back to plain, unhighlighted text. Added
+  `ipython` to the docs requirements and the `[docs]` extra. No change to the
+  package or its runtime dependencies.
+
+[1.0.2]: https://github.com/pjcigan/skyplothelper/releases/tag/v1.0.2
+
+
 ## [1.0.1]
 
 ### Performance

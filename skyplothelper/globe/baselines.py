@@ -22,7 +22,8 @@ from astropy.coordinates import SkyCoord  # noqa: F401
 from matplotlib import rcParams
 
 from ..constants import planet_radii
-from .plotting import _is_globe_axes, _wrap_fix_lons, plot_line_globe
+from ..plotting import _split_at_seam
+from .plotting import _is_globe_axes, plot_line_globe
 from .spherical import (
     great_circle_arc,
     great_circle_distance,
@@ -377,9 +378,12 @@ def plot_baselines(ax: Any, sites: Any, pairs: Any = 'all',
                     alpha=alpha * 0.5, zorder=zorder, **line_kwargs)
                 back_arc_artists.append(back_lines)
         else:
-            # Flat map: apply antimeridian wrap fix if requested.
+            # Flat map: break the arc at the antimeridian if requested, using
+            # the same display+analytic seam splitter the sky line verbs and the
+            # geographic overlays use (not a bespoke analytic wrap fix).
             if wrap_fix != 'off':
-                lons_plot, lats_plot = _wrap_fix_lons(lons_arc, lats_arc)
+                lons_plot, lats_plot = _split_at_seam(
+                    ax, np.asarray(lons_arc, float), np.asarray(lats_arc, float))
             else:
                 lons_plot, lats_plot = lons_arc, lats_arc
 

@@ -588,6 +588,12 @@ def plot_line_globe(ax: Any, lons: SkyCoord | npt.ArrayLike, lats: Any = None,
         vis = orthographic_visibility(lons, lats, center_lon, center_lat)
         lons = np.where(vis, lons, np.nan)
         lats = np.where(vis, lats, np.nan)
+    else:
+        # Flat planet map: break the track at the projection seam so it doesn't
+        # streak across the frame — the same splitter the sky line verbs use
+        # (a globe culls its far side above, so its own seam is never reached).
+        from ..plotting import _split_at_seam
+        lons, lats = _split_at_seam(ax, np.asarray(lons), np.asarray(lats))
 
     kwargs.setdefault('transform', ax.get_transform('world'))
     return ax.plot(lons, lats, **kwargs)
@@ -712,30 +718,4 @@ def _is_globe_axes(ax: Any) -> bool:
         if ctype.endswith(proj):
             return True
     return False
-
-
-def _wrap_fix_lons(lons: npt.ArrayLike, lats: npt.ArrayLike,
-                   threshold_deg: float = 180.) -> tuple[
-                       np.ndarray, np.ndarray]:
-    """
-    Insert NaN breaks where consecutive longitudes jump by more than
-    ``threshold_deg`` (an antimeridian crossing). Returns new arrays with
-    NaNs inserted, suitable for ``ax.plot(...)``.
-    """
-    lons = np.asarray(lons, dtype=float)
-    lats = np.asarray(lats, dtype=float)
-    if len(lons) < 2:
-        return lons, lats
-    dlon = np.diff(lons)
-    jumps = np.where(np.abs(dlon) > threshold_deg)[0]
-    if len(jumps) == 0:
-        return lons, lats
-    out_lons, out_lats = [lons[0]], [lats[0]]
-    for i in range(1, len(lons)):
-        if (i - 1) in jumps:
-            out_lons.append(np.nan)
-            out_lats.append(np.nan)
-        out_lons.append(lons[i])
-        out_lats.append(lats[i])
-    return np.array(out_lons), np.array(out_lats)
 

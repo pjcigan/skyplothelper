@@ -154,3 +154,35 @@ def test_seam_detector_actually_fires(center):
     assert _measure(center, _raw) > 0.5, (
         "the seam detector no longer fires on a known-streaking path; "
         "the sweep can no longer catch regressions")
+
+
+@pytest.mark.parametrize("lat", [75.0, 85.0])
+def test_split_at_seam_catches_near_pole_crossing(lat):
+    """Regression guard for the hybrid ``_split_at_seam``.
+
+    On a pseudocylindrical frame (MOL/Robinson) that narrows toward the poles, a
+    high-latitude seam crossing jumps only the *local* width — well under half
+    the canvas — so the display-space detector alone MISSES it and the line
+    streaks (the coastline near-pole streak). The analytic center-relative
+    detector must catch it regardless of on-screen width.
+
+    Asserts both halves so the test fails if the analytic branch is ever
+    dropped: (1) the display jump really is < the 0.5-width threshold here, and
+    (2) a NaN break is nonetheless inserted between the straddling vertices.
+    """
+    from skyplothelper.plotting import _split_at_seam
+    fig, ax = sph.allsky_figure(projection="MOL", center=0)
+    fig.canvas.draw()
+    width = float(ax.get_window_extent().width)
+    lon = np.array([170.0, 175.0, -175.0, -170.0])   # steps across the ±180 seam
+    la = np.full_like(lon, lat)
+    disp = ax.get_transform("world").transform(np.column_stack([lon, la]))
+    display_jump = abs(disp[2, 0] - disp[1, 0]) / width
+    assert display_jump < 0.5, (
+        f"pick a higher latitude — display jump {display_jump:.2f} would be "
+        "caught by the display detector alone, so this wouldn't guard the fix")
+    out_lon, _ = _split_at_seam(ax, lon, la)
+    assert np.count_nonzero(np.isnan(out_lon)) == 1, (
+        "near-pole seam crossing was not broken — the analytic detector in "
+        "_split_at_seam regressed and the line will streak")
+    plt.close(fig)

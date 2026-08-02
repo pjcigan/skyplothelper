@@ -412,6 +412,14 @@ def plot_boundaries_globe(ax: Any, data: npt.ArrayLike, wcs: Any = None,
             vis = orthographic_visibility(lons, lats, center_lon, center_lat)
             lons = np.where(vis, lons, np.nan)
             lats = np.where(vis, lats, np.nan)
+        else:
+            # Flat planet map: break the line where it wraps across the
+            # projection seam so it doesn't streak across the frame (a globe
+            # never reaches its own seam — the far side is culled above). Reuse
+            # the same display-space seam splitter the celestial line verbs use
+            # (``sph.plot`` & co.) rather than a bespoke one.
+            from ..plotting import _split_at_seam
+            lons, lats = _split_at_seam(ax, np.asarray(lons), np.asarray(lats))
 
         lines = ax.plot(lons, lats, **kwargs)
         all_lines.extend(lines)

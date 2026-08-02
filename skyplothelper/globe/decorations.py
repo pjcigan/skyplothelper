@@ -41,16 +41,24 @@ def _resolve_globe_center(ax: Any, lon_0: float | None,
                           lat_0: float | None) -> tuple[float, float]:
     """Resolve the orthographic projection center for a globe decoration.
 
-    On a WCSAxes (``make_globe_frame``) default ``lon_0`` / ``lat_0`` to the
-    axes' own center (CRVAL) so a decoration matches the globe without the
-    caller repeating it; a plain mpl axes falls back to ``(0, 0)``. An
-    explicitly-passed value always wins.
+    On a WCSAxes (``make_globe_frame`` / ``make_planet_frame``) default
+    ``lon_0`` / ``lat_0`` to the axes' own center so a decoration matches the
+    map without the caller repeating it; a plain mpl axes falls back to
+    ``(0, 0)``. An explicitly-passed value always wins.
+
+    Uses the shared center accessors (``_get_wcs_center_lon`` / ``_lat``), which
+    honor ``ax._sph_center_*`` — the ONLY center source on a non-FITS frame
+    (Robinson & co.), where ``ax.wcs is None`` and a raw CRVAL read would
+    silently fall back to ``(0, 0)``.
     """
     c_lon, c_lat = 0.0, 0.0
-    if hasattr(ax, 'wcs') and getattr(ax, 'wcs', None) is not None:
+    # WCSAxes carry a ``.wcs`` attribute (``None`` on the non-FITS frames);
+    # plain mpl axes don't — those keep the (0, 0) fallback.
+    if hasattr(ax, 'wcs') or hasattr(ax, '_sph_center_lon'):
         try:
-            crval = ax.wcs.wcs.crval
-            c_lon, c_lat = float(crval[0]), float(crval[1])
+            from ..wcs_frame import _get_wcs_center_lat, _get_wcs_center_lon
+            c_lon = float(_get_wcs_center_lon(ax))
+            c_lat = float(_get_wcs_center_lat(ax))
         except Exception:
             pass
     return (c_lon if lon_0 is None else lon_0,

@@ -157,37 +157,57 @@ def _split_at_seam(ax: Any, lon: np.ndarray, lat: np.ndarray,
                    ) -> tuple[np.ndarray, np.ndarray]:
     """Insert NaN breaks where a path crosses the projection's wrap edge.
 
-    The crossing is found in **display space** — project the points and look
-    for a step that spans a large fraction of the axes — rather than by
-    re-deriving where the seam "should" be from the longitudes.
+    Two complementary detectors are unioned, because neither alone is
+    sufficient:
 
-    That matters because the analytic version is subtly wrong at the boundary:
-    wrapping with ``((lon - center + 180) % 360) - 180`` sends lon=180 to
-    *minus* 180, while the projection renders it at *plus* 180. On a frame
-    centered at 0, a path stepping across exactly 180 then gets its break one
-    position off and still streaks. Display space is ground truth — whatever
-    the projection, center, or wrapping convention, a seam crossing is a jump
-    across the canvas, and nothing else is.
+    * **Display space** — project the points and look for a step that spans a
+      large fraction of the axes. This is ground truth at the exact-180
+      boundary: the analytic wrap ``((lon - center + 180) % 360) - 180`` sends
+      lon=180 to *minus* 180 while the projection renders it at *plus* 180, so a
+      path stepping across exactly 180 would get its break one position off. It
+      is also projection-agnostic. But its threshold is *half the full canvas
+      width*, so on a pseudocylindrical frame (MOL, Robinson, …) that narrows
+      toward the poles it MISSES a high-latitude crossing — the jump there spans
+      only the *local* width, well under half the canvas, and the line streaks.
+    * **Analytic** — a center-relative ``|delta lon| > 180`` between neighbors.
+      This catches the near-pole crossings the display test misses, at any
+      latitude, since it doesn't depend on the on-screen width.
+
+    Taking the union gives correct breaks everywhere: display space fixes the
+    boundary/degenerate cases, analytic fixes the narrow-frame poles. Shared by
+    every sky line verb (``sph.plot`` & co.) and the geographic overlays, so a
+    coastline on a flat planet map breaks at the seam the same way a great
+    circle does.
     """
     if lon.size < 2:
         return lon, lat
+    breaks: set[int] = set()
+    # Display-space detector (see above): a seam crossing is a near-full-width
+    # jump across the canvas — far larger than any real step in a sampled track.
     try:
-        disp = world_transform(ax).transform(
-            np.column_stack([lon, lat]))
+        disp = world_transform(ax).transform(np.column_stack([lon, lat]))
         width = float(ax.get_window_extent().width)
+        if np.isfinite(width) and width > 0:
+            dx = np.abs(np.diff(disp[:, 0]))
+            breaks.update(
+                np.nonzero(np.isfinite(dx) & (dx > 0.5 * width))[0].tolist())
     except Exception:
-        return lon, lat                      # not renderable yet — leave as-is
-    if not np.isfinite(width) or width <= 0:
-        return lon, lat
-    dx = np.abs(np.diff(disp[:, 0]))
-    # Half the axes width: far larger than any real step in a sampled track,
-    # far smaller than the near-full-width jump a seam crossing produces.
-    breaks = np.nonzero(np.isfinite(dx) & (dx > 0.5 * width))[0]
-    if breaks.size == 0:
+        pass                                 # not renderable yet — analytic still runs
+    # Analytic detector (see above): catches the narrow-frame near-pole crossings.
+    try:
+        from .wcs_frame import _get_wcs_center_lon
+        center = float(_get_wcs_center_lon(ax))
+        lon_norm = ((np.asarray(lon, float) - center + 180.0) % 360.0) - 180.0
+        dlon = np.abs(np.diff(lon_norm))
+        breaks.update(np.nonzero(np.isfinite(dlon) & (dlon > 180.0))[0].tolist())
+    except Exception:
+        pass
+    if not breaks:
         return lon, lat
     # Insert a NaN after each crossing; matplotlib lifts the pen at NaN.
-    out_lon = np.insert(lon.astype(float), breaks + 1, np.nan)
-    out_lat = np.insert(lat.astype(float), breaks + 1, np.nan)
+    idx = np.array(sorted(breaks))
+    out_lon = np.insert(lon.astype(float), idx + 1, np.nan)
+    out_lat = np.insert(lat.astype(float), idx + 1, np.nan)
     return out_lon, out_lat
 
 

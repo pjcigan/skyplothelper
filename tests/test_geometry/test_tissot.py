@@ -118,3 +118,27 @@ def test_tissot_sin_limb_no_intersection_warning():
         fig.canvas.draw()
 
     assert _intersection_warns(run) == 0
+
+
+def test_tissot_nonfits_frame_raises():
+    """tissot on a non-FITS projection (Robinson, ax.wcs is None) raises a
+    clear NotImplementedError rather than a cryptic AttributeError."""
+    import matplotlib.pyplot as plt
+    import pytest
+
+    import skyplothelper as sph
+    ax = sph.make_planet_frame(111, projection="robinson")
+    with pytest.raises(NotImplementedError, match="non-FITS"):
+        sph.tissot(ax)
+    plt.close(ax.figure)
+
+
+def test_tissot_accepts_stroke_knob():
+    """tissot forwards the shared stroke knob to the indicatrix patches."""
+    import matplotlib.pyplot as plt
+
+    import skyplothelper as sph
+    ax = sph.make_wcs_frame(111, "MOL", frame="ICRS", center=0)
+    patches = sph.tissot(ax, rad_deg=6, stroke_color="white", stroke_lw=1.5)
+    assert patches and patches[0].get_path_effects()
+    plt.close(ax.figure)

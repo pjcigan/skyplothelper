@@ -185,6 +185,29 @@ def render_kitchen_sink():
     return fig
 
 
+@_panel("compound_09_from_points_hull")
+def render_from_points_hull():
+    """CompoundRegion.from_points: build a footprint region from a scatter of
+    sources via a convex (blue) or concave (red) hull."""
+    rng = np.random.RandomState(3)
+    t = rng.uniform(0.2 * np.pi, 1.8 * np.pi, 500)
+    r = 12 + rng.normal(0, 1.2, 500)
+    lon = 60 + r * np.cos(t) / np.cos(np.radians(20))
+    lat = 20 + r * np.sin(t)
+    fig = plt.figure(figsize=(7, 5))
+    ax = make_wcs_frame(111, "TAN", frame="ICRS", center=(60, 20),
+                        fov_deg=60, fig=fig)
+    tr = ax.get_transform("world")
+    ax.scatter(lon, lat, s=4, c="0.5", transform=tr, zorder=2)
+    CompoundRegion.from_points(ax, lon, lat, hull="convex").render(
+        facecolor="none", edgecolor="C0", lw=1.6)
+    CompoundRegion.from_points(ax, lon, lat, hull="concave", ratio=0.15).render(
+        facecolor="none", edgecolor="C3", lw=1.6)
+    ax.set_title("from_points: convex (blue) vs concave (red) hull",
+                 fontsize=11)
+    return fig
+
+
 def main():
     banner("CompoundRegion algebra — gallery")
     for name, builder in PANELS.items():

@@ -408,3 +408,49 @@ def test_compound_region_clip_complement_differs():
     # complement did not mutate the region
     assert reg.clip_path().vertices.shape == inside.vertices.shape
     plt.close(ax.figure)
+
+
+# ============================================================
+# CompoundRegion.from_points — hull region from a point scatter (R1)
+# ============================================================
+
+def test_from_points_convex_region():
+    """A convex hull region encloses the points (centroid inside, most points
+    inside — hull vertices sit on the boundary) and has positive area."""
+    rng = np.random.RandomState(1)
+    lon = 60 + rng.uniform(-10, 10, 200)
+    lat = 20 + rng.uniform(-10, 10, 200)
+    ax = make_wcs_frame(111, "TAN", frame="ICRS", center=(60, 20), fov_deg=40)
+    reg = CompoundRegion.from_points(ax, lon, lat, hull="convex")
+    assert reg.contains_point(60, 20)
+    assert reg.contains_points(lon, lat).mean() > 0.9
+    assert reg.solid_angle["sq_deg"] > 0
+    plt.close(ax.figure)
+
+
+def test_from_points_concave_tighter_than_convex():
+    """A concave hull has smaller area than the convex hull of the same set."""
+    rng = np.random.RandomState(2)
+    t = rng.uniform(0, 2 * np.pi, 400)
+    r = 10 + rng.normal(0, 1, 400)
+    lon = 60 + r * np.cos(t)
+    lat = 20 + r * np.sin(t)
+    ax = make_wcs_frame(111, "TAN", frame="ICRS", center=(60, 20), fov_deg=50)
+    cvx = CompoundRegion.from_points(ax, lon, lat, hull="convex")
+    ccv = CompoundRegion.from_points(ax, lon, lat, hull="concave", ratio=0.2)
+    assert ccv.solid_angle["sq_deg"] < cvx.solid_angle["sq_deg"]
+    plt.close(ax.figure)
+
+
+def test_from_points_too_few_raises():
+    ax = make_wcs_frame(111, "TAN", frame="ICRS", center=(0, 0), fov_deg=20)
+    with pytest.raises(ValueError, match="at least 3"):
+        CompoundRegion.from_points(ax, [0, 1], [0, 1])
+    plt.close(ax.figure)
+
+
+def test_from_points_bad_hull_raises():
+    ax = make_wcs_frame(111, "TAN", frame="ICRS", center=(0, 0), fov_deg=20)
+    with pytest.raises(ValueError, match="convex.*concave"):
+        CompoundRegion.from_points(ax, [0, 1, 0.5], [0, 0, 1], hull="banana")
+    plt.close(ax.figure)

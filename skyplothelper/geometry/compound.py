@@ -213,6 +213,109 @@ class CompoundRegion:
         # continue to work.
         self._frame_poly = self.projector.frame_polygon
 
+    @classmethod
+    def from_points(cls, ax_or_projector: Any,
+                    lons: SkyCoord | npt.ArrayLike, lats: Any = None, *,
+                    hull: str = 'convex', ratio: float = 0.3,
+                    resolution: int = 200) -> CompoundRegion:
+        """Build a region enclosing a scatter of points, via a convex or
+        concave hull.
+
+        The hull is computed in a gnomonic tangent plane about the points'
+        centroid — so its straight edges are great circles (a true spherical
+        hull for a localized footprint) — then added as a spherical polygon.
+        Handy for defining a survey / instrument / detection footprint from
+        real sources, which then feeds :meth:`solid_angle`, :meth:`clip`,
+        :func:`~skyplothelper.region_search`, etc.
+
+        Parameters
+        ----------
+        ax_or_projector : WCSAxes or Projector
+            The frame the region lives on.
+        lons, lats : array-like or SkyCoord
+            Point coordinates in degrees (or a SkyCoord array in ``lons``).
+        hull : {'convex', 'concave'}
+            Hull type. ``'concave'`` (alpha-shape-like) hugs the points more
+            tightly than the convex hull.
+        ratio : float
+            Concave-hull tightness in [0, 1] (shapely ``concave_hull`` ratio):
+            near 0 = tightest / most detailed, 1 = the convex hull. Ignored
+            when ``hull='convex'``.
+        resolution : int
+            Great-circle densification per hull edge when the hull is added as
+            a spherical polygon.
+
+        Returns
+        -------
+        region : CompoundRegion
+
+        Notes
+        -----
+        The points must fit within a hemisphere of their centroid (the gnomonic
+        hull is undefined otherwise); split very large point sets into separate
+        footprints.
+        """
+        import shapely
+        from shapely.geometry import MultiPoint
+
+        region = cls(ax_or_projector)
+        lons, lats = _parse_coords(lons, lats, wcs=region._parse_wcs)
+        lons = np.asarray(lons, dtype=float)
+        lats = np.asarray(lats, dtype=float)
+        if lons.size < 3:
+            raise ValueError(
+                "CompoundRegion.from_points needs at least 3 points.")
+
+        # Unit vectors + centroid direction.
+        lon_r, lat_r = np.radians(lons), np.radians(lats)
+        xyz = np.column_stack([np.cos(lat_r) * np.cos(lon_r),
+                               np.cos(lat_r) * np.sin(lon_r),
+                               np.sin(lat_r)])
+        c = xyz.mean(axis=0)
+        c = c / np.linalg.norm(c)
+
+        # Local tangent frame (east, north) at the centroid.
+        ref = (np.array([0., 0., 1.]) if abs(c[2]) < 0.99
+               else np.array([1., 0., 0.]))
+        east = np.cross(ref, c)
+        east /= np.linalg.norm(east)
+        north = np.cross(c, east)
+
+        # Gnomonic projection of the near-side points (centroid . point > 0),
+        # where straight lines are great circles → a planar hull is a spherical
+        # (great-circle) hull.
+        denom = xyz @ c
+        good = denom > 1e-6
+        if int(good.sum()) < 3:
+            raise ValueError(
+                "from_points: the points span more than a hemisphere; the "
+                "gnomonic hull is undefined. Split the set into smaller "
+                "footprints.")
+        gx = (xyz[good] @ east) / denom[good]
+        gy = (xyz[good] @ north) / denom[good]
+        mp = MultiPoint(np.column_stack([gx, gy]))
+        if hull == 'concave':
+            poly = shapely.concave_hull(mp, ratio=ratio)
+        elif hull == 'convex':
+            poly = mp.convex_hull
+        else:
+            raise ValueError(
+                f"hull must be 'convex' or 'concave', got {hull!r}")
+        if getattr(poly, 'geom_type', None) != 'Polygon':
+            raise ValueError(
+                "from_points: the hull did not form a single polygon (need "
+                ">= 3 non-collinear points).")
+
+        # Un-project the hull boundary back to lon/lat and add it.
+        hx, hy = np.asarray(poly.exterior.coords).T
+        d = (c[None, :] + hx[:, None] * east[None, :]
+             + hy[:, None] * north[None, :])
+        d /= np.linalg.norm(d, axis=1, keepdims=True)
+        hlat = np.degrees(np.arcsin(np.clip(d[:, 2], -1.0, 1.0)))
+        hlon = np.degrees(np.arctan2(d[:, 1], d[:, 0]))
+        region.add_polygon(hlon, hlat, resolution=resolution)
+        return region
+
     @property
     def _parse_wcs(self) -> Any:
         """Convenience accessor for the projector's WCS (``None`` for

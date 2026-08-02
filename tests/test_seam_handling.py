@@ -185,4 +185,41 @@ def test_split_at_seam_catches_near_pole_crossing(lat):
     assert np.count_nonzero(np.isnan(out_lon)) == 1, (
         "near-pole seam crossing was not broken — the analytic detector in "
         "_split_at_seam regressed and the line will streak")
+
+
+def _fill_area_frac(ax, patches):
+    """Rendered fill area as a fraction of the frame area (pixels)."""
+    from skyplothelper.geometry._projector import WCSAxesProjector
+    fa = WCSAxesProjector(ax).frame_polygon.area
+    tot = 0.0
+    for p in patches:
+        v = p.get_path().vertices
+        x, y = v[:, 0], v[:, 1]
+        tot += abs(0.5 * float((x[:-1] * y[1:] - x[1:] * y[:-1]).sum()))
+    return tot / fa if fa else 0.0
+
+
+@pytest.mark.parametrize("proj", ["MOL", "AIT", "CEA", "SFL"])
+@pytest.mark.parametrize("lat,r", [(90.0, 40.0), (-90.0, 30.0), (90.0, 15.0)])
+def test_polar_cap_fill_not_complement(proj, lat, r):
+    """Regression guard for the pole-closure fix in ``_stitch_and_project``.
+
+    A geodesic circle enclosing a pole is a single antimeridian-crossing
+    segment. The old ``_project_shape`` path picked the WRONG side on MOL (it
+    filled the whole map minus the cap — a complement, empty/near-full area for
+    most radii). Closing the segment in lon/lat first must fill the CAP: its
+    rendered area on an **equal-area** frame equals the cap sky-fraction
+    ``(1 - cos r) / 2`` — not its complement.
+    """
+    fig = plt.figure()
+    ax = sph.make_wcs_frame(111, projection=proj, center=0, fig=fig)
+    fig.canvas.draw()
+    patches = sph.add_geodesic_circle(ax, 0.0, lat, r, facecolor="C0")
+    fig.canvas.draw()
+    frac = _fill_area_frac(ax, patches)
+    expected = (1 - np.cos(np.radians(r))) / 2
+    assert abs(frac - expected) < 0.03, (
+        f"{proj} pole cap r={r} filled {frac:.3f} of the frame, expected "
+        f"~{expected:.3f} — the pole-enclosing fill picked the complement "
+        "(pole-closure regression).")
     plt.close(fig)

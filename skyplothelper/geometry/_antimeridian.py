@@ -212,17 +212,30 @@ def _stitch_and_project(segments: list[dict[str, Any]], ax: Any,
         clipped = _complement_detect(clipped, frame_poly, expected_frac)
         return _shapely_to_paths(clipped, min_area=min(1.0, min_piece_area)) if not clipped.is_empty else []
 
-    # Single segment WITH boundary crossing — pole-wrapping shape.
-    # The polygon wraps nearly 360° and crosses the antimeridian once.
-    # Use _project_shape (which handles poles and pixel-space jumps)
-    # instead of the naive projection or stitch approach.
+    # Single segment WITH boundary crossing — a near-360° wrap: a pole-enclosing
+    # cap, or a large region crossing the antimeridian once. CLOSE it in lon/lat
+    # first (walk the wrap meridian for a same-side crossing, or up-and-over the
+    # pole for an opposite-side one) and only THEN project. Closing in lon/lat
+    # yields a well-formed fill polygon on curved frames (AIT / MOL / globe),
+    # where the old project-then-guess path (``_project_shape`` + the complement
+    # heuristic) picked the WRONG side for pole caps (empty / complement on MOL).
+    # ``_close_clipped_segment`` is shared with the plotly backend, so the two
+    # close pole-enclosing polygons identically.
     if len(segments) == 1 and segments[0]['entry_lat'] is not None:
-        seg = segments[0]
-        paths = _project_shape(ax, seg['lons'], seg['lats'])
-        geom = _paths_to_geom(paths)
-        if geom is None or geom.is_empty:
+        center = _get_projection_center(ax)
+        clons, clats = _close_clipped_segment(segments[0], center)
+        # Densify along each wrap meridian so the closing edge traces the curved
+        # frame silhouette instead of chording across it.
+        for _wl in (center + 180.0, center - 180.0):
+            clons, clats = _densify_along_wrap_edge(clons, clats, _wl)
+        x, y = wcs.world_to_pixel_values(clons, clats)
+        valid = np.isfinite(x) & np.isfinite(y)
+        if np.sum(valid) < 3:
             return []
-        clipped = _safe_intersection(geom, frame_poly)
+        poly = Polygon(zip(x[valid], y[valid]))
+        if not poly.is_valid:
+            poly = make_valid(poly)
+        clipped = _safe_intersection(poly, frame_poly)
         if clipped.is_empty:
             return []
         clipped = _complement_detect(clipped, frame_poly, expected_frac)
@@ -506,3 +519,142 @@ def _stitch_and_project(segments: list[dict[str, Any]], ax: Any,
 
     return _shapely_to_paths(clipped, min_area=min(1.0, min_piece_area)) if not clipped.is_empty else []
 
+
+
+# ---------------------------------------------------------------------------
+# Segment closure in lon/lat (shared with the plotly backend)
+#
+# ``_antimeridian_clip`` returns open segments (the polygon boundary cut at the
+# wrap edge). To fill a segment we must close it back into a polygon. Closing
+# in *lon/lat* — walking the wrap meridian, or up-and-over the pole — and only
+# THEN projecting gives a well-formed fill polygon on curved frames (AIT / MOL /
+# globe), where projecting first and guessing the side (the old ``_project_shape``
+# + complement heuristic) breaks for pole-enclosing caps. Both the matplotlib
+# fill (``_stitch_and_project``) and the plotly projector import these so the
+# two backends close segments identically.
+# ---------------------------------------------------------------------------
+
+def _close_clipped_segment(
+    segment: dict[str, Any], center: float, n_per_deg: float = 2,
+    min_intermediates: int = 5,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Close a single :func:`_antimeridian_clip` segment into a fill polygon
+    (in absolute lon coords).
+
+    Two closure modes, distinguished by whether the segment's entry and exit
+    boundary points sit on the same wrap meridian side:
+
+    * **Same-side closure** — the segment enters and exits at the same wrap
+      meridian (e.g. both at ``lon = center + 180``). The closure walks back
+      along that meridian from ``exit_lat`` to ``entry_lat``, densified at
+      ``n_per_deg`` vertices per degree so the projected closing edge follows
+      the curved frame silhouette on AIT / MOL.
+    * **Opposite-side closure** (polar case) — the segment enters on one wrap
+      meridian and exits on the other. Closure walks from the exit boundary
+      point UP (or down) to the nearest pole along its wrap meridian, crosses
+      to the other wrap meridian at the pole, and walks back DOWN to the entry
+      boundary point. This is the clean polar-cap closure for pole-enclosing
+      polygons that the projected-then-guess path can't represent.
+
+    Returns the closed sub-polygon as ``(lons, lats)`` arrays with last vertex
+    == first vertex.
+    """
+    seg_lons = list(segment['lons'])
+    seg_lats = list(segment['lats'])
+    entry_lat = segment['entry_lat']
+    exit_lat = segment['exit_lat']
+    entry_lon = float(seg_lons[0])
+    exit_lon = float(seg_lons[-1])
+
+    out_lons = list(seg_lons)
+    out_lats = list(seg_lats)
+
+    if abs(entry_lon - exit_lon) < 1e-6:
+        # Same-side closure along the wrap meridian from
+        # (exit_lon, exit_lat) back to (entry_lon, entry_lat).
+        wrap_lon = entry_lon
+        d_lat = float(entry_lat) - float(exit_lat)
+        n = max(int(min_intermediates),
+                int(round(n_per_deg * abs(d_lat))))
+        for k in range(1, n + 1):
+            t = k / (n + 1)
+            out_lons.append(wrap_lon)
+            out_lats.append(float(exit_lat) + t * d_lat)
+        out_lons.append(entry_lon)
+        out_lats.append(float(entry_lat))
+    else:
+        # Opposite-side (polar) closure: go from exit boundary up to the
+        # nearest pole, cross to the other wrap meridian at the pole, walk
+        # back down to the entry boundary.
+        avg_lat = (float(entry_lat) + float(exit_lat)) / 2.0
+        pole_lat = 90.0 if avg_lat >= 0 else -90.0
+        d_to_pole = pole_lat - float(exit_lat)
+        n_to_pole = max(int(min_intermediates),
+                        int(round(n_per_deg * abs(d_to_pole))))
+        for k in range(1, n_to_pole + 1):
+            t = k / (n_to_pole + 1)
+            out_lons.append(exit_lon)
+            out_lats.append(float(exit_lat) + t * d_to_pole)
+        out_lons.append(exit_lon)
+        out_lats.append(pole_lat)
+        # Cross at the pole (same sphere point, different wrap-meridian edge).
+        out_lons.append(entry_lon)
+        out_lats.append(pole_lat)
+        d_from_pole = float(entry_lat) - pole_lat
+        n_from_pole = max(int(min_intermediates),
+                          int(round(n_per_deg * abs(d_from_pole))))
+        for k in range(1, n_from_pole + 1):
+            t = k / (n_from_pole + 1)
+            out_lons.append(entry_lon)
+            out_lats.append(pole_lat + t * d_from_pole)
+        out_lons.append(entry_lon)
+        out_lats.append(float(entry_lat))
+
+    return np.asarray(out_lons), np.asarray(out_lats)
+
+
+def _densify_along_wrap_edge(
+    plons: npt.ArrayLike, plats: npt.ArrayLike, wrap_lon: float,
+    n_per_deg: float = 2, min_intermediates: int = 5,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Insert intermediate vertices along edges that lie on a wrap edge.
+
+    For projections with curved frame silhouettes (AIT, MOL, pseudocylindrical,
+    …), a polygon edge from ``(wrap_lon, lat_a)`` to ``(wrap_lon, lat_b)`` — two
+    consecutive vertices at the same wrap meridian — projects to a chord across
+    the curved frame silhouette rather than following it. This post-processes a
+    wrap-split sub-polygon by inserting N intermediate vertices at the same
+    ``wrap_lon`` with linearly interpolated latitudes on each such edge, so the
+    projected polygon traces the frame curve.
+
+    Parameters
+    ----------
+    plons, plats : sequence of float
+        Closed sub-polygon vertices (``plons[0] == plons[-1]``, same for lats).
+    wrap_lon : float
+        The wrap-edge longitude this sub-polygon is on (``center + 180`` or
+        ``center - 180``).
+    n_per_deg : float
+        Intermediate vertices per degree of latitude span. Default ``2``.
+    min_intermediates : int
+        Minimum intermediate vertices per along-wrap edge. Default ``5``.
+    """
+    plons = np.asarray(plons, dtype=float)
+    plats = np.asarray(plats, dtype=float)
+    out_lons = [float(plons[0])]
+    out_lats = [float(plats[0])]
+    for i in range(1, len(plons)):
+        l0, l1 = float(plons[i - 1]), float(plons[i])
+        a0, a1 = float(plats[i - 1]), float(plats[i])
+        on_wrap_both = (abs(l0 - wrap_lon) < 1e-6
+                        and abs(l1 - wrap_lon) < 1e-6)
+        if on_wrap_both and abs(a1 - a0) > 1e-3:
+            n = max(int(min_intermediates),
+                    int(round(n_per_deg * abs(a1 - a0))))
+            for k in range(1, n + 1):
+                t = k / (n + 1)
+                out_lons.append(wrap_lon)
+                out_lats.append(a0 + t * (a1 - a0))
+        out_lons.append(l1)
+        out_lats.append(a1)
+    return np.asarray(out_lons), np.asarray(out_lats)

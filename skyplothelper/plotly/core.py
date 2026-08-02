@@ -88,7 +88,10 @@ def _split_polygon_at_wrap(
         ``(lons, lats)`` arrays — each a closed sub-polygon. Caller
         projects and emits traces.
     """
-    from ..geometry._antimeridian import _antimeridian_clip
+    from ..geometry._antimeridian import (
+        _antimeridian_clip,
+        _close_clipped_segment,
+    )
 
     lons = np.asarray(lons, dtype=float)
     lats = np.asarray(lats, dtype=float)
@@ -135,6 +138,8 @@ def _split_polygon_by_jump(
     whole. Caps are densified along the wrap edge so the closing edge follows
     the curved AIT / MOL frame silhouette.
     """
+    from ..geometry._antimeridian import _densify_along_wrap_edge
+
     shifted = np.asarray(shifted, dtype=float)
     lats = np.asarray(lats, dtype=float)
     wrap_hi = center + 180.0
@@ -181,146 +186,6 @@ def _split_polygon_by_jump(
             pieces.append((dlons, dlats))
     return pieces
 
-
-def _close_clipped_segment(
-    segment: dict[str, Any], center: float, n_per_deg: float = 2,
-    min_intermediates: int = 5,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Close a single :func:`_antimeridian_clip` segment into a fill
-    polygon in shifted lon coords.
-
-    Two closure modes, distinguished by whether the segment's entry
-    and exit boundary points sit on the same wrap meridian side:
-
-    * **Same-side closure** — the segment enters and exits the canvas
-      at the same wrap meridian (e.g. both at ``lon = center + 180``).
-      The closure walks back along that meridian from ``exit_lat`` to
-      ``entry_lat``, densified at ``n_per_deg`` vertices per degree
-      so the projected closing edge follows the curved frame
-      silhouette on AIT / MOL.
-    * **Opposite-side closure** (polar case) — the segment enters on
-      one wrap meridian and exits on the other. Closure walks from
-      the exit boundary point UP (or down) to the nearest pole along
-      its wrap meridian, crosses to the other wrap meridian at the
-      pole, and walks back DOWN to the entry boundary point. This
-      gives a clean polar-cap closure for pole-enclosing polygons
-      that the multi-segment same-side path can't represent.
-
-    Returns the closed sub-polygon as ``(lons, lats)`` arrays with
-    last vertex == first vertex.
-    """
-    seg_lons = list(segment['lons'])
-    seg_lats = list(segment['lats'])
-    entry_lat = segment['entry_lat']
-    exit_lat = segment['exit_lat']
-    entry_lon = float(seg_lons[0])
-    exit_lon = float(seg_lons[-1])
-
-    out_lons = list(seg_lons)
-    out_lats = list(seg_lats)
-
-    if abs(entry_lon - exit_lon) < 1e-6:
-        # Same-side closure along the wrap meridian from
-        # (exit_lon, exit_lat) back to (entry_lon, entry_lat).
-        wrap_lon = entry_lon
-        d_lat = float(entry_lat) - float(exit_lat)
-        n = max(int(min_intermediates),
-                int(round(n_per_deg * abs(d_lat))))
-        for k in range(1, n + 1):
-            t = k / (n + 1)
-            out_lons.append(wrap_lon)
-            out_lats.append(float(exit_lat) + t * d_lat)
-        out_lons.append(entry_lon)
-        out_lats.append(float(entry_lat))
-    else:
-        # Opposite-side (polar) closure: go from exit boundary up to
-        # the nearest pole, cross to the other wrap meridian at the
-        # pole, walk back down to the entry boundary.
-        avg_lat = (float(entry_lat) + float(exit_lat)) / 2.0
-        pole_lat = 90.0 if avg_lat >= 0 else -90.0
-        # Exit-side meridian: exit_lat → pole_lat at exit_lon.
-        d_to_pole = pole_lat - float(exit_lat)
-        n_to_pole = max(int(min_intermediates),
-                         int(round(n_per_deg * abs(d_to_pole))))
-        for k in range(1, n_to_pole + 1):
-            t = k / (n_to_pole + 1)
-            out_lons.append(exit_lon)
-            out_lats.append(float(exit_lat) + t * d_to_pole)
-        out_lons.append(exit_lon)
-        out_lats.append(pole_lat)
-        # Cross at the pole. Same sphere point; different wrap-meridian
-        # canvas edge.
-        out_lons.append(entry_lon)
-        out_lats.append(pole_lat)
-        # Entry-side meridian: pole_lat → entry_lat at entry_lon.
-        d_from_pole = float(entry_lat) - pole_lat
-        n_from_pole = max(int(min_intermediates),
-                           int(round(n_per_deg * abs(d_from_pole))))
-        for k in range(1, n_from_pole + 1):
-            t = k / (n_from_pole + 1)
-            out_lons.append(entry_lon)
-            out_lats.append(pole_lat + t * d_from_pole)
-        out_lons.append(entry_lon)
-        out_lats.append(float(entry_lat))
-
-    return np.asarray(out_lons), np.asarray(out_lats)
-
-
-def _densify_along_wrap_edge(
-    plons: npt.ArrayLike, plats: npt.ArrayLike, wrap_lon: float,
-    n_per_deg: float = 2, min_intermediates: int = 5,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Insert intermediate vertices along edges that lie on a wrap edge.
-
-    For projections with curved frame silhouettes (AIT, MOL,
-    pseudocylindrical, etc.), a polygon edge from
-    ``(wrap_lon, lat_a)`` to ``(wrap_lon, lat_b)`` — i.e. two
-    consecutive vertices at the same wrap edge — projects to a chord
-    across the curved frame silhouette rather than following it. This
-    helper post-processes a wrap-split sub-polygon by inserting N
-    intermediate vertices at the same ``wrap_lon`` with linearly
-    interpolated latitudes on each such edge, so the projected polygon
-    traces the frame curve.
-
-    Parameters
-    ----------
-    plons, plats : sequence of float
-        Closed sub-polygon vertices (``plons[0] == plons[-1]``,
-        same for ``plats``).
-    wrap_lon : float
-        The wrap-edge longitude this sub-polygon is on (either
-        ``center + 180`` or ``center - 180``).
-    n_per_deg : float
-        Target sampling density along the wrap edge — intermediate
-        vertices per degree of latitude span. Default ``2``.
-    min_intermediates : int
-        Minimum number of intermediate vertices added per along-wrap
-        edge, regardless of latitude span. Default ``5``.
-
-    Returns
-    -------
-    out_lons, out_lats : ndarray
-        Densified vertex arrays.
-    """
-    plons = np.asarray(plons, dtype=float)
-    plats = np.asarray(plats, dtype=float)
-    out_lons = [float(plons[0])]
-    out_lats = [float(plats[0])]
-    for i in range(1, len(plons)):
-        l0, l1 = float(plons[i - 1]), float(plons[i])
-        a0, a1 = float(plats[i - 1]), float(plats[i])
-        on_wrap_both = (abs(l0 - wrap_lon) < 1e-6
-                         and abs(l1 - wrap_lon) < 1e-6)
-        if on_wrap_both and abs(a1 - a0) > 1e-3:
-            n = max(int(min_intermediates),
-                    int(round(n_per_deg * abs(a1 - a0))))
-            for k in range(1, n + 1):
-                t = k / (n + 1)
-                out_lons.append(wrap_lon)
-                out_lats.append(a0 + t * (a1 - a0))
-        out_lons.append(l1)
-        out_lats.append(a1)
-    return np.asarray(out_lons), np.asarray(out_lats)
 
 
 def _split_polyline_at_wrap(

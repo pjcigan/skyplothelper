@@ -428,6 +428,112 @@ class CompoundRegion:
         return (float(np.min(lon)), float(np.max(lon)),
                 float(np.min(lat)), float(np.max(lat)))
 
+    def _boundary_rings_lonlat(self) -> list[Any]:
+        """Per-polygon boundary rings unprojected to sky coords: a list of
+        ``((ext_lon, ext_lat), [(hole_lon, hole_lat), ...])``. FITS-WCS only."""
+        if self._geom is None or self._geom.is_empty:
+            return []
+        wcs = getattr(self.projector, 'wcs', None)
+        if wcs is None:
+            raise NotImplementedError(
+                "region export requires a FITS-WCS frame.")
+        parts = (self._geom.geoms if self._geom.geom_type.startswith('Multi')
+                 else [self._geom])
+        out = []
+        for g in parts:
+            if getattr(g, 'geom_type', None) != 'Polygon':
+                continue
+            ex, ey = g.exterior.coords.xy
+            ext = wcs.pixel_to_world_values(np.asarray(ex), np.asarray(ey))
+            holes = []
+            for ring in g.interiors:
+                hx, hy = ring.coords.xy
+                holes.append(
+                    wcs.pixel_to_world_values(np.asarray(hx), np.asarray(hy)))
+            out.append((ext, holes))
+        return out
+
+    def to_ds9(self, path: str | None = None,
+               frame: str | None = None) -> str:
+        """Export the region to DS9 region format (``.reg``).
+
+        Exterior rings become ``polygon(...)``; interior holes become excluded
+        ``-polygon(...)``. Coordinates are in the region's sky frame (or the
+        ``frame`` override). Returns the text; also writes it to ``path`` if
+        given. Requires a FITS-WCS frame.
+        """
+        fname = (frame or getattr(self.projector, 'wcs_frame', None)
+                 or 'icrs').lower()
+        ds9_frame = {'icrs': 'icrs', 'fk5': 'fk5', 'fk4': 'fk4',
+                     'galactic': 'galactic',
+                     'ecliptic': 'ecliptic'}.get(fname, 'icrs')
+        lines = ['# Region file format: DS9 version 4.1',
+                 'global color=green', ds9_frame]
+        for (ext_lon, ext_lat), holes in self._boundary_rings_lonlat():
+            coords = ','.join(f'{lo:.6f},{la:.6f}'
+                              for lo, la in zip(ext_lon, ext_lat))
+            lines.append(f'polygon({coords})')
+            for hlon, hlat in holes:
+                hc = ','.join(f'{lo:.6f},{la:.6f}'
+                              for lo, la in zip(hlon, hlat))
+                lines.append(f'-polygon({hc})')
+        text = '\n'.join(lines) + '\n'
+        if path is not None:
+            with open(path, 'w') as fh:
+                fh.write(text)
+        return text
+
+    def to_regions(self, frame: str | None = None) -> Any:
+        """Convert to an astropy-``regions`` object — a ``Regions`` container of
+        ``PolygonSkyRegion`` (one per exterior ring).
+
+        Requires the optional ``regions`` package (``pip install regions``).
+        Interior holes are not represented in the returned polygons.
+        """
+        try:
+            from regions import PolygonSkyRegion, Regions
+        except ImportError as e:
+            raise ImportError(
+                "CompoundRegion.to_regions requires the optional 'regions' "
+                "package (pip install regions).") from e
+        import astropy.units as u
+        from astropy.coordinates import SkyCoord
+
+        fname = (frame or getattr(self.projector, 'wcs_frame', None)
+                 or 'icrs').lower()
+        regs = []
+        for (ext_lon, ext_lat), _holes in self._boundary_rings_lonlat():
+            sc = SkyCoord(np.asarray(ext_lon) * u.deg,
+                          np.asarray(ext_lat) * u.deg, frame=fname)
+            regs.append(PolygonSkyRegion(vertices=sc))
+        return Regions(regs)
+
+    def to_crtf(self, path: str | None = None,
+                frame: str | None = None) -> str:
+        """Export to CASA Region Text Format (CRTF, ``.crtf``) — polygons that
+        CASA (``viewer``, ``tclean`` masks, etc.) can read.
+
+        Each exterior ring becomes a ``poly[[lon deg, lat deg], ...]`` line.
+        Interior holes are not represented. Coordinates are in the region's sky
+        frame (or the ``frame`` override). Returns the text; also writes to
+        ``path`` if given. Requires a FITS-WCS frame.
+        """
+        fname = (frame or getattr(self.projector, 'wcs_frame', None)
+                 or 'icrs').lower()
+        crtf_frame = {'icrs': 'ICRS', 'fk5': 'J2000', 'fk4': 'B1950',
+                      'galactic': 'GALACTIC',
+                      'ecliptic': 'ECLIPTIC'}.get(fname, 'ICRS')
+        lines = ['#CRTFv0']
+        for (ext_lon, ext_lat), _holes in self._boundary_rings_lonlat():
+            pts = ', '.join(f'[{lo:.6f}deg, {la:.6f}deg]'
+                            for lo, la in zip(ext_lon, ext_lat))
+            lines.append(f'poly[{pts}] coord={crtf_frame}')
+        text = '\n'.join(lines) + '\n'
+        if path is not None:
+            with open(path, 'w') as fh:
+                fh.write(text)
+        return text
+
     @property
     def _parse_wcs(self) -> Any:
         """Convenience accessor for the projector's WCS (``None`` for

@@ -506,3 +506,41 @@ def test_from_polygons_batch_union():
     reg = CompoundRegion.from_polygons(ax, [tri, box])
     assert reg.solid_angle["sq_deg"] > 0
     plt.close(ax.figure)
+
+
+# ============================================================
+# Interop export (R4): DS9 / CRTF / astropy-regions
+# ============================================================
+
+def test_to_ds9_export():
+    ax = make_wcs_frame(111, "AIT", frame="galactic", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 20).subtract_circle(60, 20, 8)
+    ds9 = reg.to_ds9()
+    assert ds9.startswith("# Region file format: DS9")
+    assert ds9.splitlines()[2] == "galactic"
+    assert "polygon(" in ds9 and "-polygon(" in ds9  # exterior + hole
+    assert reg.to_ds9(frame="icrs").splitlines()[2] == "icrs"
+    plt.close(ax.figure)
+
+
+def test_to_crtf_export():
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 20)
+    crtf = reg.to_crtf()
+    assert crtf.startswith("#CRTF")
+    assert "poly[" in crtf and "coord=ICRS" in crtf and "deg]" in crtf
+    plt.close(ax.figure)
+
+
+def test_to_regions_optional_dependency():
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 20)
+    try:
+        import regions  # noqa: F401
+    except ImportError:
+        with pytest.raises(ImportError, match="regions"):
+            reg.to_regions()
+    else:
+        from regions import Regions
+        assert isinstance(reg.to_regions(), Regions)
+    plt.close(ax.figure)

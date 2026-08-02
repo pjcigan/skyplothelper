@@ -27,7 +27,7 @@ from ._api import (
 )
 from ._frame_geom import _safe_intersection
 from ._parsing import _parse_angle, _parse_coord, _parse_coords
-from ._projector import WCSAxesProjector
+from ._projector import _projector_for_axes
 
 # Annotations are strings (PEP 563 / `from __future__ import annotations`),
 # so this import costs nothing at run time.
@@ -141,7 +141,7 @@ def add_geodesic_circle(ax: Any, lon: SkyCoord | float, lat: Any = None,
     if radius_deg is None:
         raise ValueError("radius_deg is required")
 
-    proj = WCSAxesProjector(ax)
+    proj = _projector_for_axes(ax)
     lons, lats = geodesic_circle(lon, lat, radius_deg, resolution)
     geom = proj.project_polygon(lons, lats, clip=clip,
                                 lat_center=lat, radius_deg=radius_deg)
@@ -237,7 +237,7 @@ def add_spherical_polygon(ax: Any, lons: SkyCoord | npt.ArrayLike, lats: Any = N
     >>> sph.add_spherical_polygon(ax, [150, 210, 210, 150], [-20, -20, 20, 20],
     ...                           facecolor='C0', alpha=0.2)   # edges = geodesics
     """
-    proj = WCSAxesProjector(ax)
+    proj = _projector_for_axes(ax)
     # On a bounded (zoomed) field frame, the d3 seam/complement stitcher can
     # flip a frame-crossing polygon's fill to its complement — there's no wrap
     # seam there to justify the d3 machinery. Route the 'auto' default to
@@ -275,7 +275,11 @@ def add_spherical_polygon(ax: Any, lons: SkyCoord | npt.ArrayLike, lats: Any = N
                                 min_piece_area=min_piece_area)
     # Match the upstream sub-pixel filter so a lowered min_piece_area
     # (deep-field surveys) keeps its slivers through the render step too.
-    render_min_area = (1.0 if min_piece_area is None
+    # ``None`` = "use the projector's backend default" (1.0 px² on FITS
+    # frames, a frame-relative threshold on the radians-scale non-FITS
+    # frames) — so this doesn't hard-code a pixel scale the non-FITS
+    # projector doesn't share.
+    render_min_area = (None if min_piece_area is None
                        else min(1.0, min_piece_area))
     return proj.render_region(geom, complement=complement,
                               min_area=render_min_area, **kwargs)
@@ -508,7 +512,7 @@ def add_rectangle(ax: Any, lon: SkyCoord | float, lat: Any = None, width: Any = 
     if height is None:
         raise ValueError("height is required")
 
-    proj = WCSAxesProjector(ax)
+    proj = _projector_for_axes(ax)
     lons, lats = rectangle(lon, lat, width, height, angle, resolution)
     geom = proj.project_polygon(lons, lats, clip=clip)
     return proj.render_region(geom, complement=complement, **kwargs)
@@ -598,7 +602,7 @@ def add_ellipse(ax: Any, lon: SkyCoord | float, lat: Any = None, semi_major: Any
     if semi_minor is None:
         raise ValueError("semi_minor is required")
 
-    proj = WCSAxesProjector(ax)
+    proj = _projector_for_axes(ax)
     lons, lats = ellipse(lon, lat, semi_major, semi_minor, angle, resolution)
     geom = proj.project_polygon(lons, lats, clip=clip,
                                 lat_center=lat, radius_deg=semi_major)
@@ -648,7 +652,7 @@ def add_annulus(ax: Any, lon: SkyCoord | float, lat: Any = None, inner_radius: A
     if outer_radius is None:
         raise ValueError("outer_radius is required")
 
-    proj = WCSAxesProjector(ax)
+    proj = _projector_for_axes(ax)
     frame_poly = proj.frame_polygon
 
     # Outer / inner circle geometry, projected to shapely.

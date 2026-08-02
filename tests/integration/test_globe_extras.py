@@ -679,11 +679,26 @@ def test_clip_to_land_and_ocean_wrappers():
     plt.close(ax.figure)
 
 
-def test_clip_to_land_nonfits_raises():
-    from skyplothelper.globe.boundaries import clip_to_land
+def test_clip_to_land_works_on_nonfits():
+    """clip_to_land / clip_to_ocean work on a non-FITS custom-projection frame
+    (G4): the region projector now serves Robinson etc., so the land clip path
+    builds and attaches to an artist. Skipped if the Earth data isn't present
+    (the conftest hook turns the FileNotFoundError into a skip)."""
+    import numpy as np
+
+    from skyplothelper.globe.boundaries import clip_to_land, clip_to_ocean
     ax = make_planet_frame(111, projection="robinson")
-    with pytest.raises(NotImplementedError, match="non-FITS"):
-        clip_to_land(ax)
+    assert getattr(ax, "wcs", None) is None
+    lon, lat = np.meshgrid(np.linspace(-180, 180, 60), np.linspace(-89, 89, 30))
+    mesh = ax.pcolormesh(lon, lat, lat, transform=ax.get_transform("world"),
+                         shading="auto")
+    clip_to_land(ax, mesh)          # must not raise, must set a clip path
+    assert mesh.get_clip_path() is not None
+    # clip_to_ocean on a fresh artist likewise.
+    mesh2 = ax.pcolormesh(lon, lat, lat, transform=ax.get_transform("world"),
+                          shading="auto")
+    clip_to_ocean(ax, mesh2)
+    assert mesh2.get_clip_path() is not None
     plt.close(ax.figure)
 
 

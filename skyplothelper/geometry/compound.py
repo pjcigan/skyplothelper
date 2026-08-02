@@ -190,13 +190,15 @@ class CompoundRegion:
         ----------
         ax_or_projector : WCSAxes or :class:`Projector`
             A matplotlib WCSAxes (the historical / default form — wrapped
-            internally in a :class:`WCSAxesProjector`) **or** a concrete
-            :class:`Projector` instance. The latter form lets non-mpl
-            backends (e.g. the plotly side's ``SkyplothelperProjector``)
-            drive the same compound-region algebra without an mpl axes
-            in the loop.
+            internally by ``_projector_for_axes`` in a
+            :class:`WCSAxesProjector` for FITS frames or a
+            :class:`WCSNonFitsProjector` for the custom Robinson / Eckert /
+            … frames) **or** a concrete :class:`Projector` instance. The
+            latter form lets non-mpl backends (e.g. the plotly side's
+            ``SkyplothelperProjector``) drive the same compound-region
+            algebra without an mpl axes in the loop.
         """
-        from ._projector import Projector, WCSAxesProjector
+        from ._projector import Projector, _projector_for_axes
         if isinstance(ax_or_projector, Projector):
             self.projector = ax_or_projector
             # ``self.ax`` stays available on mpl projectors for back-compat
@@ -205,7 +207,9 @@ class CompoundRegion:
             self.ax = getattr(ax_or_projector, 'ax', None)
         else:
             self.ax = ax_or_projector
-            self.projector = WCSAxesProjector(ax_or_projector)
+            # Factory picks WCSAxesProjector (FITS) or WCSNonFitsProjector
+            # (Robinson / Eckert / … custom frames, ax.wcs is None).
+            self.projector = _projector_for_axes(ax_or_projector)
         self._geom = None
         # ``_frame_poly`` is now a thin alias for the projector's frame
         # polygon; preserved as an instance attribute so existing tests
@@ -1932,8 +1936,11 @@ class CompoundRegion:
         # value is small (sub-pixel) so we only suppress segments that
         # genuinely lie along the projection limb, not segments that merely
         # touch it at a point (a larger buffer eats real boundary where
-        # great-circle bands kiss the projection edge).
-        tolerance = 0.5  # pixels
+        # great-circle bands kiss the projection edge). The projector supplies
+        # the scale: 0.5 px for the FITS pixel frames, a frame-relative value
+        # for the radians-scale non-FITS frames (where a flat 0.5 would be ~8%
+        # of the map and clip real boundary near the edge).
+        tolerance = getattr(self.projector, 'frame_edge_tolerance', 0.5)
         try:
             interior_boundary = shape_boundary.difference(
                 frame_boundary.buffer(tolerance))

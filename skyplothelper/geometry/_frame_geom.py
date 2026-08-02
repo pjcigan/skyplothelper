@@ -532,3 +532,32 @@ def _complement_detect(clipped: Any, frame_poly: Any,
         except Exception:
             return clipped
     return clipped
+
+
+def _expected_frac_from_vertices(lons: npt.ArrayLike, lats: npt.ArrayLike,
+                                 lon_center: float) -> float:
+    """Estimate a polygon's solid-angle fraction of the sphere from its
+    (lon, lat) vertices — the ``expected_frac`` hint :func:`_complement_detect`
+    uses to decide whether a stitched region came out as its complement.
+
+    The estimate is the area of the polygon's lon×sin(lat) bounding cell:
+    ``(lon_span / 360) * |sin(lat_max) - sin(lat_min)| / 2``. It is only an
+    upper-bound proxy (a convex cap fills roughly half its cell), but that is
+    all the heuristic needs — it only has to sit far closer to the true small
+    fraction than to ``1 - fraction`` to pick the right side. ``lon_span`` is
+    measured center-relative and folded past 180° so a wrap-straddling shape
+    reports its true (small) span, not ~360°.
+
+    Factored out of :func:`_prepare_region_vertices` so the matplotlib FITS
+    dispatch (``clip='d3'``) and the non-FITS ``WCSNonFitsProjector`` share one
+    formula instead of two that can drift.
+    """
+    lons = np.asarray(lons, dtype=float)
+    lats = np.asarray(lats, dtype=float)
+    sin_range = abs(np.sin(np.radians(np.max(lats)))
+                    - np.sin(np.radians(np.min(lats))))
+    lon_norm = ((lons - lon_center + 180) % 360) - 180
+    lon_span = float(np.ptp(lon_norm))
+    if lon_span > 180:
+        lon_span = 360 - lon_span
+    return (lon_span / 360.0) * float(sin_range) / 2.0

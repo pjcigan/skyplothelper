@@ -670,12 +670,33 @@ def test_shape_helper_stroke_applies_path_effects():
     plt.close(ax.figure)
 
 
-def test_region_shapes_raise_clean_on_non_fits():
-    """Region shapes on a non-FITS frame raise a clear NotImplementedError,
-    not a cryptic AttributeError."""
+def test_region_shapes_render_on_non_fits():
+    """Region shapes render on a non-FITS custom-projection frame (G4).
+
+    Robinson / Eckert / … frames have ``ax.wcs is None`` and are served by
+    ``WCSNonFitsProjector`` through the shared base pipeline. A geodesic
+    circle and a compound region both produce patches — no ``ax.wcs``."""
     import skyplothelper as sph
     ax = make_wcs_frame(111, "robinson", frame="icrs", center=0)
     assert getattr(ax, "wcs", None) is None
-    with pytest.raises(NotImplementedError):
-        sph.add_geodesic_circle(ax, 0, 40, 20, facecolor="C0")
+    patches = sph.add_geodesic_circle(ax, 40, 20, radius_deg=20, facecolor="C0")
+    assert len(patches) >= 1
+    region = (sph.CompoundRegion(ax)
+              .add_circle(120, 10, 25).subtract_circle(135, 10, 12))
+    assert len(region.render(facecolor="C1", alpha=0.4)) >= 1
+    plt.close(ax.figure)
+
+
+def test_wcsaxes_projector_still_rejects_non_fits_directly():
+    """The FITS projector class itself still refuses a non-FITS axes (misuse
+    guard); the factory ``_projector_for_axes`` is what routes correctly."""
+    from skyplothelper.geometry._projector import (
+        WCSNonFitsProjector,
+        _projector_for_axes,
+    )
+    ax = make_wcs_frame(111, "robinson", frame="icrs", center=0)
+    with pytest.raises(ValueError):
+        from skyplothelper.geometry._projector import WCSAxesProjector
+        WCSAxesProjector(ax)
+    assert isinstance(_projector_for_axes(ax), WCSNonFitsProjector)
     plt.close(ax.figure)

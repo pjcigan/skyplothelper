@@ -53,12 +53,6 @@ def tissot(ax: Axes, rad_deg: Any = 5,
     **kwargs
         Passed to PathPatch (``facecolor``, ``edgecolor``, ``alpha``, ...).
     """
-    if getattr(ax, 'wcs', None) is None:
-        raise NotImplementedError(
-            "tissot needs a FITS-projection frame (ax.wcs is None on non-FITS "
-            "projections like Robinson). Use a FITS projection (CAR/MOL/AIT/"
-            "...) or a globe.")
-
     _pe = _stroke_path_effects(stroke_color, stroke_lw)
     if _pe is not None:
         kwargs.setdefault('path_effects', _pe)

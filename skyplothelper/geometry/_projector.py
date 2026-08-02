@@ -126,6 +126,21 @@ class Projector:
         in projected coords."""
         raise NotImplementedError
 
+    @property
+    def frame_edge_tolerance(self) -> float:
+        """Buffer width (in this backend's projected units) used by
+        :meth:`CompoundRegion.render_boundary` to suppress boundary
+        segments that lie along the projection frame edge.
+
+        The default ``0.5`` is a sub-pixel value tuned for the matplotlib
+        FITS pixel frames (whose coordinates span hundreds of pixels). A
+        backend whose projected coordinates are on a very different scale
+        (the non-FITS custom frames span only a few *radians-scale* units,
+        so ``0.5`` would be ~8% of the whole map and eat real interior
+        boundary near the limb) overrides this with a frame-relative value.
+        """
+        return 0.5
+
     def _project_xy(self, lons: npt.ArrayLike, lats: npt.ArrayLike) -> tuple[Any, Any]:
         """Project sphere ``(lon, lat)`` arrays to this backend's
         projected ``(x, y)`` coords — pixel space for matplotlib, canvas
@@ -670,21 +685,20 @@ class WCSAxesProjector(Projector):
 
     def __init__(self, ax: Any) -> None:
         self.ax = ax
-        # The spherical-region pipeline projects via the axes' FITS WCS. The
-        # non-FITS custom-transform frames (Robinson, Eckert, Winkel Tripel, …)
-        # have ``ax.wcs is None``; fail with a clear message here rather than a
-        # cryptic ``NoneType has no world_to_pixel_values`` deep in the frame-
-        # polygon build. (Region fill on non-FITS frames is the deferred G4
-        # projector-unification work.)
+        # This class is the FITS-WCS projector: it projects via
+        # ``ax.wcs.world_to_pixel_values``. The non-FITS custom-transform frames
+        # (Robinson, Eckert, Winkel Tripel, …) have ``ax.wcs is None`` and are
+        # served by ``WCSNonFitsProjector`` instead. The ``_projector_for_axes``
+        # factory routes each frame to the right class; guard here so a direct
+        # ``WCSAxesProjector(non_fits_ax)`` fails clearly rather than with a
+        # cryptic ``NoneType has no world_to_pixel_values`` deep in the build.
         if getattr(ax, 'wcs', None) is None:
-            raise NotImplementedError(
-                "Region shapes / fills need a FITS-projection frame — the "
-                "non-FITS custom projections (Robinson, Eckert, Winkel Tripel, "
-                "Kavrayskiy, McBryde) have no WCS to project through yet. Use a "
-                "FITS projection (AIT, MOL, CAR, MER, SFL, PAR, CEA, TAN, SIN, "
-                "…) or a globe for region shapes / fills; line overlays "
-                "(coastlines, plate boundaries, baselines) work on non-FITS "
-                "frames.")
+            raise ValueError(
+                "WCSAxesProjector needs a FITS-projection frame (ax.wcs is a "
+                "WCS); this axes is a non-FITS custom projection (Robinson, "
+                "Eckert, Winkel Tripel, Kavrayskiy, McBryde) with ax.wcs=None. "
+                "Use WCSNonFitsProjector, or build via _projector_for_axes(ax) "
+                "which routes automatically.")
         # Cache the frame polygon (constructed once, reused per shape).
         from ._frame_geom import _get_frame_polygon, _get_projection_center
         self._frame_polygon = _get_frame_polygon(ax)
@@ -857,7 +871,7 @@ class WCSAxesProjector(Projector):
         return _paths_to_geom(paths, min_area=geom_min_area)
 
     def render_region(self, geom: Any, *, complement: bool = False,
-                      min_area: float = 1.0, **style: Any) -> list[Any]:
+                      min_area: float | None = None, **style: Any) -> list[Any]:
         """Render projected shapely geometry to matplotlib PathPatches.
 
         Mirrors the post-projection render loop the shapes helpers and
@@ -866,42 +880,226 @@ class WCSAxesProjector(Projector):
         piece. ``complement=True`` defers to ``_render_complement``,
         which fills the frame minus the shape and draws edges on the
         shape boundary (not the frame).
+
+        ``min_area=None`` selects the backend default (1.0 px² for this
+        FITS pixel-space frame), so a caller that means "backend default"
+        need not know the coordinate scale — the non-FITS projector reads
+        the same ``None`` as a frame-relative threshold.
         """
-        from matplotlib.patches import PathPatch
+        if min_area is None:
+            min_area = 1.0
+        return _render_region_mpl(self.ax, geom, self._frame_polygon,
+                                  complement=complement, min_area=min_area,
+                                  **style)
 
-        from ._frame_geom import _fix_hairline_kwargs, _shapely_to_paths
 
-        # Shared legibility-stroke knob for every shape helper that funnels
-        # through here (add_spherical_polygon / add_geodesic_circle /
-        # add_rectangle / add_square / add_ellipse / add_annulus): translate
-        # ``stroke_color`` / ``stroke_lw`` into a ``path_effects`` outline. A
-        # caller that already passed ``path_effects=`` (e.g. fill_boundaries_
-        # globe, which strokes upstream) wins, so this never double-strokes.
-        stroke_color = style.pop('stroke_color', None)
-        stroke_lw = style.pop('stroke_lw', None)
-        if stroke_color is not None and 'path_effects' not in style:
-            from .._stroke import _stroke_path_effects
-            # Default the width (as the band helpers do) so stroke_color alone
-            # is enough to get a stroke.
-            _pe = _stroke_path_effects(
-                stroke_color, 3.0 if stroke_lw is None else stroke_lw)
-            if _pe is not None:
-                style['path_effects'] = _pe
+def _render_region_mpl(ax: Any, geom: Any, frame_polygon: Any, *,
+                       complement: bool = False, min_area: float = 1.0,
+                       **style: Any) -> list[Any]:
+    """Render a projected shapely geometry to matplotlib PathPatches on ``ax``.
 
-        if complement:
-            from ._projection import _render_complement
-            shape_paths = (_shapely_to_paths(geom, min_area=min_area)
-                           if geom is not None and not geom.is_empty
-                           else [])
-            return _render_complement(self.ax, shape_paths,
-                                      self._frame_polygon, **style)
+    Shared by both matplotlib projectors: the geometry is already in the
+    axes' data coordinates (FITS pixel space for :class:`WCSAxesProjector`,
+    the projected plane for :class:`WCSNonFitsProjector`), so the render is
+    identical — add a ``PathPatch`` per piece in the default ``ax.transData``.
+    Kept as a module function (not a method) so the two projectors can never
+    drift on the stroke / complement / hairline handling.
+    """
+    from matplotlib.patches import PathPatch
 
-        if geom is None or geom.is_empty:
-            return []
-        _fix_hairline_kwargs(style)
-        patches = []
-        for path in _shapely_to_paths(geom, min_area=min_area):
-            patch = PathPatch(path, **style)
-            self.ax.add_patch(patch)
-            patches.append(patch)
-        return patches
+    from ._frame_geom import _fix_hairline_kwargs, _shapely_to_paths
+
+    # Shared legibility-stroke knob for every shape helper that funnels
+    # through here (add_spherical_polygon / add_geodesic_circle /
+    # add_rectangle / add_square / add_ellipse / add_annulus): translate
+    # ``stroke_color`` / ``stroke_lw`` into a ``path_effects`` outline. A
+    # caller that already passed ``path_effects=`` (e.g. fill_boundaries_
+    # globe, which strokes upstream) wins, so this never double-strokes.
+    stroke_color = style.pop('stroke_color', None)
+    stroke_lw = style.pop('stroke_lw', None)
+    if stroke_color is not None and 'path_effects' not in style:
+        from .._stroke import _stroke_path_effects
+        # Default the width (as the band helpers do) so stroke_color alone
+        # is enough to get a stroke.
+        _pe = _stroke_path_effects(
+            stroke_color, 3.0 if stroke_lw is None else stroke_lw)
+        if _pe is not None:
+            style['path_effects'] = _pe
+
+    if complement:
+        from ._projection import _render_complement
+        shape_paths = (_shapely_to_paths(geom, min_area=min_area)
+                       if geom is not None and not geom.is_empty
+                       else [])
+        return _render_complement(ax, shape_paths, frame_polygon, **style)
+
+    if geom is None or geom.is_empty:
+        return []
+    _fix_hairline_kwargs(style)
+    patches = []
+    for path in _shapely_to_paths(geom, min_area=min_area):
+        patch = PathPatch(path, **style)
+        ax.add_patch(patch)
+        patches.append(patch)
+    return patches
+
+
+class WCSNonFitsProjector(Projector):
+    """Projector for the non-FITS custom-projection matplotlib frames.
+
+    The five skyplothelper-extended projections — Robinson, Eckert IV,
+    Winkel Tripel, Kavrayskiy VII, McBryde-Thomas — are drawn by a
+    matplotlib ``CurvedTransform`` rather than a FITS WCS, so
+    ``ax.wcs is None`` and :class:`WCSAxesProjector` cannot serve them.
+    This projector fills that gap by driving the **shared** base
+    :meth:`Projector.project_polygon` pipeline (the same one the plotly
+    backend uses) against the axes' own world→data transform.
+
+    The projection primitive :meth:`_project_xy` reuses
+    ``ax.coords._transform`` — the exact transform the frame and every
+    existing line overlay (great circles, coastlines, baselines) already
+    render through — so a filled region registers pixel-perfect with the
+    lines on the same frame, and any center / direction / oblique aspect
+    baked into the frame is honored automatically without re-deriving it.
+    (This is why we use the axes transform rather than ``sph.project()``:
+    ``project()`` doesn't apply the oblique aspect for these projections,
+    and raises outright for some of them — e.g. Eckert IV has no FITS
+    projection code.)
+
+    Parameters
+    ----------
+    ax : matplotlib WCSAxes
+        A non-FITS custom-projection frame built by
+        :func:`skyplothelper.make_wcs_frame` (``ax.wcs is None``,
+        ``ax._sph_proj_key`` set).
+    """
+
+    def __init__(self, ax: Any) -> None:
+        self.ax = ax
+        # This projector is only for the non-FITS frames; a FITS frame must
+        # use WCSAxesProjector (its pixel-space pole/jump repair). The factory
+        # _projector_for_axes routes correctly; guard here in case of misuse.
+        if getattr(ax, 'wcs', None) is not None:
+            raise ValueError(
+                "WCSNonFitsProjector is for non-FITS custom-projection frames "
+                "(ax.wcs is None); this axes has a FITS WCS — use "
+                "WCSAxesProjector.")
+        # world (lon, lat degrees) → axes data coords, the non-FITS analog of
+        # ``wcs.world_to_pixel_values``. ``ax.coords._transform`` is the
+        # data→world CurvedTransform the frame was built with; its inverse is
+        # what apply_boundary_labels already uses to place tick labels.
+        self._world_to_data = ax.coords._transform.inverted()
+        self._center = float(getattr(ax, '_sph_center_lon', 0.0))
+        self._clat = float(getattr(ax, '_sph_center_lat', 0.0))
+        # Frame silhouette in data coords, straight from the drawn spine (no
+        # WCS needed); fall back to the axes bbox if the spine isn't built yet.
+        from ._frame_geom import _get_visual_frame
+        fp = _get_visual_frame(ax)
+        if fp is None:
+            from shapely.geometry import box
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            fp = box(xlim[0], ylim[0], xlim[1], ylim[1])
+        self._frame_polygon = fp
+
+    @property
+    def center(self) -> float:
+        return self._center
+
+    @property
+    def _center_lat(self) -> float:
+        return self._clat
+
+    @property
+    def wcs_frame(self) -> str:
+        """The host axes' native sky frame (``'icrs'`` / ``'galactic'`` / …),
+        stamped on the axes as ``_sph_frame`` by ``make_wcs_frame``."""
+        return str(getattr(self.ax, '_sph_frame', 'icrs'))
+
+    @property
+    def frame_polygon(self) -> Any:
+        return self._frame_polygon
+
+    @property
+    def frame_edge_tolerance(self) -> float:
+        """Frame-relative limb-suppression buffer for
+        :meth:`CompoundRegion.render_boundary`.
+
+        The data coords here are radians-scale (frame diagonal ~O(1), not the
+        hundreds-of-pixels a FITS frame spans), so the base ``0.5`` default
+        would be a large fraction of the map and clip real boundary near the
+        edge (the symptom: a compound region's outline goes missing on the
+        side nearest the limb). ``diagonal × 1e-3`` reproduces the same
+        *relative* sub-pixel suppression the FITS frames get from ``0.5``.
+        """
+        minx, miny, maxx, maxy = self._frame_polygon.bounds
+        return float(np.hypot(maxx - minx, maxy - miny)) * 1e-3
+
+    def _project_xy(self, lons: npt.ArrayLike, lats: npt.ArrayLike) -> tuple[Any, Any]:
+        """Project sphere ``(lon, lat)`` degrees to axes data coords via the
+        frame's own world→data transform (matches the line overlays exactly)."""
+        lons = np.atleast_1d(np.asarray(lons, dtype=float))
+        lats = np.atleast_1d(np.asarray(lats, dtype=float))
+        pts = self._world_to_data.transform(np.column_stack([lons, lats]))
+        return pts[:, 0], pts[:, 1]
+
+    def project_polygon(self, lons: npt.ArrayLike, lats: npt.ArrayLike, *,
+                        clip: str = 'auto',
+                        expected_frac: float | None = None,
+                        lat_center: float | None = None,
+                        radius_deg: float | None = None,
+                        min_piece_area: float | None = None) -> Any | None:
+        """Project a closed spherical polygon via the shared base pipeline.
+
+        Only adds one thing to :meth:`Projector.project_polygon`: when the
+        caller supplies no ``expected_frac`` (the standalone shape helpers —
+        ``add_geodesic_circle`` etc. — don't), estimate it from the vertices
+        so the base complement-detector can orient a wrap-straddling shape
+        correctly. The FITS ``clip='d3'`` dispatch computes the same estimate
+        the same way; here it lives on the projector because the base pipeline
+        is otherwise geometry-only and never sees the raw vertices' span.
+        """
+        if expected_frac is None:
+            from ._frame_geom import _expected_frac_from_vertices
+            expected_frac = _expected_frac_from_vertices(lons, lats,
+                                                         self._center)
+        return super().project_polygon(
+            lons, lats, clip=clip, expected_frac=expected_frac,
+            lat_center=lat_center, radius_deg=radius_deg,
+            min_piece_area=min_piece_area)
+
+    def render_region(self, geom: Any, *, complement: bool = False,
+                      min_area: float | None = None, **style: Any) -> list[Any]:
+        """Render projected shapely geometry to matplotlib PathPatches (in the
+        axes' data coords, via the shared :func:`_render_region_mpl`).
+
+        The default ``min_area`` differs from the FITS projector: these frames'
+        data coordinates are the projected plane in *radians-scale* units (the
+        whole map spans only a few units, frame area ~O(10)), so the FITS
+        pixel-scale default of ``1.0`` would discard every real region. A
+        frame-relative sliver threshold (``frame_area × 1e-6``, matching
+        :func:`_cleanup_for_render`'s numerical-noise intent) filters stitch
+        artifacts while keeping even sub-degree shapes.
+        """
+        if min_area is None:
+            min_area = self._frame_polygon.area * 1e-6
+        return _render_region_mpl(self.ax, geom, self._frame_polygon,
+                                  complement=complement, min_area=min_area,
+                                  **style)
+
+
+def _projector_for_axes(ax: Any) -> Projector:
+    """Return the matplotlib projector matching ``ax``'s frame type.
+
+    A FITS-projection frame (``ax.wcs`` is a WCS) gets
+    :class:`WCSAxesProjector` — the pixel-space pole/jump pipeline. A
+    non-FITS custom-projection frame (Robinson / Eckert / Winkel Tripel /
+    Kavrayskiy / McBryde, ``ax.wcs is None``) gets
+    :class:`WCSNonFitsProjector`, which drives the shared base pipeline
+    through the frame's own transform. Every region helper and
+    :class:`CompoundRegion` builds its projector through this factory so
+    both frame families are served identically.
+    """
+    if getattr(ax, 'wcs', None) is None:
+        return WCSNonFitsProjector(ax)
+    return WCSAxesProjector(ax)

@@ -192,12 +192,7 @@ def _prepare_region_vertices(
 
     expected_frac = None
     if compute_expected_frac and clip == 'd3':
-        sin_range = abs(np.sin(np.radians(np.max(lats)))
-                        - np.sin(np.radians(np.min(lats))))
-        lon_norm = ((lons - lon_center + 180) % 360) - 180
-        lon_span = np.ptp(lon_norm)
-        if lon_span > 180:
-            lon_span = 360 - lon_span
-        expected_frac = (lon_span / 360.0) * sin_range / 2.0
+        from ._frame_geom import _expected_frac_from_vertices
+        expected_frac = _expected_frac_from_vertices(lons, lats, lon_center)
 
     return lons, lats, expected_frac

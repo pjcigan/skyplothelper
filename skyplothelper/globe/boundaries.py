@@ -834,22 +834,18 @@ def _earth_clip_path(ax: Any, resolution: str = '110m',
     the ocean complement — from the bundled land polygons via the region
     machinery.  Shared by :func:`clip_to_land` / :func:`clip_to_ocean`.
     """
-    if getattr(ax, 'wcs', None) is None:
-        raise NotImplementedError(
-            "clip_to_land / clip_to_ocean need a FITS-projection frame (ax.wcs "
-            "is None on non-FITS projections like Robinson). Use a FITS "
-            "projection (CAR/MOL/AIT/...) or a globe.")
-
     import shapely
 
     from ..geometry._frame_geom import _geom_to_clip_path
-    from ..geometry._projector import WCSAxesProjector
+    from ..geometry._projector import _projector_for_axes
 
     # Batch-project each land ring and union ONCE (shapely.unary_union) — much
     # faster than adding 127 polygons to a CompoundRegion, which unions
     # incrementally. The resulting path drops into the same clip machinery as
-    # CompoundRegion.clip.
-    proj = WCSAxesProjector(ax)
+    # CompoundRegion.clip. Works on both FITS and non-FITS custom-projection
+    # frames — _projector_for_axes returns the matching projector (both emit
+    # geometry in ax.transData coords, so the clip path is identical).
+    proj = _projector_for_axes(ax)
     data = load_boundary_data('land.npz', key=f'land_{resolution}')
     geoms = []
     for seg in split_segments(data):

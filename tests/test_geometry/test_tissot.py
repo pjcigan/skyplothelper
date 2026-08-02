@@ -120,16 +120,18 @@ def test_tissot_sin_limb_no_intersection_warning():
     assert _intersection_warns(run) == 0
 
 
-def test_tissot_nonfits_frame_raises():
-    """tissot on a non-FITS projection (Robinson, ax.wcs is None) raises a
-    clear NotImplementedError rather than a cryptic AttributeError."""
+def test_tissot_renders_on_nonfits_frame():
+    """tissot renders on a non-FITS projection (Robinson, ax.wcs is None) via
+    the WCSNonFitsProjector (G4) — one indicatrix patch per grid point."""
     import matplotlib.pyplot as plt
-    import pytest
 
     import skyplothelper as sph
     ax = sph.make_planet_frame(111, projection="robinson")
-    with pytest.raises(NotImplementedError, match="non-FITS"):
-        sph.tissot(ax)
+    assert getattr(ax, "wcs", None) is None
+    patches = sph.tissot(ax, rad_deg=6,
+                         lons=[-120, 0, 120], lats=[-40, 0, 40])
+    # 3x3 grid of indicatrices, each a filled patch.
+    assert len(patches) == 9
     plt.close(ax.figure)
 
 

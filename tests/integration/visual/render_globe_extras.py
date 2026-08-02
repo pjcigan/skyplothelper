@@ -15,10 +15,13 @@ Produces:
 import sys
 
 import matplotlib.pyplot as plt
+import numpy as np
 from _common import banner, save_or_show
 
 from skyplothelper.globe.baselines import plot_baselines
 from skyplothelper.globe.boundaries import (
+    clip_to_land,
+    clip_to_ocean,
     plot_coastlines,
     plot_lakes,
     plot_land,
@@ -269,6 +272,24 @@ def render_earth_filled():
     plot_coastlines(ax, color="0.35", lw=0.4)         # coastline stroke
     ax.set_title("Filled Earth — plot_land + plot_lakes + plot_rivers "
                  "(region machinery)", fontsize=11)
+    return fig
+
+
+@_panel("globe_ext_12_clip_land_ocean")
+def render_clip_land_ocean():
+    """Clip planet-frame overlays to land vs ocean (G2). A regular point grid
+    is split: red points clipped to land, blue points clipped to ocean — the
+    region machinery's clip path used as a mask."""
+    lon, lat = np.meshgrid(np.arange(-175, 180, 8), np.arange(-84, 85, 8))
+    fig = plt.figure(figsize=(9, 4.6))
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    plot_land(ax, facecolor="0.9", zorder=0)
+    tr = ax.get_transform("world")
+    clip_to_land(ax, ax.scatter(lon.ravel(), lat.ravel(), s=7, c="C3", zorder=5,
+                                transform=tr))
+    clip_to_ocean(ax, ax.scatter(lon.ravel(), lat.ravel(), s=7, c="C0", zorder=5,
+                                 transform=tr))
+    ax.set_title("clip_to_land (red) + clip_to_ocean (blue)", fontsize=11)
     return fig
 
 

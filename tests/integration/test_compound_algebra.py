@@ -377,3 +377,34 @@ def test_render_returns_boundary_line_artists():
         a.remove()
     assert len([ln for ln in ax.get_lines()]) < n_lines
     plt.close(fig)
+
+
+# ============================================================
+# CompoundRegion.clip — mask artists to a region (G2)
+# ============================================================
+
+def test_compound_region_clip_masks_artist():
+    """CompoundRegion.clip sets a clip path on an artist so it renders only
+    inside the region. Works on a celestial all-sky frame."""
+    ax = make_wcs_frame(111, "AIT", frame="ICRS", center=0)
+    reg = CompoundRegion(ax)
+    reg.add_circle(0.0, 0.0, 30.0)
+    sc = ax.scatter([0, 120], [0, 0], transform=ax.get_transform("world"))
+    path = reg.clip(sc)
+    assert sc.get_clip_path() is not None
+    assert path.vertices.shape[0] > 0
+    plt.close(ax.figure)
+
+
+def test_compound_region_clip_complement_differs():
+    """clip(complement=True) yields a different (frame-minus-region) path."""
+    ax = make_wcs_frame(111, "AIT", frame="ICRS", center=0)
+    reg = CompoundRegion(ax)
+    reg.add_circle(0.0, 0.0, 30.0)
+    inside = reg.clip_path()
+    outside = reg.clip_path(complement=True)
+    assert inside.vertices.shape[0] > 0 and outside.vertices.shape[0] > 0
+    assert inside.vertices.shape != outside.vertices.shape
+    # complement did not mutate the region
+    assert reg.clip_path().vertices.shape == inside.vertices.shape
+    plt.close(ax.figure)

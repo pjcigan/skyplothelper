@@ -360,6 +360,24 @@ def _shapely_to_paths(geom: Any, min_area: float = 1.0) -> list[Path]:
     return paths
 
 
+def _geom_to_clip_path(geom: Any, frame_poly: Any = None,
+                       complement: bool = False) -> Path:
+    """Build a single matplotlib clip ``Path`` from a shapely geometry (already
+    in the axes' pixel / data coordinates), for use with ``set_clip_path``.
+
+    With ``complement=True`` the path covers ``frame_poly`` minus ``geom``
+    (e.g. ocean = frame minus land). Small pieces are kept (``min_area=0``) so
+    nothing silently drops out of a mask.
+    """
+    if complement and frame_poly is not None:
+        geom = (frame_poly if (geom is None or geom.is_empty)
+                else frame_poly.difference(geom))
+    if geom is None or getattr(geom, 'is_empty', True):
+        return Path(np.empty((0, 2)))
+    paths = _shapely_to_paths(geom, min_area=0.0)
+    return Path.make_compound_path(*paths) if paths else Path(np.empty((0, 2)))
+
+
 def _poly_to_path(poly: Any) -> Path:
     verts = list(poly.exterior.coords)
     codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 2) + [Path.CLOSEPOLY]

@@ -723,6 +723,96 @@ def plot_rivers(ax: Any, resolution: str = '110m', wcs_mode: bool = True,
         return plot_boundaries_ortho(ax, data, **fk)
 
 
+def _earth_clip_path(ax: Any, resolution: str = '110m',
+                     ocean: bool = False) -> Any:
+    """Build a matplotlib clip ``Path`` (in ``ax.transData``) covering land — or
+    the ocean complement — from the bundled land polygons via the region
+    machinery.  Shared by :func:`clip_to_land` / :func:`clip_to_ocean`.
+    """
+    if getattr(ax, 'wcs', None) is None:
+        raise NotImplementedError(
+            "clip_to_land / clip_to_ocean need a FITS-projection frame (ax.wcs "
+            "is None on non-FITS projections like Robinson). Use a FITS "
+            "projection (CAR/MOL/AIT/...) or a globe.")
+
+    import shapely
+
+    from ..geometry._frame_geom import _geom_to_clip_path
+    from ..geometry._projector import WCSAxesProjector
+
+    # Batch-project each land ring and union ONCE (shapely.unary_union) — much
+    # faster than adding 127 polygons to a CompoundRegion, which unions
+    # incrementally. The resulting path drops into the same clip machinery as
+    # CompoundRegion.clip.
+    proj = WCSAxesProjector(ax)
+    data = load_boundary_data('land.npz', key=f'land_{resolution}')
+    geoms = []
+    for seg in split_segments(data):
+        lons = np.asarray(seg[:, 0], dtype=float)
+        lats = np.asarray(seg[:, 1], dtype=float)
+        if len(lons) < 4 or not (abs(lons[0] - lons[-1]) < 1e-6
+                                 and abs(lats[0] - lats[-1]) < 1e-6):
+            continue
+        g = proj.project_polygon(lons, lats, clip='d3', min_piece_area=0.0)
+        if g is not None and not g.is_empty:
+            geoms.append(g)
+    land = shapely.unary_union(geoms)
+    return _geom_to_clip_path(land, proj.frame_polygon, complement=ocean)
+
+
+def _apply_earth_clip(ax: Any, artists: Any, resolution: str,
+                      ocean: bool) -> Any:
+    path = _earth_clip_path(ax, resolution=resolution, ocean=ocean)
+    if artists is not None:
+        seq = artists if isinstance(artists, (list, tuple)) else [artists]
+        for art in seq:
+            art.set_clip_path(path, ax.transData)
+    return path
+
+
+def clip_to_land(ax: Any, artists: Any = None, *,
+                 resolution: str = '110m') -> Any:
+    """Clip matplotlib artist(s) to land, using the bundled land polygons.
+
+    Masks overlays drawn on a planet frame — location markers, quiver / vector
+    arrows, a geographic raster field — so they appear only over **land**. The
+    clip region is the union of the Natural Earth land polygons, built through
+    the same spherical-region pipeline as the celestial region tools (this is
+    the region ``contains``/set-algebra machinery used as a matplotlib clip
+    path). See :func:`clip_to_ocean` for the complement.
+
+    Parameters
+    ----------
+    ax : WCSAxes
+        A FITS-projection planet frame (non-FITS projections are not yet
+        supported — the projector needs a FITS WCS).
+    artists : Artist or list of Artist, optional
+        Artist(s) to clip in place (e.g. the return of ``ax.scatter`` /
+        ``ax.quiver`` / ``ax.imshow``). If omitted, nothing is clipped and only
+        the clip path is returned.
+    resolution : str
+        Land-polygon resolution (only ``'110m'`` is bundled).
+
+    Returns
+    -------
+    path : matplotlib.path.Path
+        The land clip path (in ``ax.transData``); apply to more artists with
+        ``artist.set_clip_path(path, ax.transData)``.
+    """
+    return _apply_earth_clip(ax, artists, resolution, ocean=False)
+
+
+def clip_to_ocean(ax: Any, artists: Any = None, *,
+                  resolution: str = '110m') -> Any:
+    """Clip matplotlib artist(s) to ocean (the complement of land).
+
+    The mirror of :func:`clip_to_land` — masks overlays so they appear only
+    over **water** (the frame minus the land polygons). Same parameters and
+    return.
+    """
+    return _apply_earth_clip(ax, artists, resolution, ocean=True)
+
+
 def plot_tectonic_plates(ax: Any, wcs_mode: bool = True, *,
                          fill: bool = False,
                          **kwargs: Any) -> list[Any]:

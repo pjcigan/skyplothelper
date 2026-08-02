@@ -1080,6 +1080,43 @@ class CompoundRegion:
             self._geom = self._frame_poly.difference(self._geom)
         return self
 
+    def clip_path(self, complement: bool = False) -> Any:
+        """Return a matplotlib ``Path`` (in ``self.ax.transData``) covering this
+        region, for use as a clip path. With ``complement=True`` it covers the
+        frame *minus* the region. Does not mutate the region.
+        """
+        from ._frame_geom import _geom_to_clip_path
+        return _geom_to_clip_path(self._geom, self._frame_poly,
+                                  complement=complement)
+
+    def clip(self, artists: Any, complement: bool = False) -> Any:
+        """Clip matplotlib artist(s) to this region (or its complement).
+
+        Masks the given artist(s) so they only render *inside* the region — clip
+        a scatter / quiver / image to a survey footprint, a constellation
+        boundary, a latitude band, a HEALPix region, or any spherical polygon.
+        Works on any FITS-projection frame (all-sky, globe, or planet map).
+
+        Parameters
+        ----------
+        artists : Artist or list of Artist
+            Artist(s) to clip in place (e.g. the return of ``ax.scatter`` /
+            ``ax.quiver`` / ``ax.imshow``).
+        complement : bool
+            If True, clip to *outside* the region instead.
+
+        Returns
+        -------
+        path : matplotlib.path.Path
+            The clip path (also applied to *artists*); apply to more artists
+            with ``artist.set_clip_path(path, region.ax.transData)``.
+        """
+        path = self.clip_path(complement=complement)
+        seq = artists if isinstance(artists, (list, tuple)) else [artists]
+        for art in seq:
+            art.set_clip_path(path, self.ax.transData)
+        return path
+
     def expand(self, angle_deg: Any) -> CompoundRegion:
         """
         Expand the region boundary outward by an angular distance.

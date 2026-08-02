@@ -11,6 +11,8 @@ demo / examples helpers.
 from .animation import WebPWriter, save_animation
 from .baselines import plot_baselines
 from .boundaries import (
+    clip_to_land,
+    clip_to_ocean,
     fetch_boundary_data,
     load_boundary_data,
     plot_boundaries_globe,
@@ -99,6 +101,7 @@ __all__ = [
     # Boundaries
     "load_boundary_data", "fetch_boundary_data", "prepare_earth_data",
     "split_segments",
+    "clip_to_land", "clip_to_ocean",
     "plot_coastlines", "plot_lakes", "plot_land", "plot_rivers",
     "plot_tectonic_plates", "plot_time_zones",
     "plot_boundaries_globe", "plot_boundaries_ortho",

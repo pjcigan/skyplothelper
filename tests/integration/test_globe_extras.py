@@ -671,3 +671,25 @@ def test_fill_overlays_accept_stroke_and_alpha_knobs():
     lines = plot_coastlines(ax, color="w", stroke_color="k", stroke_lw=1.5)
     assert lines and lines[0].get_path_effects()  # stroke applied to the line
     plt.close(fig)
+
+
+def test_clip_to_land_and_ocean_wrappers():
+    """clip_to_land / clip_to_ocean build a clip path from the land polygons
+    and apply it to the given artist."""
+    from skyplothelper.globe.boundaries import clip_to_land, clip_to_ocean
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    sc = ax.scatter([0], [0], transform=ax.get_transform("world"))
+    land = clip_to_land(ax, sc)
+    assert sc.get_clip_path() is not None and land.vertices.shape[0] > 0
+    ocean = clip_to_ocean(ax)
+    assert ocean.vertices.shape[0] > 0
+    assert land.vertices.shape != ocean.vertices.shape
+    plt.close(ax.figure)
+
+
+def test_clip_to_land_nonfits_raises():
+    from skyplothelper.globe.boundaries import clip_to_land
+    ax = make_planet_frame(111, projection="robinson")
+    with pytest.raises(NotImplementedError, match="non-FITS"):
+        clip_to_land(ax)
+    plt.close(ax.figure)

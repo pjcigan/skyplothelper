@@ -27,6 +27,10 @@ from skyplothelper.globe.boundaries import (
     _find_data_file,
     fetch_boundary_data,
     plot_coastlines,
+    plot_lakes,
+    plot_land,
+    plot_rivers,
+    plot_tectonic_plates,
 )
 from skyplothelper.globe.frame import make_globe_frame, make_planet_frame
 from skyplothelper.globe.insets import (
@@ -610,3 +614,60 @@ def test_flat_planet_frame_not_hemisphere_culled():
          for ln in lines])
     assert finite_frac > 0.98  # essentially nothing culled on a flat map
     plt.close(ax.figure)
+
+
+# ============================================================
+# Filled Earth overlays (F3): plot_land / plot_lakes / plot_rivers
+# via the spherical-region machinery
+# ============================================================
+
+def _car():
+    fig = plt.figure(figsize=(6, 3))
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    return fig, ax
+
+
+def test_plot_land_fills_all_land_polygons():
+    """plot_land fills the closed land polygons (127 at 110m) as patches --
+    continents included, unlike coastline-line fills (islands only)."""
+    fig, ax = _car()
+    patches = plot_land(ax, facecolor="#c9b98f")
+    assert len(patches) >= 120   # ~127 land polygons at 110m
+    plt.close(fig)
+
+
+def test_plot_lakes_and_rivers_render():
+    """plot_lakes fills lake polygons; plot_rivers draws river centerlines."""
+    fig, ax = _car()
+    lake_patches = plot_lakes(ax, facecolor="#a6cee3")
+    river_lines = plot_rivers(ax, color="C0")
+    assert len(lake_patches) >= 10    # ~25 lake polygons at 110m
+    assert len(river_lines) >= 5      # ~13 major rivers at 110m
+    plt.close(fig)
+
+
+def test_fill_overlays_raise_on_nonfits_frame():
+    """Filling on a non-FITS projection (Robinson, ax.wcs is None) raises a
+    clear NotImplementedError -- the region fill needs a FITS WCS (G4)."""
+    ax = make_planet_frame(111, projection="robinson")
+    with pytest.raises(NotImplementedError, match="non-FITS"):
+        plot_land(ax)
+    plt.close(ax.figure)
+
+
+def test_plot_tectonic_plates_fill_not_supported():
+    """Tectonic data is boundary arcs, not closed polygons -> fill raises."""
+    fig, ax = _car()
+    with pytest.raises(NotImplementedError, match="boundary arcs"):
+        plot_tectonic_plates(ax, fill=True)
+    plt.close(fig)
+
+
+def test_fill_overlays_accept_stroke_and_alpha_knobs():
+    """The fill/line overlays accept alpha + the shared stroke knobs without
+    raising, and the stroke produces path_effects on the artists."""
+    fig, ax = _car()
+    plot_land(ax, facecolor="0.8", edgecolor="0.3", alpha=0.9)          # fill knobs
+    lines = plot_coastlines(ax, color="w", stroke_color="k", stroke_lw=1.5)
+    assert lines and lines[0].get_path_effects()  # stroke applied to the line
+    plt.close(fig)

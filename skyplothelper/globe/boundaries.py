@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt  # noqa: F401
 import numpy as np
 import numpy.typing as npt
 
+from .._stroke import _stroke_path_effects
 from .frame import make_globe_frame  # noqa: F401  (used by demo paths)
 from .plotting import _is_globe_axes  # noqa: F401
 from .spherical import (
@@ -336,6 +337,8 @@ def plot_boundaries_globe(ax: Any, data: npt.ArrayLike, wcs: Any = None,
                           center_lon: float | None = None,
                           center_lat: float | None = None,
                           densify: bool = True, n_interp: int = 3,
+                          stroke_color: Any = None,
+                          stroke_lw: float | None = None,
                           **kwargs: Any) -> list[Any]:
     """
     Plot boundary line segments (coastlines, tectonic plates, etc.) on a
@@ -385,6 +388,9 @@ def plot_boundaries_globe(ax: Any, data: npt.ArrayLike, wcs: Any = None,
         hemisphere_only = False  # no WCS to derive a center from; nothing to cull
 
     kwargs.setdefault('transform', ax.get_transform('world'))
+    _pe = _stroke_path_effects(stroke_color, stroke_lw)
+    if _pe is not None:
+        kwargs.setdefault('path_effects', _pe)
     all_lines = []
 
     for seg in segments:
@@ -497,13 +503,90 @@ def plot_boundaries_ortho(ax: Any, data: npt.ArrayLike, lon_0: float = 0.,
     return all_lines
 
 
+def fill_boundaries_globe(ax: Any, data: npt.ArrayLike,
+                          facecolor: Any = '0.85', edgecolor: Any = 'none',
+                          alpha: float | None = None, zorder: float = 1,
+                          stroke_color: Any = None,
+                          stroke_lw: float | None = None,
+                          clip: str = 'auto', min_ring_points: int = 4,
+                          **kwargs: Any) -> list[Any]:
+    """Fill the CLOSED rings of NaN-separated ``[lon, lat]`` boundary data
+    using the spherical-polygon region machinery.
+
+    Each closed ring is routed through
+    :func:`~skyplothelper.geometry.add_spherical_polygon`, so the fills inherit
+    the region engine's antimeridian clipping, on-globe limb clipping, and hole
+    handling — the same pipeline as the celestial region tools. Open segments
+    (coastline pieces clipped at the data edge, or tectonic-plate boundary arcs)
+    cannot bound a fill and are skipped.
+
+    Parameters
+    ----------
+    ax : WCSAxes
+        Target axes (a globe or a flat planet frame).
+    data : ndarray, shape (N, 2)
+        NaN-separated ``[lon, lat]`` boundary data (degrees).
+    facecolor, edgecolor, alpha, zorder :
+        Patch style. ``edgecolor='none'`` by default so filled areas read as
+        solid regions rather than outlined ones; ``zorder=1`` keeps them under
+        typical overlays.
+    clip : str
+        Seam-handling pipeline forwarded to ``add_spherical_polygon`` (default
+        ``'auto'`` → the d3 antimeridian clipper for closed regions).
+    min_ring_points : int
+        Skip rings with fewer than this many vertices (default 4).
+    **kwargs
+        Forwarded to ``add_spherical_polygon`` (e.g. ``hatch``).
+
+    Returns
+    -------
+    patches : list
+        The artist(s) returned by ``add_spherical_polygon`` for each ring.
+    """
+    from ..geometry.shapes import add_spherical_polygon
+
+    if getattr(ax, 'wcs', None) is None:
+        raise NotImplementedError(
+            "Filling geographic overlays on a non-FITS projection (Robinson, "
+            "Eckert, Winkel Tripel, ...) is not supported yet: the region fill "
+            "pipeline currently requires a FITS WCS. Use a FITS projection "
+            "(e.g. 'CAR', 'MOL', 'MER') for filled maps, or the default outline "
+            "rendering (non-FITS fill is planned via the region-projector "
+            "unification).")
+
+    _pe = _stroke_path_effects(stroke_color, stroke_lw)
+    if _pe is not None:
+        kwargs.setdefault('path_effects', _pe)
+
+    segments = split_segments(data)
+    patches = []
+    for seg in segments:
+        lons = np.asarray(seg[:, 0], dtype=float)
+        lats = np.asarray(seg[:, 1], dtype=float)
+        if len(lons) < min_ring_points:
+            continue
+        # Only closed rings (first vertex == last) can bound a fill. The
+        # bundled polygon data is already densified, so we pass resolution=0
+        # (no extra edge subdivision) and let the region pipeline handle
+        # seam + limb clipping.
+        if not (abs(lons[0] - lons[-1]) < 1e-6
+                and abs(lats[0] - lats[-1]) < 1e-6):
+            continue
+        patches.append(add_spherical_polygon(
+            ax, lons, lats, resolution=0, clip=clip,
+            facecolor=facecolor, edgecolor=edgecolor, alpha=alpha,
+            zorder=zorder, **kwargs))
+    return patches
+
+
 def plot_coastlines(ax: Any, resolution: str = '110m', wcs_mode: bool = True,
                     **kwargs: Any) -> list[Any]:
     """
-    Convenience function to plot coastlines on a globe.
+    Draw coastlines as outlines on a globe or flat planet frame.
 
-    Loads coastline data from the data directory. Call prepare_earth_data()
-    first to generate the data files.
+    Loads coastline LINE data (Natural Earth, public domain). For FILLED land
+    use :func:`plot_land` — coastline lines are clipped at the antimeridian and
+    so don't bound continent fills; the land-polygon dataset does.
 
     Parameters
     ----------
@@ -538,7 +621,110 @@ def plot_coastlines(ax: Any, resolution: str = '110m', wcs_mode: bool = True,
         return plot_boundaries_ortho(ax, data, **fk)
 
 
-def plot_tectonic_plates(ax: Any, wcs_mode: bool = True,
+def plot_land(ax: Any, resolution: str = '110m', facecolor: Any = '0.85',
+              **kwargs: Any) -> list[Any]:
+    """Fill continents, islands, and other land areas as solid land.
+
+    Uses the bundled Natural Earth LAND polygons (public domain) — proper
+    closed, antimeridian-safe polygons — filled via the spherical-region
+    machinery (:func:`fill_boundaries_globe`). Inland lakes (Great Lakes, etc.)
+    are treated as land here, matching the Natural Earth land product; overlay
+    them as water with :func:`plot_lakes`. Add a ``plot_coastlines(ax)`` call
+    for a coastline stroke on top.
+
+    Parameters
+    ----------
+    ax : WCSAxes
+        A globe or flat planet frame on a FITS projection. (Non-FITS projections
+        like Robinson are not yet supported for fills.)
+    resolution : str
+        Data resolution. Only ``'110m'`` is bundled; heavier resolutions can be
+        generated into the user cache with :func:`prepare_earth_data` (or reach
+        for cartopy for cartography-grade detail).
+    facecolor : color
+        Land fill color (default ``'0.85'``).
+    **kwargs
+        Forwarded to :func:`fill_boundaries_globe`.
+
+    Returns
+    -------
+    patches : list
+    """
+    data = load_boundary_data('land.npz', key=f'land_{resolution}')
+    return fill_boundaries_globe(ax, data, facecolor=facecolor, **kwargs)
+
+
+def plot_lakes(ax: Any, resolution: str = '110m', facecolor: Any = '#a6cee3',
+               **kwargs: Any) -> list[Any]:
+    """Fill lakes (Great Lakes, Caspian, Baikal, ...) as water.
+
+    Uses the bundled Natural Earth LAKES polygons (public domain) — a layer
+    separate from :func:`plot_land` (in the Natural Earth model, LAND treats
+    inland lakes as land, so lakes are overlaid here). The default ``facecolor``
+    is a light water blue; set it to your ocean / axes background color to make
+    the lakes read as holes punched in the land underneath.
+
+    Parameters
+    ----------
+    ax : WCSAxes
+        A globe or flat planet frame on a FITS projection.
+    resolution : str
+        Only ``'110m'`` is bundled (see :func:`prepare_earth_data` for more).
+    facecolor : color
+        Lake fill color (default light water blue ``'#a6cee3'``).
+    **kwargs
+        Forwarded to :func:`fill_boundaries_globe`.
+
+    Returns
+    -------
+    patches : list
+    """
+    data = load_boundary_data('lakes.npz', key=f'lakes_{resolution}')
+    return fill_boundaries_globe(ax, data, facecolor=facecolor, **kwargs)
+
+
+def plot_rivers(ax: Any, resolution: str = '110m', wcs_mode: bool = True,
+                **kwargs: Any) -> list[Any]:
+    """Draw major rivers (Nile, Amazon, Mississippi, ...) as centerlines.
+
+    Uses the bundled Natural Earth ``rivers_lake_centerlines`` (public domain).
+    This is a line overlay (like :func:`plot_coastlines`), not a fill. At the
+    bundled ``'110m'`` resolution only the ~13 major rivers are present; finer
+    detail can be generated with :func:`prepare_earth_data` (or via cartopy).
+
+    Parameters
+    ----------
+    ax : Axes
+        WCSAxes (if wcs_mode=True) or regular Axes.
+    resolution : str
+        Data resolution (only ``'110m'`` is bundled).
+    wcs_mode : bool
+        If True, uses plot_boundaries_globe. If False, plot_boundaries_ortho.
+    **kwargs
+        Passed to the underlying plot function (``color``, ``lw``, ...).
+
+    Returns
+    -------
+    lines : list of Line2D
+    """
+    data = load_boundary_data('rivers.npz', key=f'rivers_{resolution}')
+
+    kwargs.setdefault('color', '#4a90d9')
+    kwargs.setdefault('lw', 0.5)
+
+    if wcs_mode:
+        return plot_boundaries_globe(ax, data, **kwargs)
+    else:
+        fk = {k: kwargs.pop(k) for k in list(kwargs) if k in
+              ['lon_0', 'lat_0', 'R', 'show_back', 'front_kwargs', 'back_kwargs',
+               'densify', 'n_interp']}
+        fk['front_kwargs'] = dict(color=kwargs.get('color', '#4a90d9'),
+                                   lw=kwargs.get('lw', 0.5))
+        return plot_boundaries_ortho(ax, data, **fk)
+
+
+def plot_tectonic_plates(ax: Any, wcs_mode: bool = True, *,
+                         fill: bool = False,
                          **kwargs: Any) -> list[Any]:
     """
     Convenience function to plot tectonic plate boundaries on a globe.
@@ -549,6 +735,11 @@ def plot_tectonic_plates(ax: Any, wcs_mode: bool = True,
         WCSAxes or regular Axes.
     wcs_mode : bool
         If True, uses plot_boundaries_globe.
+    fill : bool
+        Not supported — the bundled tectonic data is plate *boundary arcs*,
+        not closed plate polygons, so there is nothing to fill. Passing
+        ``fill=True`` raises ``NotImplementedError`` (closed-plate fill is
+        planned for a future release).
     **kwargs
         Passed to the underlying plot function.
 
@@ -556,6 +747,13 @@ def plot_tectonic_plates(ax: Any, wcs_mode: bool = True,
     -------
     lines : list of Line2D
     """
+    if fill:
+        raise NotImplementedError(
+            "plot_tectonic_plates fill is not supported: the bundled tectonic "
+            "data is plate boundary arcs, not closed plate polygons, so there "
+            "is nothing to fill. Use the default line rendering; closed-plate "
+            "fill is planned for a future release.")
+
     fname = 'tectonic_plates.npz'
     data = load_boundary_data(fname)
 
@@ -573,7 +771,9 @@ def plot_tectonic_plates(ax: Any, wcs_mode: bool = True,
         return plot_boundaries_ortho(ax, data, **fk)
 
 
-def plot_time_zones(ax: Any, wcs_mode: bool = True,
+def plot_time_zones(ax: Any, wcs_mode: bool = True, *,
+                    fill: bool = False, facecolor: Any = None,
+                    edgecolor: Any = None, alpha: float | None = None,
                     **kwargs: Any) -> list[Any]:
     """
     Convenience function to plot world time-zone boundaries on a map.
@@ -608,6 +808,18 @@ def plot_time_zones(ax: Any, wcs_mode: bool = True,
     fname = 'time_zones.npz'
     data = load_boundary_data(fname)
 
+    if fill or facecolor is not None:
+        if not wcs_mode:
+            raise ValueError(
+                "plot_time_zones(fill=True) needs wcs_mode=True: the fill "
+                "routes through the spherical-region machinery, which requires "
+                "a WCSAxes projection.")
+        return fill_boundaries_globe(
+            ax, data,
+            facecolor='0.85' if facecolor is None else facecolor,
+            edgecolor='none' if edgecolor is None else edgecolor,
+            alpha=alpha, **kwargs)
+
     kwargs.setdefault('color', '0.55')
     kwargs.setdefault('lw', 0.4)
     kwargs.setdefault('linestyle', '--')
@@ -628,6 +840,9 @@ def prepare_earth_data(output_dir: str | None = None,
                        include_tectonic: bool = True,
                        include_coastlines: bool = True,
                        include_timezones: bool = True,
+                       include_land: bool = True,
+                       include_lakes: bool = True,
+                       include_rivers: bool = True,
                        resolutions: Sequence[str] = ('110m', '50m')) -> None:
     """
     Download and prepare Earth boundary data files: coastlines and time
@@ -648,9 +863,17 @@ def prepare_earth_data(output_dir: str | None = None,
     include_timezones : bool
         Download Natural Earth time zones (10m only; it's the only
         resolution available for this dataset).
+    include_land, include_lakes : bool
+        Download Natural Earth land / lakes POLYGONS (for the filled
+        overlays ``plot_land`` / ``plot_lakes``). Antimeridian-touching
+        vertices are nudged inward so the region fill's seam clipper reads
+        them correctly.
+    include_rivers : bool
+        Download Natural Earth river / lake centerlines (for ``plot_rivers``).
     resolutions : tuple of str
-        Coastline resolutions to include: any of ``'110m'``, ``'50m'``,
-        ``'10m'``.
+        Resolutions to include: any of ``'110m'``, ``'50m'``, ``'10m'``. The
+        files bundled in the package are ``'110m'`` only for land / lakes /
+        rivers (regenerate here for finer detail, or reach for cartopy).
 
     Notes
     -----
@@ -671,12 +894,14 @@ def prepare_earth_data(output_dir: str | None = None,
     # Print attribution on every run so it's easy to carry over into
     # figure credits. Also nice for reminding users what they're using.
     print("Data sources for prepare_earth_data():")
-    print("  * Natural Earth (coastlines, time zones) — Public Domain")
+    print("  * Natural Earth (coastlines, land, lakes, rivers, time zones)"
+          " — Public Domain")
     print("      https://www.naturalearthdata.com/")
     print("  * Plate boundaries — Bird (2003), doi:10.1029/2001GC000252")
     print("      via https://github.com/fraxen/tectonicplates")
     print("  Suggested figure credit:")
-    print("    'Coastlines and time zones: Natural Earth (public domain).'")
+    print("    'Coastlines, land, lakes, rivers, and time zones: Natural "
+          "Earth (public domain).'")
     print("    'Plate boundaries: Bird (2003), doi:10.1029/2001GC000252.'")
     print()
 
@@ -719,6 +944,78 @@ def prepare_earth_data(output_dir: str | None = None,
         out_path = os.path.join(output_dir, 'coastlines.npz')
         np.savez_compressed(out_path, **cast("dict[str, Any]", coast_arrays))
         print(f"  Saved: {out_path} ({os.path.getsize(out_path)/1024:.0f} KB)")
+
+    # -- Land / lakes (polygons) + rivers (lines), Natural Earth physical --
+    # Filled-area overlays (plot_land / plot_lakes) need CLOSED polygons, not
+    # the coastline LINES (which Natural Earth clips at the antimeridian,
+    # leaving continents as open arcs). We store each polygon's exterior ring;
+    # a vertex touching exactly one antimeridian edge is nudged inward so the
+    # region fill's d3 clipper doesn't read a seam-touch as a seam-crossing
+    # (which would close the polygon across the whole map).
+    if include_land or include_lakes or include_rivers:
+        try:
+            import cartopy.io.shapereader as shpreader
+        except ImportError:
+            raise ImportError("cartopy is required to download Natural Earth "
+                              "data. Install with: pip install cartopy")
+
+        def _poly_rings(res: str, name: str) -> tuple[Any, int]:
+            shp = shpreader.natural_earth(resolution=res, category='physical',
+                                          name=name)
+            pts, n = [], 0
+            for geom in shpreader.Reader(shp).geometries():
+                parts = (geom.geoms if geom.geom_type == 'MultiPolygon'
+                         else [geom])
+                for p in parts:
+                    n += 1
+                    ring = np.asarray(p.exterior.coords)[:, :2].copy()
+                    lo = ring[:, 0]
+                    tp, tn = np.any(lo > 179.99), np.any(lo < -179.99)
+                    if tp != tn:  # touches one seam edge only → nudge inward
+                        lo[lo > 179.99] = 179.9
+                        lo[lo < -179.99] = -179.9
+                    pts.append(ring)
+                    pts.append(np.array([[np.nan, np.nan]]))
+            return np.vstack(pts).astype(np.float32), n
+
+        for flag, name, fname, key in (
+                (include_land, 'land', 'land.npz', 'land'),
+                (include_lakes, 'lakes', 'lakes.npz', 'lakes')):
+            if not flag:
+                continue
+            arrs = {}
+            for res in resolutions:
+                arr, n = _poly_rings(res, name)
+                arrs[f'{key}_{res}'] = arr
+                print(f"  {name.capitalize()} {res}: {n} polygons, "
+                      f"{arr.shape[0]} points")
+            out_path = os.path.join(output_dir, fname)
+            np.savez_compressed(out_path, **cast("dict[str, Any]", arrs))
+            print(f"  Saved: {out_path} ({os.path.getsize(out_path)/1024:.0f} KB)")
+
+        if include_rivers:
+            arrs = {}
+            for res in resolutions:
+                shp = shpreader.natural_earth(
+                    resolution=res, category='physical',
+                    name='rivers_lake_centerlines')
+                segs = []
+                for geom in shpreader.Reader(shp).geometries():
+                    if geom.geom_type == 'MultiLineString':
+                        for ln in geom.geoms:
+                            segs.append(np.array(ln.coords))
+                    elif geom.geom_type == 'LineString':
+                        segs.append(np.array(geom.coords))
+                all_pts = []
+                for seg in segs:
+                    all_pts.append(seg[:, :2])
+                    all_pts.append(np.array([[np.nan, np.nan]]))
+                arrs[f'rivers_{res}'] = np.vstack(all_pts).astype(np.float32)
+                print(f"  Rivers {res}: {len(segs)} segments, "
+                      f"{arrs[f'rivers_{res}'].shape[0]} points")
+            out_path = os.path.join(output_dir, 'rivers.npz')
+            np.savez_compressed(out_path, **cast("dict[str, Any]", arrs))
+            print(f"  Saved: {out_path} ({os.path.getsize(out_path)/1024:.0f} KB)")
 
     # -- Time zones (Natural Earth cultural, polygon geometries) ----------
     # Natural Earth provides time zones only at 10m, as polygons. We extract

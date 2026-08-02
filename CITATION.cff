@@ -56,3 +56,14 @@ references:
       definitions; this is the de-facto IAU-derived, BSD-redistributable
       reference.
     url: "https://github.com/ofrohn/d3-celestial"
+
+  - type: data
+    title: "Natural Earth — coastlines, land, lakes, rivers, and time zones"
+    year: 2024
+    notes: >
+      Bundled Earth vector overlays (skyplothelper/data/coastlines.npz,
+      land.npz, lakes.npz, rivers.npz, and time_zones.npz) are derived from
+      Natural Earth, which is released into the public domain (no attribution
+      is required; it is credited here as good practice). Time zones were
+      donated to Natural Earth by International Mapping Associates, Inc.
+    url: "https://www.naturalearthdata.com/"

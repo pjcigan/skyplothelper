@@ -16,6 +16,9 @@ from .boundaries import (
     plot_boundaries_globe,
     plot_boundaries_ortho,
     plot_coastlines,
+    plot_lakes,
+    plot_land,
+    plot_rivers,
     plot_tectonic_plates,
     plot_time_zones,
     prepare_earth_data,
@@ -96,7 +99,8 @@ __all__ = [
     # Boundaries
     "load_boundary_data", "fetch_boundary_data", "prepare_earth_data",
     "split_segments",
-    "plot_coastlines", "plot_tectonic_plates", "plot_time_zones",
+    "plot_coastlines", "plot_lakes", "plot_land", "plot_rivers",
+    "plot_tectonic_plates", "plot_time_zones",
     "plot_boundaries_globe", "plot_boundaries_ortho",
     # Nightshade
     "pseudofits_from_image", "make_nightshade_blend",

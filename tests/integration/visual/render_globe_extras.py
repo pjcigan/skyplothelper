@@ -18,7 +18,12 @@ import matplotlib.pyplot as plt
 from _common import banner, save_or_show
 
 from skyplothelper.globe.baselines import plot_baselines
-from skyplothelper.globe.boundaries import plot_coastlines
+from skyplothelper.globe.boundaries import (
+    plot_coastlines,
+    plot_lakes,
+    plot_land,
+    plot_rivers,
+)
 from skyplothelper.globe.frame import make_planet_frame
 from skyplothelper.globe.insets import (
     connect_inset_axes,
@@ -246,6 +251,24 @@ def render_planet_robinson_baselines():
                    site_label_fontsize=7)
     ax.set_title("make_planet_frame(projection='robinson') — non-FITS planet map",
                  fontsize=11)
+    return fig
+
+
+@_panel("globe_ext_11_earth_filled")
+def render_earth_filled():
+    """Filled Earth on a CAR frame via the spherical-region machinery:
+    plot_land (continents), plot_lakes (Great Lakes/Caspian as water),
+    plot_rivers (Nile/Amazon/... centerlines), and a plot_coastlines stroke.
+    Exercises the F3 fill path + the stroke knob."""
+    fig = plt.figure(figsize=(9, 4.6))
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    ax.set_facecolor("#dfeaf2")                       # ocean
+    plot_land(ax, facecolor="#e7dbb8")                # land
+    plot_lakes(ax, facecolor="#dfeaf2")               # lakes = ocean color
+    plot_rivers(ax, color="#5b8fb9", lw=0.6)          # rivers
+    plot_coastlines(ax, color="0.35", lw=0.4)         # coastline stroke
+    ax.set_title("Filled Earth — plot_land + plot_lakes + plot_rivers "
+                 "(region machinery)", fontsize=11)
     return fig
 
 

@@ -553,7 +553,7 @@ def make_globe_angles(
 def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
                      center_LATdeg: float = 0.,
                      radesys: str = 'ICRS', direction: str = 'sky',
-                     lon_units: str = 'auto',
+                     lon_units: str = 'auto', lon_west: bool = False,
                      projection: str = 'SIN', equinox: float = 2000.0,
                      lonpole: float = 0., latpole: float = 0.,
                      obstime: Any = None, Naxispix: int = 360,
@@ -601,6 +601,12 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
         globe, degrees for a geographic or body-fixed (ITRS) globe. ``'hours'``
         / ``'degrees'`` force the unit. Aliases ``hms`` / ``h``, ``deg`` /
         ``d``.
+    lon_west : bool
+        Label longitude **westward** (default ``False``): west-longitude with a
+        ``W`` / ``E`` hemisphere suffix (east −71° → ``71°W``), forcing degrees.
+        Only the labels change; the data stays east-longitude. For planetary /
+        observing conventions that count longitude in °W. See
+        :func:`~skyplothelper.wcs_frame.make_wcs_frame` for the full note.
     projection : str
         Fits projection code. Default 'SIN' (orthographic).
     equinox : float, optional
@@ -805,13 +811,23 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
     # coord-overlay machinery, so the unit is passed to it as a label format;
     # set_format_unit on ax.coords is also applied for consistency.
     from ..projections.project import resolve_lon_units
-    from ..wcs_frame import _apply_lon_units, _apply_tick_style, _overlay_lon_fmt
+    from ..wcs_frame import (
+        _apply_lon_units,
+        _apply_tick_style,
+        _install_west_longitude_labels,
+        _overlay_lon_fmt,
+    )
     _lon_u = resolve_lon_units(lon_units)
+    # West-longitude labeling (route b): 'west' overlay fmt for the visible
+    # in-frame labels + the native formatter for the frame-edge tick style.
+    _lon_fmt = 'west' if lon_west else _overlay_lon_fmt(_lon_u, _geographic)
     _apply_tick_style(ax, 'circular', tick_style, tick_rotation,
                       label_fontsize=auto_fs,
-                      lon_label_fmt=_overlay_lon_fmt(_lon_u, _geographic),
+                      lon_label_fmt=_lon_fmt,
                       lon_spacing=lon_deg_spacing, lat_spacing=lat_deg_spacing)
     _apply_lon_units(ax, _lon_u, _geographic)
+    if lon_west:
+        _install_west_longitude_labels(ax)
 
     if return_header:
         return ax, hdr
@@ -821,7 +837,7 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
 def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
                       center_LONdeg: float = 0.,
                       center_LATdeg: float = 0., projection: str = 'SIN',
-                      radesys: str | None = None,
+                      radesys: str | None = None, lon_west: bool = False,
                       **kwargs: Any) -> Any:
     """Globe frame for a planetary body, viewed from outside.
 
@@ -874,6 +890,16 @@ def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
     radesys : str, optional
         Override the coordinate frame. Defaults to ``'ITRS'`` (body-fixed
         lon/lat). Rarely needed.
+    lon_west : bool
+        Label longitude **westward** (default ``False``) — for bodies /
+        catalogs that count longitude in °W (classical Mars / lunar frames,
+        station catalogs). The ticks read west-longitude with a ``W`` / ``E``
+        hemisphere suffix (east −71° → ``71°W``); **only the labels change**,
+        the data stays east-longitude and the map keeps its normal (unmirrored)
+        planet orientation. Works on the SIN globe and the flat planet
+        projections alike. Feed °W input coordinates through
+        :func:`~skyplothelper.lon_west_to_east` once at the door. See
+        :func:`~skyplothelper.wcs_frame.make_wcs_frame`.
     **kwargs
         Forwarded to the underlying builder (``lonpole`` / ``latpole`` for
         tilt, ``obstime``, ``grid``, ``direction`` to override the geographic
@@ -922,7 +948,8 @@ def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
     if proj_key == 'sin':
         return make_globe_frame(subplot_number, center_LONdeg=center_LONdeg,
                                 center_LATdeg=center_LATdeg, radesys=radesys,
-                                projection=projection, **kwargs)
+                                projection=projection, lon_west=lon_west,
+                                **kwargs)
 
     from ..wcs_frame import make_wcs_frame
     # The two builders diverge on a couple of kwarg names (make_globe_frame
@@ -931,7 +958,7 @@ def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
         kwargs['return_hdr'] = kwargs.pop('return_header')
     return make_wcs_frame(subplot_number, projection=projection,
                           center_lon=center_LONdeg, center_lat=center_LATdeg,
-                          frame=radesys, **kwargs)
+                          frame=radesys, lon_west=lon_west, **kwargs)
 
 
 # =============================================================================

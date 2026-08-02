@@ -348,7 +348,7 @@ from .plotting import (
     world_transform,
 )
 from .projections.canvas import healpix_to_canvas, project_to_canvas
-from .projections.project import project
+from .projections.project import lon_east_to_west, lon_west_to_east, project
 from .projections.registry import get_frame_class, list_projections
 from .queries import (
     download_hips,
@@ -446,6 +446,7 @@ __all__ = [
     # projections
     "list_projections", "get_frame_class",
     "project_to_canvas", "healpix_to_canvas", "project",
+    "lon_west_to_east", "lon_east_to_west",
     # vector spherical harmonics
     "vsh_field", "vsh_shift_sources", "vsh_shift_frame", "VSH_PARAM_NAMES",
     # mutual sky visibility (co-visibility)

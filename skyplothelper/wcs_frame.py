@@ -1574,12 +1574,67 @@ def _overlay_lon_fmt(lon_units: str, geographic: bool) -> str | None:
     return 'deg' if geographic else None
 
 
+def _install_west_longitude_labels(ax: Any) -> None:
+    """Relabel the longitude axis to read **west-longitude** (route-b of the
+    West-mode design): the underlying data and world coordinates stay
+    east-longitude, but each tick label is rewritten to its west-longitude
+    equivalent with a ``W`` / ``E`` hemisphere suffix (east −71° → ``71°W``,
+    east +30° → ``30°E``; the 0° and 180° meridians get no letter).
+
+    Used for planetary / observing conventions that count longitude westward
+    (station catalogs in °W; classical Mars / lunar frames). Longitude units
+    are forced to degrees — a westward count is never expressed in hour-angle.
+
+    The magnitudes are still formatted by astropy's own
+    ``AngleFormatterLocator`` (so ``lon_spacing`` / precision / the degree
+    glyph are respected); we only feed it the west magnitude and append the
+    hemisphere letter. The wrap is stored as an instance attribute on the
+    formatter-locator so it survives every redraw (pan / zoom / animation),
+    unlike a one-shot relabel of the already-drawn ``Text`` artists.
+
+    Handedness is deliberately *not* touched (the West convention is decoupled
+    from ``direction``): the label is physically correct on an east-right or an
+    east-left frame alike. A planet map keeps its normal (unmirrored) geographic
+    orientation; ``lon_west`` only relabels the ticks westward.
+    """
+    try:
+        coord = ax.coords[0]
+    except Exception:
+        return
+    # A westward count only makes sense in degrees, never hour-angle.
+    coord.set_format_unit(u.deg, decimal=True)
+    fl = coord._formatter_locator
+    orig = fl.formatter  # bound AngleFormatterLocator.formatter (reads fl state)
+
+    def _west_fmt(values: Any, spacing: Any = None,
+                  format: str = 'auto') -> Any:  # noqa: A002  (astropy's name)
+        if values is None or len(values) == 0:
+            return orig(values, spacing=spacing, format=format)
+        east = np.asarray(values.to_value(u.deg), dtype=float)
+        # west-positive longitude, wrapped to (-180, 180]
+        wsig = -(((east + 180.0) % 360.0) - 180.0)
+        wsig = np.where(wsig <= -180.0 + 1e-9, 180.0, wsig)
+        # Let astropy format the (unsigned) magnitudes so precision / the
+        # degree glyph match every other frame; we only add the hemisphere.
+        base = orig(np.abs(wsig) * u.deg, spacing=spacing, format=format)
+        out = []
+        for text, w in zip(base, np.ravel(wsig)):
+            if abs(w) < 1e-6 or abs(abs(w) - 180.0) < 1e-6:
+                out.append(text)          # prime / anti-meridian: no hemisphere
+            else:
+                out.append(text + ('W' if w > 0 else 'E'))
+        return out
+
+    fl.formatter = _west_fmt
+    ax._sph_lon_west = True
+
+
 def make_wcs_frame(subplotnumber: Any = 111, projection: str = 'AIT',
                    center: SkyCoord | float | tuple[float, float] | None = None,
                    center_lon: float | None = None,
                    center_lat: float | None = None,
                    frame: str = 'ICRS', direction: str = 'sky',
-                   lon_units: str = 'auto',
+                   lon_units: str = 'auto', lon_west: bool = False,
                    lon_spacing: float | str = 'auto',
                    lat_spacing: float | str = 'auto',
                    grid: bool = True, gridcolor: str = '0.5',
@@ -1675,6 +1730,18 @@ def make_wcs_frame(subplotnumber: Any = 111, projection: str = 'AIT',
         for geographic / galactic / ecliptic. ``'hours'`` / ``'degrees'``
         force the unit (e.g. an ICRS all-sky map labeled in degrees). Latitude
         is always in degrees. Aliases ``hms`` / ``h`` and ``deg`` / ``d``.
+    lon_west : bool
+        Label longitude **westward** (default ``False``). When ``True`` the
+        longitude ticks read west-longitude with a ``W`` / ``E`` hemisphere
+        suffix (east −71° → ``71°W``), forcing degree units — for planetary /
+        observing conventions that count longitude westward (station catalogs
+        in °W; classical Mars / lunar frames). **Only the tick labels change:**
+        the data and world coordinates stay east-longitude, so the map
+        orientation and everything drawn on it (points, coastlines, fills,
+        regions, a surface compass) are byte-identical to the east-labeled
+        frame — it stays a normal map, just labeled westward. Independent of
+        ``direction`` (the W/E label is physically correct in either
+        handedness); it is *not* a mirror flip.
     lon_spacing, lat_spacing : float or 'auto'
         Tick/grid spacing in degrees. ``'auto'`` (default) picks a
         sensible spacing based on the field of view (~8 ticks across
@@ -2176,6 +2243,15 @@ def make_wcs_frame(subplotnumber: Any = 111, projection: str = 'AIT',
             _apply_lon_units(ax, _lon_u, _geo)
             lon_label_fmt = _overlay_lon_fmt(_lon_u, _geo)
 
+        # West-longitude labeling (route b) — same as the FITS path, but the
+        # non-FITS (CurvedTransform) branch has its own return, so install here
+        # before the tick style draws. ``'west'`` also signals the in-frame /
+        # overlay label path (see ``_apply_tick_style``), which draws its own
+        # labels and would otherwise miss the native formatter.
+        if lon_west:
+            _install_west_longitude_labels(ax)
+            lon_label_fmt = 'west'
+
         # Pad title position for projections whose topmost tick labels
         # would otherwise collide with the default title location.
         if proj_key in _POLE_TOP_NON_FITS_FRAME_SHAPES or \
@@ -2644,6 +2720,14 @@ def make_wcs_frame(subplotnumber: Any = 111, projection: str = 'AIT',
         _lon_u = resolve_lon_units(lon_units)
         _apply_lon_units(ax, _lon_u, lonsign > 0)
         pb_lon_label_fmt = _overlay_lon_fmt(_lon_u, lonsign > 0)
+
+    # West-longitude labeling (route b): relabel the longitude ticks to count
+    # westward without touching the data or world coords. Kept out of the
+    # ``apply_format_defaults`` block so it still applies when the caller
+    # suppresses the frame's own format policy. Runs before the auto-fontsize
+    # draw so the (slightly longer) W/E labels are measured for sizing.
+    if lon_west:
+        _install_west_longitude_labels(ax)
 
     # Pad title position for FITS projections whose topmost tick labels
     # (pole meridians) would otherwise collide with the default title.

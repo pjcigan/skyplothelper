@@ -330,6 +330,24 @@ def _format_tick_label(value: float, kind: str, frame: str,
         if nd == 0 or (step is None and abs(d - round(d)) < 1e-3):
             return f"{int(round(d)) % 360:d}°"
         return f"{d:.{nd}f}°"
+    if fmt == 'west':
+        # West-longitude labeling (route b): ``value`` is east-longitude; show
+        # its west-longitude equivalent with a W/E hemisphere suffix (east −71°
+        # → "71°W"; 0° / 180° get no letter). Mirrors the native-tick path
+        # (``_install_west_longitude_labels``) so overlay (in-frame) labels on
+        # the non-FITS all-sky planet frames match the FITS ones.
+        nd = _label_decimals(step)
+        w = -(((float(value) + 180.0) % 360.0) - 180.0)  # west-positive (-180,180]
+        if w <= -180.0 + 1e-9:
+            w = 180.0
+        mag = abs(w)
+        if nd == 0 or (step is None and abs(mag - round(mag)) < 1e-3):
+            body = f"{int(round(mag)):d}°"
+        else:
+            body = f"{mag:.{nd}f}°"
+        if mag < 1e-6 or abs(mag - 180.0) < 1e-6:
+            return body
+        return body + ('W' if w > 0 else 'E')
     raise ValueError(f"Unknown lon-tick format {fmt!r}")
 
 

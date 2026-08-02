@@ -153,6 +153,41 @@ def resolve_lon_units(lon_units: str) -> str:
             f"hms/h, deg/d), got {lon_units!r}")
 
 
+def lon_west_to_east(lon_west: npt.ArrayLike) -> npt.NDArray[np.float64]:
+    """Convert west-longitude(s) to the east-longitude the package stores
+    internally.
+
+    skyplothelper always represents longitude as **east-positive** (the data,
+    the WCS, and every plotted point). When your catalog lists longitudes in
+    ``°W`` (planetary / observing conventions — classical Mars / lunar frames,
+    some station catalogs), convert them once at the door with this helper and
+    plot the result normally. To *label* the axis westward as well, pass
+    ``lon_west=True`` to the frame builder.
+
+    The mapping is ``east = -west`` wrapped to ``[0, 360)`` (so ``71°W`` → the
+    equivalent east-longitude ``289°``; both name the same meridian). Inverse of
+    :func:`lon_east_to_west`.
+
+    Parameters
+    ----------
+    lon_west : float or array_like
+        West-longitude(s), in degrees.
+
+    Returns
+    -------
+    numpy.ndarray
+        East-longitude(s), in degrees, in ``[0, 360)``.
+    """
+    return (-np.asarray(lon_west, dtype=float)) % 360.0
+
+
+def lon_east_to_west(lon_east: npt.ArrayLike) -> npt.NDArray[np.float64]:
+    """Convert east-longitude(s) to west-longitude: ``west = -east`` wrapped to
+    ``[0, 360)``. Inverse of :func:`lon_west_to_east` (which documents the
+    east-positive internal convention)."""
+    return (-np.asarray(lon_east, dtype=float)) % 360.0
+
+
 def _wrap_lon(lons: npt.ArrayLike, center: float) -> npt.NDArray[np.float64]:
     """Shift longitudes into ``[center - 180, center + 180]`` so that
     the projection center sits at ``0`` in the natural frame the custom

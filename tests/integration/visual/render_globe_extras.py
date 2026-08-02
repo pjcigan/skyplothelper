@@ -293,6 +293,33 @@ def render_clip_land_ocean():
     return fig
 
 
+@_panel("globe_ext_13_lon_west")
+def render_lon_west():
+    """F2 -- longitude-West labeling (route b). Two normal (unmirrored) CAR
+    planet maps with ``lon_west=True``: only the tick labels change to read
+    west-longitude (W/E suffix) while the data stay east-internal, so the map
+    still looks and behaves like an ordinary planet map. Shown at two centers
+    to confirm the labels track the seam. The red stations are given in
+    degrees-WEST and fed through ``lon_west_to_east``."""
+    from skyplothelper import lon_west_to_east
+    sites_W = {"VLA": (107.6, 34.1), "GBT": (79.8, 38.4), "OVRO": (118.3, 37.2)}
+    fig = plt.figure(figsize=(11, 3.4))
+    for col, cen in enumerate((0, -100), start=1):
+        ax = make_planet_frame((1, 2, col), projection="CAR",
+                               center_LONdeg=cen, lon_west=True, fig=fig)
+        plot_coastlines(ax, color="0.5", lw=0.6)
+        tr = ax.get_transform("world")
+        for lon_w, lat in sites_W.values():
+            ax.plot(lon_west_to_east(lon_w), lat, "o", color="C3", ms=5,
+                    transform=tr, zorder=5)
+        ax.set_title(f"lon_west=True, center={cen}° (normal planet map)",
+                     fontsize=10)
+    fig.suptitle("F2: west-longitude labels on a normal planet map "
+                 "(stations fed in °W)", fontsize=12)
+    fig.tight_layout(rect=(0, 0, 1, 0.92))
+    return fig
+
+
 def main():
     banner("globe extras (baselines + insets) — gallery")
     for name, builder in PANELS.items():

@@ -693,3 +693,99 @@ def test_clip_to_land_nonfits_raises():
     with pytest.raises(NotImplementedError, match="non-FITS"):
         clip_to_land(ax)
     plt.close(ax.figure)
+
+
+# ============================================================
+# F2 -- longitude-West labeling (route b: labels + handedness,
+# data stays east-internal)
+# ============================================================
+
+def _all_lon_ticklabels(ax):
+    """Flatten every native longitude tick-label string (dict keyed by spine)."""
+    ax.figure.canvas.draw()
+    txt = getattr(ax.coords[0].ticklabels, "text", {})
+    out = []
+    for v in dict(txt).values():
+        out.extend(v)
+    return out
+
+
+def _visible_overlay_texts(ax):
+    ax.figure.canvas.draw()
+    return [t.get_text() for t in ax.texts if t.get_text()]
+
+
+def test_lon_west_flag_sets_marker_and_default_off():
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    assert getattr(ax, "_sph_lon_west", False) is False
+    plt.close(ax.figure)
+    axw = make_planet_frame(111, projection="CAR", center_LONdeg=0,
+                            lon_west=True)
+    assert getattr(axw, "_sph_lon_west", False) is True
+    plt.close(axw.figure)
+
+
+def test_lon_west_labels_fits_have_hemisphere_suffix():
+    """FITS flat map (native ticks): west labels carry W/E hemisphere letters,
+    and the prime/anti-meridian get none."""
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0,
+                           lon_west=True)
+    labs = _all_lon_ticklabels(ax)
+    assert any(s.endswith("W") for s in labs), labs
+    assert any(s.endswith("E") for s in labs), labs
+    assert "0°" in labs and "180°" in labs  # no hemisphere letter
+    plt.close(ax.figure)
+
+
+def test_lon_west_default_labels_have_no_hemisphere_suffix():
+    """Without lon_west the labels stay plain east degrees (no baseline churn)."""
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0,
+                           lon_units="degrees")
+    labs = _all_lon_ticklabels(ax)
+    assert labs and not any(s.endswith(("W", "E")) for s in labs), labs
+    plt.close(ax.figure)
+
+
+def test_lon_west_labels_nonfits_overlay_have_suffix():
+    """Non-FITS flat map (Robinson) uses overlay labels -- they too read west."""
+    ax = make_planet_frame(111, projection="robinson", center_LONdeg=0,
+                           lon_west=True)
+    txts = _visible_overlay_texts(ax)
+    assert any(s.endswith("W") for s in txts), txts
+    assert any(s.endswith("E") for s in txts), txts
+    plt.close(ax.figure)
+
+
+def test_lon_west_sin_globe_overlay_have_suffix():
+    """The SIN globe overlay labels support west mode as well (normal planet
+    orientation -- no direction override needed)."""
+    ax = make_planet_frame(111, projection="SIN", center_LONdeg=-80,
+                           lon_west=True)
+    txts = _visible_overlay_texts(ax)
+    assert any(s.endswith("W") for s in txts), txts
+    plt.close(ax.figure)
+
+
+def test_lon_west_leaves_data_and_wcs_untouched():
+    """lon_west changes only labels: the world->pixel mapping (hence every
+    plotted point) is byte-identical to the east-labeled frame."""
+    import numpy as np
+    lon, lat = -71.0, 38.0
+    ax_e = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    ax_w = make_planet_frame(111, projection="CAR", center_LONdeg=0,
+                             lon_west=True)
+    pe = np.asarray(ax_e.wcs.world_to_pixel_values(lon, lat))
+    pw = np.asarray(ax_w.wcs.world_to_pixel_values(lon, lat))
+    assert np.allclose(pe, pw)
+    plt.close(ax_e.figure)
+    plt.close(ax_w.figure)
+
+
+def test_lon_west_east_converters_roundtrip():
+    import numpy as np
+
+    import skyplothelper as sph
+    assert np.isclose(sph.lon_west_to_east(71.0), 289.0)
+    assert np.isclose(sph.lon_east_to_west(289.0), 71.0)
+    vals = np.array([0.0, 45.0, 120.0, 300.0])
+    assert np.allclose(sph.lon_east_to_west(sph.lon_west_to_east(vals)), vals)

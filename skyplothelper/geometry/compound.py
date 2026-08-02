@@ -316,6 +316,118 @@ class CompoundRegion:
         region.add_polygon(hlon, hlat, resolution=resolution)
         return region
 
+    @classmethod
+    def from_polygons(cls, ax_or_projector: Any, polygons: Any, *,
+                      resolution: int = 200) -> CompoundRegion:
+        """Build a region from many polygons at once via a single union.
+
+        Faster than repeated :meth:`add_polygon` (which unions incrementally,
+        O(n^2) for many rings).
+
+        Parameters
+        ----------
+        ax_or_projector : WCSAxes or Projector
+        polygons : sequence of (lons, lats)
+            Each item is a ring: two array-likes of degrees (or a SkyCoord in
+            the first slot). Rings are auto-closed.
+        resolution : int
+            Great-circle densification per edge.
+        """
+        import shapely
+
+        region = cls(ax_or_projector)
+        geoms = []
+        for lons, lats in polygons:
+            g = region._project_polygon(lons, lats, resolution=resolution)
+            if g is not None and not g.is_empty:
+                geoms.append(g)
+        region._geom = shapely.unary_union(geoms) if geoms else None
+        return region
+
+    @classmethod
+    def from_healpix_mask(cls, ax_or_projector: Any, mask: npt.ArrayLike, *,
+                          nest: bool = False) -> CompoundRegion:
+        """Build a region from a boolean HEALPix mask (the union of its True
+        pixels).
+
+        Pixel angles are interpreted in the axes' sky frame. The inverse of
+        :meth:`to_healpix_mask`. Cost scales with the number of True pixels —
+        degrade a fine mask first if needed.
+        """
+        import healpy as hp
+        import shapely
+
+        from ..healpix import healpix_pixel_corners
+
+        mask = np.asarray(mask, dtype=bool)
+        nside = hp.npix2nside(mask.size)
+        pix = np.flatnonzero(mask)
+        if pix.size == 0:
+            raise ValueError("from_healpix_mask: the mask is empty (all False).")
+        region = cls(ax_or_projector)
+        lons_list, lats_list = healpix_pixel_corners(pix, nside, nest=nest)
+        geoms = []
+        for plon, plat in zip(lons_list, lats_list):
+            g = region.projector.project_polygon(
+                np.asarray(plon, dtype=float), np.asarray(plat, dtype=float),
+                clip='d3')
+            if g is not None and not g.is_empty:
+                geoms.append(g)
+        region._geom = shapely.unary_union(geoms) if geoms else None
+        return region
+
+    def to_healpix_mask(self, nside: int, *, nest: bool = False) -> np.ndarray:
+        """Rasterize the region to a boolean HEALPix mask.
+
+        Returns a boolean array of length ``12 * nside**2`` — True where a pixel
+        *center* falls inside the region. Pixel angles are interpreted in the
+        region's own sky frame. Turns a footprint into a survey mask (feeds
+        HEALPix coverage maps, and the inverse of :meth:`from_healpix_mask`).
+        """
+        import healpy as hp
+
+        npix = hp.nside2npix(int(nside))
+        lon, lat = hp.pix2ang(int(nside), np.arange(npix), nest=nest,
+                              lonlat=True)
+        return self.contains_points(lon, lat)
+
+    @property
+    def centroid(self) -> tuple[float, float]:
+        """``(lon, lat)`` of the region's area centroid in degrees (region
+        frame); ``(nan, nan)`` if empty. Requires a FITS-WCS frame."""
+        if self._geom is None or self._geom.is_empty:
+            return (float('nan'), float('nan'))
+        wcs = getattr(self.projector, 'wcs', None)
+        if wcs is None:
+            raise NotImplementedError(
+                "centroid requires a FITS-WCS frame (no pixel->world inverse "
+                "on non-FITS projections here).")
+        c = self._geom.centroid
+        lon, lat = wcs.pixel_to_world_values(c.x, c.y)
+        return (float(lon), float(lat))
+
+    @property
+    def bounds(self) -> tuple[float, float, float, float]:
+        """``(lon_min, lon_max, lat_min, lat_max)`` of the region in degrees
+        (region frame). Longitude bounds are naive (no antimeridian-wrap
+        handling); requires a FITS-WCS frame."""
+        if self._geom is None or self._geom.is_empty:
+            return (float('nan'),) * 4
+        wcs = getattr(self.projector, 'wcs', None)
+        if wcs is None:
+            raise NotImplementedError("bounds requires a FITS-WCS frame.")
+        parts = (self._geom.geoms if self._geom.geom_type.startswith('Multi')
+                 else [self._geom])
+        xs: list[float] = []
+        ys: list[float] = []
+        for g in parts:
+            x, y = g.exterior.coords.xy
+            xs.extend(x)
+            ys.extend(y)
+        lon, lat = wcs.pixel_to_world_values(np.asarray(xs), np.asarray(ys))
+        return (float(np.min(lon)), float(np.max(lon)),
+                float(np.min(lat)), float(np.max(lat)))
+
     @property
     def _parse_wcs(self) -> Any:
         """Convenience accessor for the projector's WCS (``None`` for

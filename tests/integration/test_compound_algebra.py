@@ -454,3 +454,55 @@ def test_from_points_bad_hull_raises():
     with pytest.raises(ValueError, match="convex.*concave"):
         CompoundRegion.from_points(ax, [0, 1, 0.5], [0, 0, 1], hull="banana")
     plt.close(ax.figure)
+
+
+# ============================================================
+# HEALPix bridge (R2) + conveniences (R3)
+# ============================================================
+
+def test_to_healpix_mask_matches_area():
+    """Rasterized mask sky-fraction matches the region's solid-angle fraction."""
+    ax = make_wcs_frame(111, "AIT", frame="ICRS", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 15)
+    mask = reg.to_healpix_mask(64)
+    expect = reg.solid_angle["sr"] / (4 * np.pi)
+    assert abs(mask.mean() - expect) < 0.002
+    plt.close(ax.figure)
+
+
+def test_healpix_mask_round_trip_preserves_area():
+    """region -> to_healpix_mask -> from_healpix_mask keeps the area (within
+    HEALPix pixelization)."""
+    ax = make_wcs_frame(111, "AIT", frame="ICRS", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 15)
+    reg2 = CompoundRegion.from_healpix_mask(ax, reg.to_healpix_mask(64))
+    a1, a2 = reg.solid_angle["sq_deg"], reg2.solid_angle["sq_deg"]
+    assert abs(a2 - a1) / a1 < 0.05
+    plt.close(ax.figure)
+
+
+def test_from_healpix_empty_mask_raises():
+    import healpy as hp
+    ax = make_wcs_frame(111, "AIT", frame="ICRS", center=0)
+    with pytest.raises(ValueError, match="empty"):
+        CompoundRegion.from_healpix_mask(ax, np.zeros(hp.nside2npix(8), bool))
+    plt.close(ax.figure)
+
+
+def test_centroid_and_bounds():
+    ax = make_wcs_frame(111, "AIT", frame="ICRS", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 15)
+    clon, clat = reg.centroid
+    assert abs(clon - 60) < 3 and abs(clat - 20) < 3
+    lo0, lo1, la0, la1 = reg.bounds
+    assert lo0 < 60 < lo1 and la0 < 20 < la1
+    plt.close(ax.figure)
+
+
+def test_from_polygons_batch_union():
+    ax = make_wcs_frame(111, "AIT", frame="ICRS", center=0)
+    tri = ([0, 20, 10, 0], [0, 0, 20, 0])
+    box = ([40, 60, 60, 40, 40], [-10, -10, 10, 10, -10])
+    reg = CompoundRegion.from_polygons(ax, [tri, box])
+    assert reg.solid_angle["sq_deg"] > 0
+    plt.close(ax.figure)

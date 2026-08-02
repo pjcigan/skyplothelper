@@ -208,6 +208,19 @@ def render_from_points_hull():
     return fig
 
 
+@_panel("compound_10_from_healpix_mask")
+def render_from_healpix_mask():
+    """Round-trip: a region -> HEALPix mask -> region reconstructed from the
+    mask (union of the True pixels)."""
+    fig, ax = _allsky()
+    src = CompoundRegion(ax).add_circle(160, 20, 25).add_circle(210, -15, 18)
+    reg = CompoundRegion.from_healpix_mask(ax, src.to_healpix_mask(32))
+    reg.render(facecolor="C2", edgecolor="k", alpha=0.5)
+    ax.set_title("region from a HEALPix mask (nside 32, union of True pixels)",
+                 fontsize=11)
+    return fig
+
+
 def main():
     banner("CompoundRegion algebra — gallery")
     for name, builder in PANELS.items():

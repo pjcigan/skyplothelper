@@ -544,3 +544,41 @@ def test_to_regions_optional_dependency():
         from regions import Regions
         assert isinstance(reg.to_regions(), Regions)
     plt.close(ax.figure)
+
+
+def test_ds9_round_trip_with_hole():
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 20).subtract_circle(60, 20, 8)
+    reg2 = CompoundRegion.from_ds9(ax, reg.to_ds9())
+    assert abs(reg2.solid_angle["sq_deg"] - reg.solid_angle["sq_deg"]) < 2
+    plt.close(ax.figure)
+
+
+def test_ds9_import_from_file(tmp_path):
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 15)
+    p = str(tmp_path / "r.reg")
+    reg.to_ds9(path=p)
+    reg2 = CompoundRegion.from_ds9(ax, p)
+    assert reg2.solid_angle["sq_deg"] > 0
+    plt.close(ax.figure)
+
+
+def test_crtf_round_trip_poly():
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=0)
+    reg = CompoundRegion(ax).add_circle(60, 20, 15)
+    reg2 = CompoundRegion.from_crtf(ax, reg.to_crtf())
+    a1, a2 = reg.solid_angle["sq_deg"], reg2.solid_angle["sq_deg"]
+    assert abs(a2 - a1) / a1 < 0.02
+    plt.close(ax.figure)
+
+
+def test_ds9_cross_frame_import_preserves_area():
+    axg = make_wcs_frame(111, "AIT", frame="galactic", center=0)
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=0)
+    rg = CompoundRegion(axg).add_circle(120, 30, 15)
+    r_icrs = CompoundRegion.from_ds9(ax, rg.to_ds9())  # galactic -> icrs
+    a1, a2 = rg.solid_angle["sq_deg"], r_icrs.solid_angle["sq_deg"]
+    assert abs(a2 - a1) / a1 < 0.05
+    plt.close(axg.figure)
+    plt.close(ax.figure)

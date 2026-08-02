@@ -534,6 +534,128 @@ class CompoundRegion:
                 fh.write(text)
         return text
 
+    @staticmethod
+    def _read_region_text(source: str) -> str:
+        """Return region text from either a path or a raw string."""
+        import os
+        if ('\n' not in source) and os.path.exists(source):
+            with open(source) as fh:
+                return fh.read()
+        return source
+
+    @classmethod
+    def from_ds9(cls, ax_or_projector: Any, source: str, *,
+                 frame: str | None = None) -> CompoundRegion:
+        """Build a region from a DS9 region file/text — the inverse of
+        :meth:`to_ds9`.
+
+        Parses ``polygon(...)`` and ``circle(x, y, r)`` shapes (and their
+        excluded ``-polygon`` / ``-circle`` forms → subtract). Coordinates are
+        read in the file's frame line (or the ``frame`` override) and converted
+        to the axes frame. Other DS9 shapes are ignored; for full-fidelity
+        parsing use astropy ``regions`` + :meth:`from_regions`.
+        """
+        import re
+
+        import astropy.units as u
+        from astropy.coordinates import SkyCoord
+
+        _alias = {'j2000': 'fk5', 'b1950': 'fk4'}
+        file_frame = frame
+        region = cls(ax_or_projector)
+        for raw in cls._read_region_text(source).splitlines():
+            line = raw.strip()
+            if not line or line.startswith('#'):
+                continue
+            low = line.lower()
+            if low in ('icrs', 'fk5', 'fk4', 'galactic', 'ecliptic',
+                       'j2000', 'b1950'):
+                file_frame = frame or low
+                continue
+            exclude = line.startswith('-')
+            body = line[1:].strip() if exclude else line
+            m = re.match(r'(polygon|circle)\s*\(([^)]*)\)', body, re.I)
+            if not m:
+                continue
+            kind = m.group(1).lower()
+            nums = [float(v) for v in
+                    re.split(r'[,\s]+', m.group(2).strip()) if v]
+            fr = _alias.get((file_frame or 'icrs').lower(),
+                            (file_frame or 'icrs').lower())
+            if kind == 'polygon' and len(nums) >= 6:
+                sc = SkyCoord(nums[0::2] * u.deg, nums[1::2] * u.deg, frame=fr)
+                (region.subtract_polygon if exclude
+                 else region.add_polygon)(sc)
+            elif kind == 'circle' and len(nums) >= 3:
+                sc = SkyCoord(nums[0] * u.deg, nums[1] * u.deg, frame=fr)
+                (region.subtract_circle if exclude
+                 else region.add_circle)(sc, radius_deg=nums[2])
+        return region
+
+    @classmethod
+    def from_crtf(cls, ax_or_projector: Any, source: str, *,
+                  frame: str | None = None) -> CompoundRegion:
+        """Build a region from CASA CRTF text — the inverse of :meth:`to_crtf`.
+
+        Parses ``poly[[lon deg, lat deg], ...]`` (and ``circle[[x, y], r deg]``)
+        lines; a leading ``-`` subtracts. Frame from each line's ``coord=`` (or
+        the ``frame`` override).
+        """
+        import re
+
+        import astropy.units as u
+        from astropy.coordinates import SkyCoord
+
+        _alias = {'j2000': 'fk5', 'b1950': 'fk4'}
+        region = cls(ax_or_projector)
+        for raw in cls._read_region_text(source).splitlines():
+            line = raw.strip()
+            if not line or line.startswith('#'):
+                continue
+            exclude = line.startswith('-')
+            cm = re.search(r'coord\s*=\s*(\w+)', line, re.I)
+            fname = (frame or (cm.group(1) if cm else 'icrs')).lower()
+            fr = _alias.get(fname, fname)
+            if re.match(r'-?\s*poly', line, re.I):
+                pairs = re.findall(
+                    r'\[\s*([-\d.eE]+)\s*deg\s*,\s*([-\d.eE]+)\s*deg\s*\]', line)
+                if len(pairs) < 3:
+                    continue
+                lon = [float(a) for a, _ in pairs]
+                lat = [float(b) for _, b in pairs]
+                sc = SkyCoord(lon * u.deg, lat * u.deg, frame=fr)
+                (region.subtract_polygon if exclude
+                 else region.add_polygon)(sc)
+        return region
+
+    @classmethod
+    def from_regions(cls, ax_or_projector: Any,
+                     region_obj: Any) -> CompoundRegion:
+        """Build a region from astropy-``regions`` sky-region object(s).
+
+        Accepts a single ``SkyRegion``, a list, or a ``Regions`` container.
+        ``PolygonSkyRegion`` and ``CircleSkyRegion`` are supported (union;
+        ``meta['include'] == 0`` subtracts). The inverse of :meth:`to_regions`;
+        requires the optional ``regions`` package for the input objects.
+        """
+        region = cls(ax_or_projector)
+        try:
+            objs = list(region_obj)
+        except TypeError:
+            objs = [region_obj]
+        for r in objs:
+            meta = getattr(r, 'meta', {}) or {}
+            include = int(meta.get('include', 1)) if hasattr(meta, 'get') else 1
+            tname = type(r).__name__
+            if tname == 'PolygonSkyRegion':
+                (region.subtract_polygon if not include
+                 else region.add_polygon)(r.vertices)
+            elif tname == 'CircleSkyRegion':
+                rad = r.radius.to('deg').value
+                (region.subtract_circle if not include
+                 else region.add_circle)(r.center, radius_deg=rad)
+        return region
+
     @property
     def _parse_wcs(self) -> Any:
         """Convenience accessor for the projector's WCS (``None`` for

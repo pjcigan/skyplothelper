@@ -221,6 +221,26 @@ def render_from_healpix_mask():
     return fig
 
 
+@_panel("compound_11_region_set_ops")
+def render_region_set_ops():
+    """Region-to-region set algebra: build two independent regions A and B,
+    then show A∪B / A∩B / A−B / A XOR B via the new union/intersection/
+    difference/symmetric_difference methods."""
+    ops = [("A ∪ B", "union"), ("A ∩ B", "intersection"),
+           ("A − B", "difference"), ("A XOR B", "symmetric_difference")]
+    fig = plt.figure(figsize=(15, 4))
+    for col, (label, meth) in enumerate(ops, start=1):
+        ax = make_wcs_frame((1, 4, col), projection="AIT", center=180, fig=fig)
+        fig.canvas.draw()
+        A = CompoundRegion(ax).add_circle(165, 15, radius_deg=28)
+        B = CompoundRegion(ax).add_circle(195, -15, radius_deg=28)
+        getattr(A, meth)(B).render(facecolor="C0", edgecolor="navy", alpha=0.45)
+        ax.set_title(f"{label}  (area_frac={A.area_frac:.3f})", fontsize=10)
+    fig.suptitle("CompoundRegion region-to-region set algebra", fontsize=12)
+    fig.subplots_adjust(top=0.86, wspace=0.3)
+    return fig
+
+
 def main():
     banner("CompoundRegion algebra — gallery")
     for name, builder in PANELS.items():

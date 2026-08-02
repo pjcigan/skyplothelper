@@ -1523,6 +1523,54 @@ class CompoundRegion:
             self._geom = self._frame_poly.difference(self._geom)
         return self
 
+    def _binary_op(self, other: CompoundRegion, name: str) -> CompoundRegion:
+        """Shared core for the region-region set operations.
+
+        Both regions must be built on the **same frame** — the geometry lives in
+        that frame's pixel space, so combining regions from different axes is
+        meaningless. Empty (``None``) geometries are handled per operation.
+        """
+        if not isinstance(other, CompoundRegion):
+            raise TypeError(
+                f"expected another CompoundRegion, got {type(other).__name__}")
+        a, b = self._geom, other._geom
+        a_empty = a is None or a.is_empty
+        b_empty = b is None or b.is_empty
+        if name == 'union':
+            g = b if a_empty else a if b_empty else a.union(b)
+        elif name == 'intersection':
+            g = None if (a_empty or b_empty) else a.intersection(b)
+        elif name == 'difference':
+            g = None if a_empty else (a if b_empty else a.difference(b))
+        else:  # symmetric_difference
+            g = b if a_empty else a if b_empty else a.symmetric_difference(b)
+        self._geom = g if (g is not None and not g.is_empty) else None
+        return self
+
+    def union(self, other: CompoundRegion) -> CompoundRegion:
+        """Union in another region (``self ∪ other``), mutating ``self``.
+
+        The region-level counterpart of the shape-specific ``add_*`` methods:
+        combine two independently-built regions (e.g. two survey footprints).
+        Both must be on the same frame. Returns ``self`` for chaining."""
+        return self._binary_op(other, 'union')
+
+    def intersection(self, other: CompoundRegion) -> CompoundRegion:
+        """Intersect with another region (``self ∩ other``), mutating ``self``
+        (e.g. the sky two surveys have in common). Returns ``self``."""
+        return self._binary_op(other, 'intersection')
+
+    def difference(self, other: CompoundRegion) -> CompoundRegion:
+        """Subtract another region (``self − other``), mutating ``self`` — punch
+        one region's area out of another (e.g. land minus lakes, footprint minus
+        an avoidance zone). Returns ``self``."""
+        return self._binary_op(other, 'difference')
+
+    def symmetric_difference(self, other: CompoundRegion) -> CompoundRegion:
+        """Symmetric difference (``self XOR other`` — area in exactly one of the
+        two regions), mutating ``self``. Returns ``self``."""
+        return self._binary_op(other, 'symmetric_difference')
+
     def clip_path(self, complement: bool = False) -> Any:
         """Return a matplotlib ``Path`` (in ``self.ax.transData``) covering this
         region, for use as a clip path. With ``complement=True`` it covers the
@@ -1776,6 +1824,19 @@ class CompoundRegion:
         geom = _cleanup_for_render(geom)
         if geom.is_empty:
             return []
+
+        # Shared legibility-stroke knob (parity with the shape / band / fill
+        # helpers): translate ``stroke_color`` / ``stroke_lw`` into a
+        # ``path_effects`` outline on the fill path (visible even though the
+        # fill itself carries no edge). An explicit ``path_effects=`` wins.
+        stroke_color = kwargs.pop('stroke_color', None)
+        stroke_lw = kwargs.pop('stroke_lw', None)
+        if stroke_color is not None and 'path_effects' not in kwargs:
+            from .._stroke import _stroke_path_effects
+            _pe = _stroke_path_effects(
+                stroke_color, 3.0 if stroke_lw is None else stroke_lw)
+            if _pe is not None:
+                kwargs['path_effects'] = _pe
 
         # Separate edgecolor for boundary-only rendering
         edgecolor = kwargs.pop('edgecolor', kwargs.pop('ec', None))

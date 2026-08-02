@@ -670,6 +670,21 @@ class WCSAxesProjector(Projector):
 
     def __init__(self, ax: Any) -> None:
         self.ax = ax
+        # The spherical-region pipeline projects via the axes' FITS WCS. The
+        # non-FITS custom-transform frames (Robinson, Eckert, Winkel Tripel, …)
+        # have ``ax.wcs is None``; fail with a clear message here rather than a
+        # cryptic ``NoneType has no world_to_pixel_values`` deep in the frame-
+        # polygon build. (Region fill on non-FITS frames is the deferred G4
+        # projector-unification work.)
+        if getattr(ax, 'wcs', None) is None:
+            raise NotImplementedError(
+                "Region shapes / fills need a FITS-projection frame — the "
+                "non-FITS custom projections (Robinson, Eckert, Winkel Tripel, "
+                "Kavrayskiy, McBryde) have no WCS to project through yet. Use a "
+                "FITS projection (AIT, MOL, CAR, MER, SFL, PAR, CEA, TAN, SIN, "
+                "…) or a globe for region shapes / fills; line overlays "
+                "(coastlines, plate boundaries, baselines) work on non-FITS "
+                "frames.")
         # Cache the frame polygon (constructed once, reused per shape).
         from ._frame_geom import _get_frame_polygon, _get_projection_center
         self._frame_polygon = _get_frame_polygon(ax)
@@ -855,6 +870,23 @@ class WCSAxesProjector(Projector):
         from matplotlib.patches import PathPatch
 
         from ._frame_geom import _fix_hairline_kwargs, _shapely_to_paths
+
+        # Shared legibility-stroke knob for every shape helper that funnels
+        # through here (add_spherical_polygon / add_geodesic_circle /
+        # add_rectangle / add_square / add_ellipse / add_annulus): translate
+        # ``stroke_color`` / ``stroke_lw`` into a ``path_effects`` outline. A
+        # caller that already passed ``path_effects=`` (e.g. fill_boundaries_
+        # globe, which strokes upstream) wins, so this never double-strokes.
+        stroke_color = style.pop('stroke_color', None)
+        stroke_lw = style.pop('stroke_lw', None)
+        if stroke_color is not None and 'path_effects' not in style:
+            from .._stroke import _stroke_path_effects
+            # Default the width (as the band helpers do) so stroke_color alone
+            # is enough to get a stroke.
+            _pe = _stroke_path_effects(
+                stroke_color, 3.0 if stroke_lw is None else stroke_lw)
+            if _pe is not None:
+                style['path_effects'] = _pe
 
         if complement:
             from ._projection import _render_complement

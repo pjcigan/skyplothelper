@@ -582,3 +582,100 @@ def test_ds9_cross_frame_import_preserves_area():
     assert abs(a2 - a1) / a1 < 0.05
     plt.close(axg.figure)
     plt.close(ax.figure)
+
+
+# ============================================================
+# Region-to-region set algebra (union / intersection / difference /
+# symmetric_difference) — new in the F3(ii)/region-ops expansion
+# ============================================================
+
+def _two_regions(ax):
+    """Two overlapping circle regions on the same frame, plus their areas."""
+    A = CompoundRegion(ax).add_circle(160, 0, radius_deg=30)
+    B = CompoundRegion(ax).add_circle(200, 0, radius_deg=30)
+    return A, B
+
+
+def test_region_union_equals_A_plus_B_minus_intersection():
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=180)
+    ax.figure.canvas.draw()
+    aA = _two_regions(ax)[0].solid_angle["sq_deg"]
+    aB = _two_regions(ax)[1].solid_angle["sq_deg"]
+    A, B = _two_regions(ax)
+    inter = A.intersection(B).solid_angle["sq_deg"]
+    C, D = _two_regions(ax)
+    uni = C.union(D).solid_angle["sq_deg"]
+    assert abs(uni - (aA + aB - inter)) / uni < 0.02
+    plt.close(ax.figure)
+
+
+def test_region_difference_equals_A_minus_intersection():
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=180)
+    ax.figure.canvas.draw()
+    aA = _two_regions(ax)[0].solid_angle["sq_deg"]
+    A, B = _two_regions(ax)
+    inter = A.intersection(B).solid_angle["sq_deg"]
+    C, D = _two_regions(ax)
+    diff = C.difference(D).solid_angle["sq_deg"]
+    assert abs(diff - (aA - inter)) / aA < 0.02
+    plt.close(ax.figure)
+
+
+def test_region_symmetric_difference_equals_union_minus_intersection():
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=180)
+    ax.figure.canvas.draw()
+    A, B = _two_regions(ax)
+    uni = A.union(B).solid_angle["sq_deg"]
+    C, D = _two_regions(ax)
+    inter = C.intersection(D).solid_angle["sq_deg"]
+    E, F = _two_regions(ax)
+    xor = E.symmetric_difference(F).solid_angle["sq_deg"]
+    assert abs(xor - (uni - inter)) / uni < 0.02
+    plt.close(ax.figure)
+
+
+def test_region_setop_rejects_non_region():
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=180)
+    with pytest.raises(TypeError):
+        CompoundRegion(ax).add_circle(160, 0, 30).union("not a region")
+    plt.close(ax.figure)
+
+
+def test_compound_render_stroke_applies_path_effects():
+    """CompoundRegion.render(stroke_color=...) draws a legibility stroke
+    (shared stroke knob added to the region fills)."""
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=180)
+    ax.figure.canvas.draw()
+    R = CompoundRegion(ax).add_circle(180, 0, radius_deg=25)
+    patches = R.render(facecolor="C0", stroke_color="w", stroke_lw=3)
+    assert any(p.get_path_effects() for p in patches)
+    # default (no stroke) leaves path_effects empty
+    R2 = CompoundRegion(ax).add_circle(120, 20, radius_deg=15)
+    assert not any(p.get_path_effects() for p in R2.render(facecolor="C1"))
+    plt.close(ax.figure)
+
+
+def test_shape_helper_stroke_applies_path_effects():
+    """add_spherical_polygon / add_geodesic_circle gained the stroke knob via
+    the shared render_region path."""
+    import skyplothelper as sph
+    ax = make_wcs_frame(111, "AIT", frame="icrs", center=180)
+    ax.figure.canvas.draw()
+    p1 = sph.add_spherical_polygon(ax, [150, 210, 210, 150], [-20, -20, 20, 20],
+                                   facecolor="C0", stroke_color="w", stroke_lw=3)
+    p2 = sph.add_geodesic_circle(ax, 100, 30, 15, facecolor="C1",
+                                 stroke_color="k")
+    assert any(a.get_path_effects() for a in p1)
+    assert any(a.get_path_effects() for a in p2)
+    plt.close(ax.figure)
+
+
+def test_region_shapes_raise_clean_on_non_fits():
+    """Region shapes on a non-FITS frame raise a clear NotImplementedError,
+    not a cryptic AttributeError."""
+    import skyplothelper as sph
+    ax = make_wcs_frame(111, "robinson", frame="icrs", center=0)
+    assert getattr(ax, "wcs", None) is None
+    with pytest.raises(NotImplementedError):
+        sph.add_geodesic_circle(ax, 0, 40, 20, facecolor="C0")
+    plt.close(ax.figure)

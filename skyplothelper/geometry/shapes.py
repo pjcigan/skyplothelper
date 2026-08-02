@@ -219,6 +219,14 @@ def add_spherical_polygon(ax: Any, lons: SkyCoord | npt.ArrayLike, lats: Any = N
         Drop projected sub-polygons smaller than this area (in pixels²)
         after clipping — filters sub-pixel slivers along the wrap edge.
         ``None`` (default) uses the built-in sub-pixel threshold.
+    stroke_color : color, optional
+        Draw a legibility stroke (outline halo) around the polygon in this
+        color — the shared ``stroke_color`` / ``stroke_lw`` knob used across the
+        package's overlays. ``None`` (default) draws no stroke. Also accepted by
+        ``add_geodesic_circle`` / ``add_rectangle`` / ``add_square`` /
+        ``add_ellipse`` / ``add_annulus`` (they share this render path).
+    stroke_lw : float, optional
+        Stroke width in points (default: a sensible outline width).
     **kwargs
         Passed to matplotlib PathPatch (facecolor, edgecolor, alpha, etc.).
 

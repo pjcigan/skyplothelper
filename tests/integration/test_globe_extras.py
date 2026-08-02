@@ -655,14 +655,6 @@ def test_fill_overlays_raise_on_nonfits_frame():
     plt.close(ax.figure)
 
 
-def test_plot_tectonic_plates_fill_not_supported():
-    """Tectonic data is boundary arcs, not closed polygons -> fill raises."""
-    fig, ax = _car()
-    with pytest.raises(NotImplementedError, match="boundary arcs"):
-        plot_tectonic_plates(ax, fill=True)
-    plt.close(fig)
-
-
 def test_fill_overlays_accept_stroke_and_alpha_knobs():
     """The fill/line overlays accept alpha + the shared stroke knobs without
     raising, and the stroke produces path_effects on the artists."""
@@ -789,3 +781,112 @@ def test_lon_west_east_converters_roundtrip():
     assert np.isclose(sph.lon_east_to_west(289.0), 71.0)
     vals = np.array([0.0, 45.0, 120.0, 300.0])
     assert np.allclose(sph.lon_east_to_west(sph.lon_west_to_east(vals)), vals)
+
+
+# ============================================================
+# F3(ii) + G3 — plate polygons/fill, land-lakes hole-punch,
+# choropleth, and the SIN-globe subplot placement fix
+# ============================================================
+
+def test_plot_land_lakes_hole_punch_smaller_than_land():
+    """plot_land(lakes=True) subtracts the lakes as true holes, so its area is
+    a bit smaller than plain land (land - lakes via region set-algebra)."""
+
+    from skyplothelper.geometry.compound import CompoundRegion
+    from skyplothelper.globe.boundaries import _closed_rings, load_boundary_data
+    ax = make_planet_frame(111, projection="CAR", center_LONdeg=0)
+    ax.figure.canvas.draw()
+    land = CompoundRegion.from_polygons(
+        ax, _closed_rings(load_boundary_data("land.npz", key="land_110m")),
+        resolution=0)
+    lakes = CompoundRegion.from_polygons(
+        ax, _closed_rings(load_boundary_data("lakes.npz", key="lakes_110m")),
+        resolution=0)
+    a_land = land.solid_angle["sq_deg"]
+    a_diff = CompoundRegion.from_polygons(
+        ax, _closed_rings(load_boundary_data("land.npz", key="land_110m")),
+        resolution=0).difference(lakes).solid_angle["sq_deg"]
+    assert 0 < a_land - a_diff < 200          # lakes are a small inland area
+    # the plot call itself renders without raising
+    assert plot_land(ax, lakes=True)
+    plt.close(ax.figure)
+
+
+def test_plot_land_lakes_nonfits_raises():
+    ax = make_planet_frame(111, projection="robinson")
+    with pytest.raises(NotImplementedError):
+        plot_land(ax, lakes=True)
+    plt.close(ax.figure)
+
+
+def test_plate_polygons_bundled_with_metadata():
+    """The bundled tectonic_plates.npz carries plate polygons + code/name
+    metadata (needed for fill + choropleth-by-plate)."""
+    import numpy as np
+
+    from skyplothelper.globe.boundaries import _find_data_file
+    d = np.load(_find_data_file("tectonic_plates.npz"))
+    assert "plate_polygons" in d and "plate_codes" in d and "plate_names" in d
+    assert int((np.asarray(d["plate_codes"]) == "PA").sum()) >= 2  # Pacific split
+
+
+def test_plot_tectonic_plates_fill_categorical():
+    """fill=True fills the plate polygons (one patch set per ring)."""
+    ax = make_planet_frame(111, projection="MOL", center_LONdeg=0)
+    patches = plot_tectonic_plates(ax, fill=True, alpha=0.6)
+    assert len(patches) > 10
+    plt.close(ax.figure)
+
+
+def test_plot_tectonic_plates_fill_choropleth_returns_mappable():
+    """fill=True with values= returns a ScalarMappable (for a colorbar)."""
+    from matplotlib.cm import ScalarMappable
+    ax = make_planet_frame(111, projection="MOL", center_LONdeg=0)
+    sm = plot_tectonic_plates(ax, fill=True,
+                              values={"PA": 1.0, "NA": 2.0, "AF": 3.0},
+                              cmap="viridis")
+    assert isinstance(sm, ScalarMappable)
+    plt.close(ax.figure)
+
+
+def test_plot_tectonic_plates_fill_nonfits_raises():
+    ax = make_planet_frame(111, projection="robinson")
+    with pytest.raises(NotImplementedError):
+        plot_tectonic_plates(ax, fill=True)
+    plt.close(ax.figure)
+
+
+def test_choropleth_helper_colors_rings_by_value():
+    import numpy as np
+
+    import skyplothelper as sph
+    ax = make_wcs_frame(111, projection="AIT", frame="icrs", center=180)
+    ax.figure.canvas.draw()
+    rings = [([150, 170, 170, 150], [-10, -10, 10, 10]),
+             ([190, 210, 210, 190], [-10, -10, 10, 10])]
+    sm = sph.choropleth(ax, rings, np.array([1.0, 5.0]), cmap="viridis")
+    from matplotlib.cm import ScalarMappable
+    assert isinstance(sm, ScalarMappable)
+    plt.close(ax.figure)
+
+
+def test_sin_globe_fits_into_subplot_grid():
+    """make_globe_frame / make_planet_frame(SIN) now takes fig= and places into
+    one cell of a grid instead of overplotting the whole current figure."""
+    fig = plt.figure(figsize=(8, 8))
+    for i in (1, 2, 3):
+        make_wcs_frame((2, 2, i), projection="CAR", frame="icrs", center=0,
+                       fig=fig)
+    axg = make_planet_frame((2, 2, 4), projection="SIN", center_LONdeg=-40,
+                            center_LATdeg=25, fig=fig)
+    assert len(fig.axes) == 4               # no stray full-figure overplot axes
+    assert axg in fig.axes
+    plt.close(fig)
+
+
+def test_sin_globe_swaps_pre_existing_axes():
+    """A pre-existing subplot Axes can be swapped for a SIN globe."""
+    fig, axes = plt.subplots(2, 2, figsize=(8, 8))
+    axg = make_planet_frame(axes[1, 1], projection="SIN", center_LONdeg=60)
+    assert len(fig.axes) == 4 and axg in fig.axes
+    plt.close(fig)

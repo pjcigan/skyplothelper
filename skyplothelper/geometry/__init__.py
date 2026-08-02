@@ -13,6 +13,7 @@ from .bands import (
     add_longitude_band,
     add_lonlat_box,
 )
+from .choropleth import choropleth
 from .compound import CompoundRegion
 from .shapes import (
     add_annulus,
@@ -40,6 +41,8 @@ __all__ = [
     "add_lonlat_box",
     # Tissot
     "tissot",
+    # Choropleth
+    "choropleth",
     # Compound region
     "CompoundRegion",
 ]

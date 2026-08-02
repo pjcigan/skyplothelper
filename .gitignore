@@ -90,6 +90,9 @@ tests/visual_baselines/result/
 skyplothelper/data/coastlines.npz
 skyplothelper/data/tectonic_plates.npz
 skyplothelper/data/time_zones.npz
+skyplothelper/data/land.npz
+skyplothelper/data/lakes.npz
+skyplothelper/data/rivers.npz
 
 # Jupyter notebook checkpoints (tutorial authoring)
 .ipynb_checkpoints/

@@ -149,6 +149,7 @@ from .geometry import (
     add_rectangle,
     add_spherical_polygon,
     add_square,
+    choropleth,
     ellipse,
     geodesic_circle,
     rectangle,
@@ -566,6 +567,7 @@ __all__ = [
     "add_great_circle_band", "add_frame_band",
     "add_lonlat_box",
     "tissot",
+    "choropleth",
     "CompoundRegion",
     # === Submodules ===
     "plotly",

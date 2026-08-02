@@ -49,6 +49,7 @@ def test_boundary_data_urls_populated():
     """Registry has entries for the standard boundary files."""
     expected = {
         "coastlines.npz", "tectonic_plates.npz", "time_zones.npz",
+        "land.npz", "lakes.npz", "rivers.npz",
     }
     assert expected == set(_BOUNDARY_DATA_URLS.keys())
 

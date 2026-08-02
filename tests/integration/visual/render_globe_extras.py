@@ -320,6 +320,66 @@ def render_lon_west():
     return fig
 
 
+@_panel("globe_ext_14_land_lakes")
+def render_land_lakes():
+    """F3(ii): plot_land(lakes=True) punches the lakes out of the land as true
+    holes via the region set-algebra (land − lakes). Zoomed on the Great
+    Lakes so the holes are visible."""
+    from skyplothelper.globe.boundaries import plot_land
+    fig = plt.figure(figsize=(11, 4.6))
+    ax1 = make_planet_frame((1, 2, 1), projection="CAR", center_LONdeg=0,
+                            fig=fig)
+    plot_land(ax1, facecolor="0.7", lakes=True)
+    ax1.set_title("plot_land(lakes=True) — global", fontsize=10)
+    ax2 = make_planet_frame((1, 2, 2), projection="CAR", center_LONdeg=-84,
+                            center_LATdeg=44, fov_deg=40, fig=fig)
+    plot_land(ax2, facecolor="0.7", lakes=True)
+    plot_coastlines(ax2, color="0.35", lw=0.7)
+    ax2.set_title("zoom: Great Lakes as holes", fontsize=10)
+    return fig
+
+
+@_panel("globe_ext_15_plate_fill")
+def render_plate_fill():
+    """F3(ii): plot_tectonic_plates(fill=True) — categorical plate map (one
+    color per plate; Pacific split pieces share a color and trace the frame
+    edge) with the boundary arcs on top."""
+    from skyplothelper.globe.boundaries import plot_tectonic_plates
+    fig = plt.figure(figsize=(12, 5))
+    for col, (proj, cen) in enumerate([("CAR", 0), ("MOL", -60)], start=1):
+        ax = make_planet_frame((1, 2, col), projection=proj, center_LONdeg=cen,
+                               fig=fig)
+        plot_tectonic_plates(ax, fill=True, alpha=0.6)
+        plot_coastlines(ax, color="k", lw=0.3)
+        plot_tectonic_plates(ax, color="0.1", lw=0.6)
+        ax.set_title(f"{proj} center={cen}: plate fill", fontsize=10)
+    return fig
+
+
+@_panel("globe_ext_16_plate_choropleth")
+def render_plate_choropleth():
+    """G3: plot_tectonic_plates(fill=True, values=…) choropleth — plates
+    colored by a per-plate value with a colorbar."""
+    import numpy as np
+
+    import skyplothelper as sph
+    from skyplothelper.globe.boundaries import _closed_rings, _find_data_file, plot_tectonic_plates
+    d = np.load(_find_data_file("tectonic_plates.npz"))
+    codes = [str(c) for c in d["plate_codes"]]
+    rings = _closed_rings(d["plate_polygons"])
+    cent = {}
+    for c, r in zip(codes, rings):
+        cent[c] = max(cent.get(c, 0.0), abs(float(np.nanmean(r[1]))))
+    fig = plt.figure(figsize=(8, 4.6))
+    ax = make_planet_frame(111, projection="MOL", center_LONdeg=0, fig=fig)
+    sm = plot_tectonic_plates(ax, fill=True, values=cent, cmap="plasma",
+                              edgecolor="0.25")
+    plot_coastlines(ax, color="k", lw=0.3)
+    sph.add_colorbar(sm, ax=ax, label="|plate centroid lat| (deg)")
+    ax.set_title("plate choropleth (fill=True, values=…)", fontsize=10)
+    return fig
+
+
 def main():
     banner("globe extras (baselines + insets) — gallery")
     for name, builder in PANELS.items():

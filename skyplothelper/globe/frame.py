@@ -566,7 +566,7 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
                      extra_cards: dict[str, Any] | None = None,
                      tick_style: str = 'in_frame',
                      tick_rotation: Any = 'tangent',
-                     auto_fontsize: bool = True) -> Any:
+                     auto_fontsize: bool = True, fig: Any = None) -> Any:
     """
     Create a WCSAxes plot frame in orthographic ('globe') projection.
 
@@ -668,6 +668,15 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
         width. Default ``True``. See the matching kwarg on
         :func:`~skyplothelper.wcs_frame.make_wcs_frame` for the full
         description.
+    fig : matplotlib Figure, optional
+        Figure to draw into. Defaults to the current figure (``plt.gcf()``).
+        Pass an explicit figure to place the globe into one cell of a specific
+        figure's grid without disturbing the others — e.g. alongside flat
+        frames from :func:`~skyplothelper.wcs_frame.make_wcs_frame`. (Parity
+        with ``make_wcs_frame``; previously the globe always used the current
+        figure, which overplotted an existing grid.) ``subplot_number`` may
+        also be a pre-existing Axes (from ``plt.subplots`` / ``GridSpec``),
+        which is swapped in place for the globe.
 
     Returns
     -------
@@ -747,18 +756,40 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
 
     wcs = WCS(hdr)
 
-    # Create WCSAxes subplot with elliptical (circular) boundary.
-    # plt.subplot is stubbed to return a plain Axes, but with a WCS
-    # ``projection`` it returns a WCSAxes (with ``.coords`` etc.), so the
-    # local is annotated Any to expose the WCSAxes-only API to callers.
-    # Accept an int (111), a 3-tuple ((2, 3, 1)), or a SubplotSpec — parity
-    # with make_wcs_frame, so grids beyond 9 panels are addressable. A tuple is
-    # unpacked into plt.subplot's (nrows, ncols, index) args; int / SubplotSpec
-    # pass through as a single positional.
+    # Create the WCSAxes with an elliptical (circular) boundary, using
+    # ``fig.add_subplot`` on an EXPLICIT figure rather than the stateful
+    # ``plt.subplot`` (which always targets ``plt.gcf()``). That parity with
+    # make_wcs_frame is what lets a globe drop cleanly into one cell of an
+    # existing grid instead of overplotting the whole current figure.
+    # ``subplot_number`` accepts an int (111), a 3-tuple ((2, 3, 1)), a
+    # SubplotSpec, OR a pre-existing Axes (swapped in place — the common
+    # "give me a globe in this subplot" spelling for plt.subplots / GridSpec
+    # workflows). A WCS ``projection`` makes add_subplot return a WCSAxes.
+    from matplotlib.axes import Axes
+    if isinstance(subplot_number, Axes):
+        existing_ax = subplot_number
+        if fig is None:
+            fig = existing_ax.figure
+        elif fig is not existing_ax.figure:
+            raise ValueError(
+                "make_globe_frame() received both an explicit ``fig=`` and a "
+                "``subplot_number=`` Axes from a different figure — pass at "
+                "most one figure context.")
+        spec = existing_ax.get_subplotspec()
+        if spec is None:
+            raise ValueError(
+                "Pre-existing Axes passed via ``subplot_number=`` has no "
+                "SubplotSpec (probably from ``fig.add_axes(rect)``). Pass a "
+                "SubplotSpec, an int subplot number, or an Axes in a subplot "
+                "grid (``plt.subplots`` / ``GridSpec``).")
+        existing_ax.remove()
+        subplot_number = spec
+    if fig is None:
+        fig = plt.gcf()
     _spec = (subplot_number if isinstance(subplot_number, tuple)
              else (subplot_number,))
-    ax: Any = plt.subplot(*_spec, projection=wcs,
-                          frame_class=EllipticalFrame, aspect=aspect)
+    ax: Any = fig.add_subplot(*_spec, projection=wcs,
+                              frame_class=EllipticalFrame, aspect=aspect)
     ax.set_xlim(-0.5, N - 0.5)
     ax.set_ylim(-0.5, N + 0.5)
     for i in (0, 1):

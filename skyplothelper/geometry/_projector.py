@@ -83,6 +83,103 @@ def _densify_lonlat(coords: npt.NDArray[np.float64],
     return np.asarray(out, dtype=float)
 
 
+def _slerp_unit(a: npt.NDArray[np.float64], b: npt.NDArray[np.float64],
+                step_deg: float = 2.0) -> npt.NDArray[np.float64]:
+    """Great-circle interpolate between two unit vectors ``a`` and ``b``,
+    inclusive, with roughly ``step_deg`` spacing. Used to trace the visible
+    limb (both endpoints lie on the limb great circle, so the interpolation
+    stays on it)."""
+    dot = float(np.clip(np.dot(a, b), -1.0, 1.0))
+    ang = np.arccos(dot)
+    if ang < 1e-9:
+        return np.array([a, b])
+    n = max(2, int(np.ceil(np.degrees(ang) / step_deg)) + 1)
+    t = np.linspace(0.0, 1.0, n)
+    sin_ang = np.sin(ang)
+    out = (np.sin((1 - t)[:, None] * ang) * a
+           + np.sin(t[:, None] * ang) * b) / sin_ang
+    return out / np.linalg.norm(out, axis=1, keepdims=True)
+
+
+def _clip_polygon_to_hemisphere(
+    verts: npt.NDArray[np.float64], center: npt.NDArray[np.float64],
+    slerp_step_deg: float = 2.0,
+) -> npt.NDArray[np.float64] | None:
+    """Clip a spherical polygon (unit-vector ring ``verts``) to the visible
+    hemisphere ``p·center > 0`` and return the visible boundary as unit
+    vectors, with the limb edges traced along the limb great circle.
+
+    Sutherland-Hodgman against the single half-space plane through the center:
+    it keys on the *sign* of ``p·center``, so — unlike an azimuthal projection
+    — it has no antipode singularity (the far side is simply clipped). A ring
+    entirely on the far side (all ``p·center ≤ 0``) yields ``None``; a ring
+    that crosses the limb is closed along the limb arc between its exit and
+    re-entry crossings. (A far-side ring that *encloses* the whole visible
+    hemisphere still yields ``None`` — all its vertices are clipped — which is
+    the one documented globe-fill limitation.)
+    """
+    d = verts @ center
+    n = len(verts)
+    # (unit vector, is_limb_crossing) in boundary order.
+    out: list[tuple[npt.NDArray[np.float64], bool]] = []
+    for i in range(n):
+        j = (i + 1) % n
+        di, dj = float(d[i]), float(d[j])
+        if di > 0:
+            out.append((verts[i], False))
+            if dj <= 0:                       # exit: crossing onto the limb
+                t = di / (di - dj)
+                cx = verts[i] + t * (verts[j] - verts[i])
+                out.append((cx / np.linalg.norm(cx), True))
+        elif dj > 0:                          # entry: crossing off the limb
+            t = di / (di - dj)
+            cx = verts[i] + t * (verts[j] - verts[i])
+            out.append((cx / np.linalg.norm(cx), True))
+    if len(out) < 3:
+        return None
+    # Trace every limb edge (both endpoints are crossings) along the limb.
+    m = len(out)
+    dense: list[npt.NDArray[np.float64]] = []
+    for k in range(m):
+        va, ca = out[k]
+        vb, cb = out[(k + 1) % m]
+        dense.append(va)
+        if ca and cb:
+            arc = _slerp_unit(va, vb, slerp_step_deg)
+            dense.extend(arc[1:-1])
+    return _despike_ring(np.asarray(dense, dtype=float))
+
+
+def _despike_ring(pts: npt.NDArray[np.float64],
+                  tol: float = 1e-7) -> npt.NDArray[np.float64] | None:
+    """Remove degenerate spikes and duplicate points from a closed vertex ring.
+
+    A polygon that *encloses a pole* (e.g. the North American tectonic plate)
+    is stored as a ring cut up one meridian to the pole and back down the
+    antimeridian. In unit-vector space ``±180°`` are the same point, so that cut
+    is a *palindromic retrace* — a zero-width spike that would otherwise be
+    drawn as a spurious 180° seam by any edge color. Peeling spikes (a vertex
+    whose neighbors coincide) collapses the retrace while leaving the ring still
+    enclosing the pole (the boundary just closes across the cut). Also drops
+    consecutive duplicates. Returns ``None`` if fewer than 3 vertices survive.
+    """
+    v = [p for i, p in enumerate(pts)
+         if i == 0 or np.linalg.norm(p - pts[i - 1]) > tol]
+    changed = True
+    while changed and len(v) > 3:
+        changed = False
+        i = 1
+        while i < len(v) - 1:
+            if np.linalg.norm(v[i - 1] - v[i + 1]) < tol:   # spike tip
+                del v[i]
+                if i < len(v) and np.linalg.norm(v[i - 1] - v[i]) < tol:
+                    del v[i]
+                changed = True
+            else:
+                i += 1
+    return np.asarray(v, dtype=float) if len(v) >= 3 else None
+
+
 class Projector:
     """Abstract base for projection backends.
 
@@ -463,6 +560,13 @@ class Projector:
             lons = np.append(lons, lons[0])
             lats = np.append(lats, lats[0])
 
+        # Globe (orthographic all-sky) frames — plotly globes reach the base
+        # pipeline here — clip to the visible hemisphere instead of splitting at
+        # the antimeridian (which lies on the far side). Flat frames skip this.
+        if self._is_globe():
+            return self._project_hemisphere_domain_clip(lons, lats,
+                                                        expected_frac)
+
         center = self.center
         segments = _antimeridian_clip(lons, lats, center)
         if not segments:
@@ -574,6 +678,82 @@ class Projector:
         if not poly.is_valid:
             poly = make_valid(poly)
         return self._finalize(poly, expected_frac)
+
+    # ------------------------------------------------------------------
+    # Globe (visible-hemisphere) domain clip — shared by every backend.
+    #
+    # On an orthographic globe (SIN celestial / planet frame, or a plotly
+    # globe) the far hemisphere is not drawable and the visible boundary is
+    # the *limb* (the 90°-from-center small circle), NOT the antimeridian. A
+    # filled region that spills past the limb can't be closed by projecting-
+    # and-dropping the NaN far-side vertices (that chords across the disk) nor
+    # by the antimeridian machinery (the center±180 seam is itself on the far
+    # side). The robust fix — the one cartopy takes — is to clip the region to
+    # the visible-hemisphere DOMAIN as a proper polygon operation.
+    #
+    # We do it in an azimuthal-equidistant frame centered on the globe center,
+    # where the visible hemisphere is a disk of radius 90° and the far side is
+    # a finite annulus (90°–180°). A single shapely intersection with the 90°
+    # disk handles every case uniformly: a limb-crosser gets a clean limb arc,
+    # a cap that encloses the whole hemisphere yields the whole disk, and a
+    # far-side-only ring vanishes — no NaN, no chords, no complement guessing.
+    # The clipped polygon is mapped back to (lon, lat) and projected with the
+    # backend's own ``_project_xy`` (now all within the limb, so all finite).
+    # ------------------------------------------------------------------
+
+    def _is_globe(self) -> bool:
+        """True when the frame is an orthographic all-sky globe whose region
+        fills must be clipped to the visible hemisphere. Backends that can host
+        a globe override this (``WCSAxesProjector`` for SIN celestial/planet
+        frames, ``SkyplothelperProjector`` for plotly globes); the base default
+        is ``False`` (flat frames need no hemisphere clip)."""
+        return False
+
+    def _project_hemisphere_domain_clip(
+        self, lons: npt.ArrayLike, lats: npt.ArrayLike,
+        expected_frac: float | None = None,
+    ) -> Any | None:
+        """Clip a spherical polygon to the globe's visible hemisphere, then
+        project. See the section comment above for the rationale. Returns a
+        shapely geometry in the backend's projected coords, or ``None``."""
+        from shapely.geometry import Polygon
+
+        from ._frame_geom import _safe_intersection
+
+        lons = np.asarray(lons, dtype=float)
+        lats = np.asarray(lats, dtype=float)
+        verts = _unit_vecs(lons, lats)
+        center = _unit_vecs(np.array([self.center]),
+                            np.array([self._center_lat]))[0]
+        clipped = _clip_polygon_to_hemisphere(verts, center)
+        if clipped is None or len(clipped) < 3:
+            return None
+        # unit vectors → (lon, lat); all now on the visible hemisphere, so
+        # the backend projection returns finite coords.
+        lon_c = np.degrees(np.arctan2(clipped[:, 1], clipped[:, 0]))
+        lat_c = np.degrees(np.arcsin(np.clip(clipped[:, 2], -1.0, 1.0)))
+        x, y = self._project_xy(lon_c, lat_c)
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+        finite = np.isfinite(x) & np.isfinite(y)
+        if int(finite.sum()) < 3:
+            return None
+        poly = Polygon(zip(x[finite], y[finite]))
+        # ``buffer(0)`` cleans self-touches from the projected ring. (A ring
+        # that ENCLOSES a visible pole — e.g. the North American plate — carries
+        # a meridian cut to the pole that survives as a thin seam under an edge
+        # color; proper pole-enclosing handling is a tracked follow-up.)
+        poly = poly.buffer(0)
+        if poly.is_empty:
+            return None
+        # Safety clip to the drawn frame silhouette; no complement flip needed —
+        # the hemisphere clip already yields the correctly-oriented visible
+        # region.
+        try:
+            poly = _safe_intersection(poly, self.frame_polygon)
+        except Exception:
+            pass
+        return None if poly.is_empty else poly
 
     def render_region(self, geom: Any, *, complement: bool = False,
                       min_area: float = 1.0, **style: Any) -> list[Any]:
@@ -713,6 +893,17 @@ class WCSAxesProjector(Projector):
         return self._frame_polygon
 
     @property
+    def _center_lat(self) -> float:
+        """Projection center latitude (crval[1]) — used by the globe limb-fill
+        path to test whether a far-side ring encloses the visible hemisphere.
+        The base default of 0 would be wrong for a globe centered off the
+        equator."""
+        try:
+            return float(self.ax.wcs.wcs.crval[1])
+        except Exception:
+            return 0.0
+
+    @property
     def wcs(self) -> Any:
         """The host WCS — exposed so CompoundRegion can resolve
         sexagesimal / hourangle coordinate input via the existing
@@ -845,6 +1036,24 @@ class WCSAxesProjector(Projector):
             from ._antimeridian import _antimeridian_clip
             la = np.asarray(lons, dtype=float)
             lb = np.asarray(lats, dtype=float)
+
+            # Globe (orthographic all-sky SIN) frame: the far hemisphere is not
+            # drawable and the ``center±180`` antimeridian is NOT a visible seam
+            # — it lies on the far side. Splitting the ring there fragments it
+            # and chords across the far side (e.g. Afro-Eurasia). Instead clip
+            # the region to the visible hemisphere (the shared azimuthal-
+            # equidistant domain clip) and project the visible part. Only the
+            # globe takes this branch; flat frames fall through to the
+            # antimeridian pipeline unchanged.
+            if self._is_globe():
+                # Return the hemisphere-clipped geometry directly (already in
+                # pixel coords). Do NOT round-trip through
+                # _shapely_to_paths/_paths_to_geom: that filter is meant for the
+                # pixel-stitch pipeline and drops a pole-enclosing MultiPolygon
+                # (a plate wrapping the pole, e.g. the North American plate).
+                return self._project_hemisphere_domain_clip(
+                    la, lb, expected_frac)
+
             segments = _antimeridian_clip(la, lb, self.center)
             if (segments and len(segments) == 1
                     and segments[0]['entry_lat'] is None
@@ -869,6 +1078,31 @@ class WCSAxesProjector(Projector):
         if not paths:
             return None
         return _paths_to_geom(paths, min_area=geom_min_area)
+
+    def _is_globe(self) -> bool:
+        """True when the axes is a zenithal *all-sky* frame — a SIN/AZP/…
+        globe whose far hemisphere is not drawable and whose visible boundary
+        is the limb (not the antimeridian).
+
+        Gates the visible-hemisphere domain clip for region fills. A zenithal
+        *field* (a small TAN/SIN image) is excluded because it reports a finite
+        ``world_bounds`` and is served by the bounded-field clip path instead;
+        only the all-sky globe (``world_bounds() is None``) needs the hemisphere
+        clip. Cached after the first call."""
+        cached = getattr(self, '_globe_cache', None)
+        if cached is not None:
+            return cached
+        result = False
+        try:
+            from ..projections.project import _ZENITHAL_FITS_CODES
+            from ..wcs_frame import _axes_fits_code
+            code = _axes_fits_code(self.ax)
+            result = (code in _ZENITHAL_FITS_CODES
+                      and self.world_bounds() is None)
+        except Exception:
+            result = False
+        self._globe_cache = result
+        return result
 
     def render_region(self, geom: Any, *, complement: bool = False,
                       min_area: float | None = None, **style: Any) -> list[Any]:

@@ -169,6 +169,12 @@ class SkyplothelperProjector(Projector):
         hull = MultiPoint(np.column_stack([x[finite], y[finite]])).convex_hull
         return hull if hull.geom_type == 'Polygon' else Polygon()
 
+    def _is_globe(self) -> bool:
+        """True for a plotly orthographic *globe* — a zenithal projection whose
+        far hemisphere is not drawable. Gates the shared visible-hemisphere
+        domain clip for region fills (same as the mpl SIN globe)."""
+        return self.projection.upper() in _ZENITHAL_FITS_CODES
+
     def _project_xy(self, lons: npt.ArrayLike,
                     lats: npt.ArrayLike) -> tuple[Any, Any]:
         """Project sphere ``(lon, lat)`` into this figure's canvas coords

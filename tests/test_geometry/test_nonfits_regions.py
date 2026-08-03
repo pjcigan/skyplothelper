@@ -185,6 +185,47 @@ def test_nonfits_galactic_frame_numeric_coords():
     plt.close(fig)
 
 
+@pytest.mark.parametrize("proj", NONFITS)
+def test_region_to_region_xor_keeps_its_hole(proj):
+    """Region-level ``symmetric_difference`` on a non-FITS frame must render the
+    overlap as a *hole*, not a solid blob.
+
+    Regression: ``CompoundRegion.render`` runs a morphological-close
+    (``buffer(+eps).buffer(-eps)``) to weld sub-resolution set-algebra seams.
+    The FITS default ``eps=0.5`` is a half-pixel, but the non-FITS frames are
+    only a few radians-scale units across, so a flat 0.5 filled the xor lens
+    back in and the fill rendered identical to the union. The projector now
+    supplies a frame-relative ``render_close_eps``; the hole must survive.
+    """
+    fig = plt.figure(figsize=(8, 4))
+    ax = sph.make_wcs_frame(111, proj, frame="ICRS", center=155, fig=fig)
+
+    def _A():
+        return (sph.CompoundRegion(ax).add_circle(138, 4, radius_deg=40)
+                .add_circle(150, 48, radius_deg=16))
+
+    def _B():
+        return (sph.CompoundRegion(ax).add_circle(172, -4, radius_deg=40)
+                .add_circle(160, -50, radius_deg=16))
+
+    union = _A().union(_B())
+    xor = _A().symmetric_difference(_B())
+    # The xor drops the overlap, so its true area is well under the union.
+    assert xor.solid_angle["sr"] < 0.85 * union.solid_angle["sr"]
+
+    # And the *rendered* geometry (what render() actually draws, after the
+    # frame-relative morphological close) must still carry an interior ring —
+    # i.e. the hole was not welded shut.
+    from skyplothelper.geometry.compound import _cleanup_for_render
+    eps = _projector_for_axes(ax).render_close_eps
+    drawn = _cleanup_for_render(xor._geom.intersection(xor._frame_poly),
+                                close_eps=eps)
+    parts = (drawn.geoms if drawn.geom_type.startswith("Multi") else [drawn])
+    assert any(len(p.interiors) > 0 for p in parts), \
+        f"{proj}: xor hole welded shut by close_eps={eps}"
+    plt.close(fig)
+
+
 # --- FITS regression guard -------------------------------------------------
 
 def test_fits_path_unchanged_smoke():

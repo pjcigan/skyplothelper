@@ -1824,8 +1824,12 @@ class CompoundRegion:
         # ``buffer(0)`` first cleans LineString / point artifacts
         # by collapsing the GeometryCollection to a clean
         # MultiPolygon. This is render-only — does not mutate
-        # ``self._geom``.
-        geom = _cleanup_for_render(geom)
+        # ``self._geom``. The projector supplies the weld radius: 0.5 px
+        # for the FITS pixel frames, a frame-relative value for the
+        # radians-scale non-FITS frames (where a flat 0.5 would fill a
+        # genuine set-algebra hole, e.g. an ``xor`` lens).
+        geom = _cleanup_for_render(
+            geom, close_eps=getattr(self.projector, 'render_close_eps', 0.5))
         if geom.is_empty:
             return []
 
@@ -1925,7 +1929,8 @@ class CompoundRegion:
         # because Shapely returns ``None`` for ``GeometryCollection
         # .boundary``, and the raw boundary of a fragmented polygon
         # set includes seam edges between near-touching pieces.
-        geom = _cleanup_for_render(geom)
+        geom = _cleanup_for_render(
+            geom, close_eps=getattr(self.projector, 'render_close_eps', 0.5))
         if geom.is_empty:
             return []
 

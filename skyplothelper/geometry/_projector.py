@@ -238,6 +238,22 @@ class Projector:
         """
         return 0.5
 
+    @property
+    def render_close_eps(self) -> float:
+        """Morphological-close radius (in this backend's projected units)
+        used by :meth:`CompoundRegion.render` / ``render_boundary`` to weld
+        the sub-resolution seams that set algebra leaves where two
+        differently-densified edges cross.
+
+        Same scale story as :attr:`frame_edge_tolerance`: the default ``0.5``
+        is a sub-pixel weld tuned for the FITS pixel frames (hundreds of
+        pixels wide). On the radians-scale non-FITS frames (only a few units
+        across) ``0.5`` is ~10% of the whole map and would swallow genuine
+        interior holes — set-algebra results like an ``xor`` lens — so those
+        backends override it with a frame-relative value.
+        """
+        return 0.5
+
     def _project_xy(self, lons: npt.ArrayLike, lats: npt.ArrayLike) -> tuple[Any, Any]:
         """Project sphere ``(lon, lat)`` arrays to this backend's
         projected ``(x, y)`` coords — pixel space for matplotlib, canvas
@@ -1265,6 +1281,20 @@ class WCSNonFitsProjector(Projector):
         edge (the symptom: a compound region's outline goes missing on the
         side nearest the limb). ``diagonal × 1e-3`` reproduces the same
         *relative* sub-pixel suppression the FITS frames get from ``0.5``.
+        """
+        minx, miny, maxx, maxy = self._frame_polygon.bounds
+        return float(np.hypot(maxx - minx, maxy - miny)) * 1e-3
+
+    @property
+    def render_close_eps(self) -> float:
+        """Frame-relative morphological-close radius for
+        :meth:`CompoundRegion.render`.
+
+        Same radians-scale reasoning as :attr:`frame_edge_tolerance`: the base
+        ``0.5`` (a half-pixel weld on the FITS frames) is ~10% of this frame's
+        few-units span and would fill genuine set-algebra holes (an ``xor``
+        lens, a punched-out avoidance zone). ``diagonal × 1e-3`` matches the
+        *relative* sub-pixel weld the FITS frames get from ``0.5``.
         """
         minx, miny, maxx, maxy = self._frame_polygon.bounds
         return float(np.hypot(maxx - minx, maxy - miny)) * 1e-3

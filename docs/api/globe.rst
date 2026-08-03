@@ -99,10 +99,15 @@ Earth features & nightshade
    fetch_boundary_data
    prepare_earth_data
    plot_coastlines
+   plot_land
+   plot_lakes
+   plot_rivers
    plot_tectonic_plates
    plot_time_zones
    plot_boundaries_globe
    plot_boundaries_ortho
+   clip_to_land
+   clip_to_ocean
    pseudofits_from_image
    make_nightshade_blend
 

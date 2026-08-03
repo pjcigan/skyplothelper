@@ -49,6 +49,15 @@ multi-panel layouts), and `return_hdr=True` also returns the synthesized
 FITS header, handy when downstream code (reprojection, HEALPix rasterizing)
 needs the WCS itself.
 
+`lon_west=True` labels longitude the western way (e.g. `71°W` instead of
+`289°`) — a **label-only** convention flip for planetary maps. The data
+stays east-longitude internally and the map is **not** mirrored (that is
+`direction=`'s job, see {doc}`concepts`); only the tick labels change.
+{func}`~skyplothelper.lon_west_to_east` / {func}`~skyplothelper.lon_east_to_west`
+convert values between the two conventions. It is available on
+`make_wcs_frame`, {func}`~skyplothelper.make_globe_frame`, and
+{func}`~skyplothelper.make_planet_frame`.
+
 ```python
 # Galactic-frame Mollweide with a coarser grid, on an existing figure
 fig = plt.figure(figsize=(9, 5))
@@ -65,7 +74,7 @@ For the everyday cases, one call makes the figure and the frame together:
 | {func}`~skyplothelper.allsky_figure` | full-sky elliptical frame | returns `(fig, ax)`; `style=` applies a tick/label preset |
 | {func}`~skyplothelper.offset_figure` | tangent-plane field on a target | `center=` + `fov_deg=`; offset (relative) coordinates |
 | {func}`~skyplothelper.make_globe_frame` | orthographic celestial globe | see {doc}`globe` |
-| {func}`~skyplothelper.make_planet_frame` | Earth/planet globe, geographic convention | see {doc}`globe` |
+| {func}`~skyplothelper.make_planet_frame` | Earth/planet globe (default `SIN`) or a flat planet map via `projection=` (`'robinson'`, `'MOL'`, …); geographic convention | see {doc}`globe` |
 | {func}`~skyplothelper.make_cone_frame` | z–RA wedge (not a WCS frame) | see {doc}`cone` |
 | {func}`~skyplothelper.make_cartopy_frame` | cartopy GeoAxes | terrestrial maps with cartopy's feature stack |
 | {func}`~skyplothelper.projection_gallery` | grid of frames across projections | quick visual comparison |

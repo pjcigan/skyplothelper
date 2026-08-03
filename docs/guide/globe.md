@@ -176,21 +176,41 @@ The spherical-geodesy helpers underneath are general-purpose:
 ```
 *{doc}`Earth with surface features </features/earth-with-surface-features>` — code in the Feature Gallery.*
 
-**Vector features** — coastlines, tectonic plates, time zones — draw from
-small data files fetched once with
-{func}`~skyplothelper.fetch_boundary_data` (standard-library download; see
-{doc}`../installation`):
+**Vector features** — coastlines, filled land, lakes, rivers, tectonic
+plates, and time zones — draw from small data files fetched **once per
+environment** with {func}`~skyplothelper.prepare_earth_data` (Natural Earth
+via the optional `cartopy` extra, plus the Bird 2003 plate polygons; see
+{doc}`../installation`). They are not shipped with the package:
 
 ```python
-sph.fetch_boundary_data()        # one-time
+sph.prepare_earth_data()          # one-time; needs the cartopy extra + network
 sph.plot_coastlines(ax)
+sph.plot_land(ax, lakes=True)     # filled land, lakes punched out as holes
+sph.plot_rivers(ax)
 sph.plot_tectonic_plates(ax, color="tab:red")
 sph.plot_time_zones(ax)
 ```
 
+The **area** features ({func}`~skyplothelper.plot_land`,
+{func}`~skyplothelper.plot_lakes`, filled plates) fill through the same
+region machinery as {func}`~skyplothelper.add_spherical_polygon`, so they
+work on the flat all-sky projections and the custom Robinson/Eckert frames
+as well as on the globe. {func}`~skyplothelper.plot_tectonic_plates` takes
+`fill=True` for filled plates — one color, a categorical map, or a
+`values=`-driven **choropleth** (the general
+{func}`~skyplothelper.choropleth` helper does the same for any list of
+rings). {func}`~skyplothelper.clip_to_land` /
+{func}`~skyplothelper.clip_to_ocean` mask any artist — an image drape, a
+scatter — to the coastline.
+
+skyplothelper's Earth maps aim to make whole-globe views and simple
+planetary plots look good with little setup; for heavy terrestrial
+cartography (fine-resolution features, national borders, filled land/ocean
+at scale, GIS queries) reach for the cartopy backend below.
+
 ({func}`~skyplothelper.load_boundary_data` and
-{func}`~skyplothelper.prepare_earth_data` are the lower-level fetch/build
-helpers; {func}`~skyplothelper.plot_boundaries_globe` /
+{func}`~skyplothelper.fetch_boundary_data` are the lower-level load / mirror-
+download helpers; {func}`~skyplothelper.plot_boundaries_globe` /
 {func}`~skyplothelper.plot_boundaries_ortho` draw arbitrary boundary
 datasets, and {func}`~skyplothelper.split_segments` breaks polylines at
 the visibility horizon.)
@@ -263,8 +283,10 @@ when straight connectors would cut through the marked region.
 - **Tracks drawn through the planet** → raw matplotlib calls aren't
   hemisphere-aware; use the `plot_*_globe` family or mask with
   {func}`~skyplothelper.orthographic_visibility`.
-- **`plot_coastlines` complaining about missing data** → run
-  {func}`~skyplothelper.fetch_boundary_data` once per installation.
+- **`plot_coastlines` (or `plot_land` / `plot_tectonic_plates` / …)
+  complaining about missing data** → run
+  {func}`~skyplothelper.prepare_earth_data` once per environment to fetch
+  and cache the vector Earth data (needs the `cartopy` extra).
 - **Scale bar length looks wrong on another body** → pass the body so the
   radius lookup matches (`planet_radii` keys); a Mars km is not an Earth
   degree.

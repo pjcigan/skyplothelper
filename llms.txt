@@ -133,6 +133,20 @@ sph.add_spherical_polygon(ax, [150, 210, 210, 150],
 *Adjust:* edges follow great circles (geodesic='auto'); add_great_circle_band for a zone between two parallels of a great circle.
 *Worked example:* [Regions & Spherical Polygons](https://skyplothelper.readthedocs.io/en/latest/tutorials/regions.html)
 
+**Combine regions with set algebra, then fill / test / clip**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+reg = (sph.CompoundRegion(ax)
+       .add_circle(150, 20, radius_deg=25)
+       .subtract_circle(160, 20, radius_deg=10))
+reg.render(facecolor='C0', edgecolor='navy', alpha=0.4)
+inside = reg.contains_points(ra, dec)   # vectorized membership test
+```
+*Adjust:* add_/intersect_/subtract_/xor_circle build a shape; union / intersection / difference / symmetric_difference combine two CompoundRegions; reg.clip(artists) masks artists to the region; also from_points (hull), to_healpix_mask, solid_angle. Renders on flat, globe, and non-FITS frames.
+*Worked example:* [Regions & Spherical Polygons](https://skyplothelper.readthedocs.io/en/latest/tutorials/regions.html)
+
 **Constellation stick figures**
 
 ```python
@@ -228,6 +242,35 @@ bg = sph.reproject_rgb_map(hdu, out_hdr, shape_out=(ny, nx))
 ax.imshow(np.nan_to_num(bg), zorder=-10)
 ```
 *Adjust:* geo=True is essential — it gives the raster an east-right geographic WCS. reproject_rgb_map handles the RGB resample (needs the reproject extra). The same drape works on a make_globe_frame SKY globe with a celestial raster (geo=False).
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Draw Earth features (coastlines, filled land, plate boundaries)**
+
+```python
+import skyplothelper as sph
+# ONE-TIME fetch of the vector Earth data (needs the cartopy extra +
+# a network connection); run once per environment, then it's cached:
+# sph.prepare_earth_data()
+ax = sph.make_planet_frame(111, body='earth', center_LONdeg=0,
+                           center_LATdeg=20)
+sph.plot_land(ax, lakes=True)              # filled land, lakes cut out
+sph.plot_coastlines(ax, color='0.3', lw=0.5)
+sph.plot_tectonic_plates(ax, color='C3', lw=1.0)
+```
+*Adjust:* plot_tectonic_plates(fill=True, values={plate: number}) draws a plate choropleth; plot_lakes / plot_rivers add inland water; clip_to_land(ax, artist) / clip_to_ocean mask any artist to the coastline. Earth maps target good-looking whole-globe / simple views — reach for cartopy for heavy GIS work.
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Flat planet map (Robinson etc.) with longitude-West labels**
+
+```python
+import skyplothelper as sph
+ax = sph.make_planet_frame(111, body='earth', projection='robinson',
+                           lon_west=True)
+sph.plot_coastlines(ax, color='0.3', lw=0.5)
+# a flat world map; lon_west=True labels longitude as W/E (labels only —
+# the data stays east-longitude internally, map is unmirrored).
+```
+*Adjust:* projection= takes any non-SIN code (mollweide/eckert_iv/winkel_tripel/…) for a flat map; make_wcs_frame / make_globe_frame also take lon_west=. sph.lon_west_to_east / lon_east_to_west convert values.
 *Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
 
 **Rotation-axis rod on an orthographic globe**

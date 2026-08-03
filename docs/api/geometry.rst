@@ -49,6 +49,7 @@ on :func:`~skyplothelper.add_spherical_polygon`.
    add_frame_band
    add_lonlat_box
    tissot
+   choropleth
 
 Compound regions
 ----------------

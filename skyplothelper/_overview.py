@@ -197,6 +197,41 @@ RECIPES: tuple[Recipe, ...] = (
         "raster (geo=False).",
     ),
     Recipe(
+        "Draw Earth features (coastlines, filled land, plate boundaries)",
+        "globes",
+        ("make_planet_frame", "plot_land", "plot_coastlines",
+         "plot_tectonic_plates"),
+        "import skyplothelper as sph\n"
+        "# ONE-TIME fetch of the vector Earth data (needs the cartopy extra +\n"
+        "# a network connection); run once per environment, then it's cached:\n"
+        "# sph.prepare_earth_data()\n"
+        "ax = sph.make_planet_frame(111, body='earth', center_LONdeg=0,\n"
+        "                           center_LATdeg=20)\n"
+        "sph.plot_land(ax, lakes=True)              # filled land, lakes cut out\n"
+        "sph.plot_coastlines(ax, color='0.3', lw=0.5)\n"
+        "sph.plot_tectonic_plates(ax, color='C3', lw=1.0)",
+        "plot_tectonic_plates(fill=True, values={plate: number}) draws a plate "
+        "choropleth; plot_lakes / plot_rivers add inland water; "
+        "clip_to_land(ax, artist) / clip_to_ocean mask any artist to the "
+        "coastline. Earth maps target good-looking whole-globe / simple views — "
+        "reach for cartopy for heavy GIS work.",
+        see="globe_plots",
+    ),
+    Recipe(
+        "Flat planet map (Robinson etc.) with longitude-West labels",
+        "globes", ("make_planet_frame",),
+        "import skyplothelper as sph\n"
+        "ax = sph.make_planet_frame(111, body='earth', projection='robinson',\n"
+        "                           lon_west=True)\n"
+        "sph.plot_coastlines(ax, color='0.3', lw=0.5)\n"
+        "# a flat world map; lon_west=True labels longitude as W/E (labels only —\n"
+        "# the data stays east-longitude internally, map is unmirrored).",
+        "projection= takes any non-SIN code (mollweide/eckert_iv/winkel_tripel/…) "
+        "for a flat map; make_wcs_frame / make_globe_frame also take lon_west=. "
+        "sph.lon_west_to_east / lon_east_to_west convert values.",
+        see="globe_plots",
+    ),
+    Recipe(
         "Plot a sparse HEALPix map",
         "healpix", ("plot_healpix_sparse",),
         "import skyplothelper as sph\n"
@@ -321,6 +356,22 @@ RECIPES: tuple[Recipe, ...] = (
         "                          [-20, -20, 20, 20], facecolor='C0', alpha=0.2)",
         "edges follow great circles (geodesic='auto'); add_great_circle_band for "
         "a zone between two parallels of a great circle.",
+        see="regions",
+    ),
+    Recipe(
+        "Combine regions with set algebra, then fill / test / clip",
+        "overlays", ("make_wcs_frame", "CompoundRegion"),
+        "import skyplothelper as sph\n"
+        "ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)\n"
+        "reg = (sph.CompoundRegion(ax)\n"
+        "       .add_circle(150, 20, radius_deg=25)\n"
+        "       .subtract_circle(160, 20, radius_deg=10))\n"
+        "reg.render(facecolor='C0', edgecolor='navy', alpha=0.4)\n"
+        "inside = reg.contains_points(ra, dec)   # vectorized membership test",
+        "add_/intersect_/subtract_/xor_circle build a shape; union / intersection "
+        "/ difference / symmetric_difference combine two CompoundRegions; "
+        "reg.clip(artists) masks artists to the region; also from_points (hull), "
+        "to_healpix_mask, solid_angle. Renders on flat, globe, and non-FITS frames.",
         see="regions",
     ),
     Recipe(

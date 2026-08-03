@@ -61,9 +61,29 @@ references:
     title: "Natural Earth — coastlines, land, lakes, rivers, and time zones"
     year: 2024
     notes: >
-      Bundled Earth vector overlays (skyplothelper/data/coastlines.npz,
-      land.npz, lakes.npz, rivers.npz, and time_zones.npz) are derived from
-      Natural Earth, which is released into the public domain (no attribution
-      is required; it is credited here as good practice). Time zones were
-      donated to Natural Earth by International Mapping Associates, Inc.
+      The Earth vector overlays (coastlines.npz, land.npz, lakes.npz,
+      rivers.npz, and time_zones.npz) are NOT shipped with the package —
+      they are generated on demand into a local cache by
+      ``skyplothelper.prepare_earth_data()``, which downloads them from
+      Natural Earth. Natural Earth is released into the public domain (no
+      attribution is required; it is credited here as good practice). Time
+      zones were donated to Natural Earth by International Mapping
+      Associates, Inc.
     url: "https://www.naturalearthdata.com/"
+
+  - type: data
+    title: "PB2002 — global model of present-day plate boundaries"
+    authors:
+      - family-names: "Bird"
+        given-names: "Peter"
+    year: 2003
+    doi: "10.1029/2001GC000252"
+    notes: >
+      The tectonic-plate polygons and boundaries (tectonic_plates.npz,
+      used by ``plot_tectonic_plates``) are the PB2002 model of Bird
+      (2003), "An updated digital model of plate boundaries"
+      (Geochemistry, Geophysics, Geosystems, 4(3), 1027). Like the other
+      Earth data they are NOT shipped with the package; they are fetched on
+      demand by ``skyplothelper.prepare_earth_data()`` from the fraxen/
+      tectonicplates GeoJSON redistribution (public domain).
+    url: "https://github.com/fraxen/tectonicplates"

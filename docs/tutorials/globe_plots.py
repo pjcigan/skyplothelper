@@ -35,6 +35,19 @@
 # > planet textures) are large and ship outside the pip package, so they live in
 # > `examples/data/` locally; the committed notebook outputs show every figure, and
 # > the code is exactly what you'd run with the files in place.
+# >
+# > **Vector Earth features are fetched once, on demand.** The coastlines, land /
+# > lakes / rivers, tectonic plates, and time zones used in §7 are *not* bundled with
+# > the package — they download and cache locally the first time you use them. Run
+# > `sph.prepare_earth_data()` once per environment before using them; it needs the
+# > optional `cartopy` extra (for the Natural Earth layers) and a network connection.
+# >
+# > **Scope, stated honestly.** skyplothelper's Earth maps are an earnest effort to
+# > make whole-globe views and simple planetary plots look good with little setup —
+# > enough to orient a figure, drape a texture, or sketch station geography. For
+# > heavier terrestrial cartography — fine-resolution features, national borders,
+# > filled land/ocean at scale, or GIS-style feature queries — reach for
+# > [cartopy](https://scitools.org.uk/cartopy/); §8 shows the built-in bridge.
 #
 # ## Contents
 #
@@ -1190,23 +1203,36 @@ plt.show()
 # %% [markdown]
 # ## 7. Earth features without cartopy
 #
-# You don't need cartopy to draw Earth's coastlines, plate boundaries, or time
-# zones — skyplothelper ships lightweight vector versions that go straight onto a
-# planet frame:
+# You don't need cartopy to draw Earth's coastlines, land, rivers, plate
+# boundaries, or time zones — skyplothelper ships lightweight vector versions that
+# go straight onto a planet frame:
 #
 # - `plot_coastlines()` — continental outlines;
-# - `plot_tectonic_plates()` — plate boundaries;
-# - `plot_time_zones()` — the UTC-offset meridians.
+# - `plot_land()` — filled land (optionally `lakes=True` to punch lake holes);
+# - `plot_lakes()` / `plot_rivers()` — inland water;
+# - `plot_tectonic_plates()` — plate boundaries, or filled plates
+#   (`fill=True`, with a categorical / single / `values=`-choropleth color);
+# - `plot_time_zones()` — the UTC-offset meridians (or filled bands);
+# - `clip_to_land()` / `clip_to_ocean()` — mask any artist to the coastline.
 #
-# They draw from small data files prepared once per install with
-# `sph.prepare_earth_data()` (coastlines and time zones come from cartopy's
-# Natural Earth data; tectonic plates need only the standard library), or
-# `sph.fetch_boundary_data()` if you point it at a mirror. Under the hood
-# `plot_boundaries_globe()` / `plot_boundaries_ortho()` draw any boundary dataset,
-# and `split_segments()` breaks polylines at the visibility horizon so nothing
-# trails across the back of the globe.
+# These draw from the small vector data files fetched once by
+# `sph.prepare_earth_data()` (see the note at the top — Natural Earth for the
+# coastline/land/water/time-zone layers, Bird 2003 via fraxen for the plate
+# polygons), or `sph.fetch_boundary_data()` if you point it at a mirror. Under the
+# hood `plot_boundaries_globe()` / `plot_boundaries_ortho()` draw any boundary
+# dataset, and `split_segments()` breaks polylines at the visibility horizon so
+# nothing trails across the back of the globe. The fills route through the same
+# region machinery as `add_spherical_polygon` (§6 of the *Regions* tutorial), so
+# they work on the flat all-sky projections and the custom Robinson/Eckert frames
+# too, not just the globe.
 
 # %%
+# One-time setup: fetch the vector Earth data (coastlines / land / lakes / rivers
+# / tectonic plates / time zones) into the local cache. Run this once per
+# environment before the feature helpers below will find anything to draw. Needs
+# the optional `cartopy` extra (Natural Earth layers) and a network connection.
+# sph.prepare_earth_data()
+
 clon, clat, pole = sph.euler_to_fits_ortho(rotation=50, obliquity=23.44, perspective=8)
 fig = plt.figure(figsize=(13, 6.4))
 

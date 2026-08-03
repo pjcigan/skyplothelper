@@ -90,12 +90,17 @@ the region — the quick way to draw exclusion zones and avoidance masks.
 
 ### `stroke_color=` — legibility over imagery
 
-The band and box helpers ({func}`~skyplothelper.add_latitude_band`,
+The closed-region helpers — the band and box helpers
+({func}`~skyplothelper.add_latitude_band`,
 {func}`~skyplothelper.add_longitude_band`,
 {func}`~skyplothelper.add_great_circle_band`,
-{func}`~skyplothelper.add_lonlat_box`, {func}`~skyplothelper.add_frame_band`)
-take the package's usual `stroke_color=`/`stroke_lw=` pair, outlining their
-edges so a band stays readable across a bright background.
+{func}`~skyplothelper.add_lonlat_box`, {func}`~skyplothelper.add_frame_band`),
+the shape helpers ({func}`~skyplothelper.add_spherical_polygon`,
+{func}`~skyplothelper.add_geodesic_circle`, and the rectangle/ellipse
+family), {func}`~skyplothelper.tissot`, and
+{meth}`~skyplothelper.CompoundRegion.render` — take the package's usual
+`stroke_color=`/`stroke_lw=` pair, outlining their edges so a region stays
+readable across a bright background.
 
 ### Geodesic vs. linear edges
 
@@ -158,6 +163,17 @@ Beyond rendering, a region is a queryable object:
   shrink by an angular margin (buffer zones).
 - {meth}`~skyplothelper.CompoundRegion.complement` — invert the region;
   `is_empty` — sanity check after aggressive intersections.
+- {meth}`~skyplothelper.CompoundRegion.union` / `intersection` /
+  `difference` / `symmetric_difference` — combine two whole regions (as
+  opposed to the `add_`/`subtract_` shape verbs, which fold one shape in at
+  a time).
+- {meth}`~skyplothelper.CompoundRegion.clip` — mask arbitrary artists (an
+  image drape, a scatter) to the region; the Earth wrappers
+  {func}`~skyplothelper.clip_to_land` / {func}`~skyplothelper.clip_to_ocean`
+  are this applied to the coastline.
+- {meth}`~skyplothelper.CompoundRegion.from_points` (convex/concave hull of
+  a scatter) and {meth}`~skyplothelper.CompoundRegion.to_healpix_mask` /
+  `from_healpix_mask` bridge regions to point sets and HEALPix maps.
 - {meth}`~skyplothelper.CompoundRegion.render` fills the region and returns
   its artists — the fill `PathPatch`es *and* the boundary `Line2D`s — so a
   rendered region can be removed cleanly; {meth}`~skyplothelper.CompoundRegion.render_boundary`
@@ -170,7 +186,14 @@ for when several regions share a map; the survey-footprint catalog is
 discoverable via {func}`~skyplothelper.list_surveys` /
 {func}`~skyplothelper.survey_keys` ({doc}`overlays`).
 
-The same `CompoundRegion` works on the interactive backend: build it
+Regions (and all the layer-2 shape helpers) render on every frame family —
+the FITS all-sky and field projections, orthographic globes, and the
+custom non-FITS projections (Robinson, Eckert, Winkel Tripel, Kavrayskiy,
+McBryde). The projection seam and pole handling are shared across all of
+them, so a wrap-straddling shape or a polar cap fills correctly regardless
+of the frame.
+
+The same `CompoundRegion` also works on the interactive backend: build it
 against a plotly figure with `sphpl.make_compound_region(fig)` and render
 with `sphpl.add_compound_region(fig, region)` — holes render correctly
 there too. See {doc}`plotly`.

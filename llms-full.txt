@@ -133,6 +133,20 @@ sph.add_spherical_polygon(ax, [150, 210, 210, 150],
 *Adjust:* edges follow great circles (geodesic='auto'); add_great_circle_band for a zone between two parallels of a great circle.
 *Worked example:* [Regions & Spherical Polygons](https://skyplothelper.readthedocs.io/en/latest/tutorials/regions.html)
 
+**Combine regions with set algebra, then fill / test / clip**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=0)
+reg = (sph.CompoundRegion(ax)
+       .add_circle(150, 20, radius_deg=25)
+       .subtract_circle(160, 20, radius_deg=10))
+reg.render(facecolor='C0', edgecolor='navy', alpha=0.4)
+inside = reg.contains_points(ra, dec)   # vectorized membership test
+```
+*Adjust:* add_/intersect_/subtract_/xor_circle build a shape; union / intersection / difference / symmetric_difference combine two CompoundRegions; reg.clip(artists) masks artists to the region; also from_points (hull), to_healpix_mask, solid_angle. Renders on flat, globe, and non-FITS frames.
+*Worked example:* [Regions & Spherical Polygons](https://skyplothelper.readthedocs.io/en/latest/tutorials/regions.html)
+
 **Constellation stick figures**
 
 ```python
@@ -228,6 +242,35 @@ bg = sph.reproject_rgb_map(hdu, out_hdr, shape_out=(ny, nx))
 ax.imshow(np.nan_to_num(bg), zorder=-10)
 ```
 *Adjust:* geo=True is essential — it gives the raster an east-right geographic WCS. reproject_rgb_map handles the RGB resample (needs the reproject extra). The same drape works on a make_globe_frame SKY globe with a celestial raster (geo=False).
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Draw Earth features (coastlines, filled land, plate boundaries)**
+
+```python
+import skyplothelper as sph
+# ONE-TIME fetch of the vector Earth data (needs the cartopy extra +
+# a network connection); run once per environment, then it's cached:
+# sph.prepare_earth_data()
+ax = sph.make_planet_frame(111, body='earth', center_LONdeg=0,
+                           center_LATdeg=20)
+sph.plot_land(ax, lakes=True)              # filled land, lakes cut out
+sph.plot_coastlines(ax, color='0.3', lw=0.5)
+sph.plot_tectonic_plates(ax, color='C3', lw=1.0)
+```
+*Adjust:* plot_tectonic_plates(fill=True, values={plate: number}) draws a plate choropleth; plot_lakes / plot_rivers add inland water; clip_to_land(ax, artist) / clip_to_ocean mask any artist to the coastline. Earth maps target good-looking whole-globe / simple views — reach for cartopy for heavy GIS work.
+*Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
+
+**Flat planet map (Robinson etc.) with longitude-West labels**
+
+```python
+import skyplothelper as sph
+ax = sph.make_planet_frame(111, body='earth', projection='robinson',
+                           lon_west=True)
+sph.plot_coastlines(ax, color='0.3', lw=0.5)
+# a flat world map; lon_west=True labels longitude as W/E (labels only —
+# the data stays east-longitude internally, map is unmirrored).
+```
+*Adjust:* projection= takes any non-SIN code (mollweide/eckert_iv/winkel_tripel/…) for a flat map; make_wcs_frame / make_globe_frame also take lon_west=. sph.lon_west_to_east / lon_east_to_west convert values.
 *Worked example:* [Globe and Planet Plotting](https://skyplothelper.readthedocs.io/en/latest/tutorials/globe_plots.html)
 
 **Rotation-axis rod on an orthographic globe**
@@ -398,6 +441,9 @@ sph.set_theme('publication')      # or a dict of rcParam overrides
 - `make_planet_frame(subplot_number: 'Any' = 111, *, body: 'str' = 'earth', center_LONdeg: 'float' = 0.0, center_LATdeg: 'float' = 0.0, projection: 'str' = 'SIN', radesys: 'str | None' = None, lon_west: 'bool' = False, **kwargs: 'Any') -> 'Any'`
 - `pseudofits_from_image(input_path: 'str | os.PathLike[str] | npt.NDArray[Any]', fitsproj: 'str' = 'CAR', gmst_deg: 'float' = 0.0, geo: 'bool' = False) -> 'Any'`
 - `reproject_rgb_map(input_hdu: 'Any', *args: 'Any', **kwargs: 'Any') -> 'np.ndarray'`
+- `plot_land(ax: 'Any', resolution: 'str' = '110m', facecolor: 'Any' = '0.85', *, lakes: 'bool' = False, **kwargs: 'Any') -> 'list[Any]'`
+- `plot_coastlines(ax: 'Any', resolution: 'str' = '110m', wcs_mode: 'bool' = True, **kwargs: 'Any') -> 'list[Any]'`
+- `plot_tectonic_plates(ax: 'Any', wcs_mode: 'bool' = True, *, fill: 'bool' = False, cmap: 'Any' = None, facecolor: 'Any' = None, edgecolor: 'Any' = '0.3', alpha: 'float | None' = None, values: 'Any' = None, vmin: 'float | None' = None, vmax: 'float | None' = None, **kwargs: 'Any') -> 'Any'`
 - `plot_healpix_sparse(pixel_indices: 'npt.ArrayLike', values: 'npt.ArrayLike | None', nside: 'int', ax: 'Any' = None, nest: 'bool' = False, step: 'int' = 1, show_boundaries: 'bool' = False, boundary_color: 'str' = '0.5', boundary_lw: 'float' = 0.5, set_extent: 'bool' = True, padding_factor: 'float' = 1.5, cmap: 'Any' = 'viridis', vmin: 'float | None' = None, vmax: 'float | None' = None, backend: 'str' = 'patches', sampling: 'str' = 'canvas', interp: 'bool' = False, xyres_pix: 'tuple[int, int]' = (2000, 1000), blank_value: 'float' = nan, **patch_kwargs: 'Any') -> 'Any'`
 - `channel_map(cube: 'Any', *, header: 'pyfits.Header | None' = None, channels: 'int | Sequence[int] | None' = 9, every_N: 'int' = 1, average: 'int | None' = None, smooth: 'str | None' = None, smooth_width: 'int' = 3, trim_empty: 'bool' = False, order: 'str | None' = None, ncols: 'int' = 3, nrows: 'int | None' = None, start_panel: 'int' = 0, stretch: 'Any' = 'linear', vmin: 'float | None' = None, vmax: 'float | None' = None, plo: 'float' = 0.5, phi: 'float' = 99.8, norm: 'Any' = None, cmap: 'str' = 'sph.lagoon', wcs_panels: 'bool' = True, pad: 'float | None' = None, wspace: 'float | None' = None, hspace: 'float | None' = None, panel_facecolor: 'Any' = None, tick_direction: 'str' = 'in', tick_labelsize: 'float | None' = None, figsize: 'tuple[float, float] | None' = None, facecolor: 'str | None' = None, suptitle: 'str | None' = None, imshow_kwargs: 'dict[str, Any] | None' = None, ticks: 'str' = 'minimal', label_panel: 'Any' = 'lower left', coords: 'str' = 'sky', label: 'Any' = 'auto', label_unit: 'str | None' = None, restfreq: 'Any' = None, vsys: 'float | None' = None, label_fmt: 'str | None' = None, label_color: 'str' = 'white', label_fontsize: 'float' = 10.0, label_stroke_lw: 'float' = 2.0, label_stroke_color: 'str' = 'black', label_kwargs: 'dict[str, Any] | None' = None, colorbar: 'bool' = True, cbar_label: 'str | None' = None, cbar_pad: 'float' = 0.12, beam: 'bool' = False, beam_panel: 'Any' = 'lower right', beam_kwargs: 'dict[str, Any] | None' = None, scalebar: 'float | None' = None, scalebar_label: 'str | None' = None, scalebar_panel: 'Any' = 'lower right', scalebar_kwargs: 'dict[str, Any] | None' = None, moment0: 'bool' = False, moment0_panel: 'Any' = 'upper left', moment0_label: 'str | None' = 'moment 0', moment0_cmap: 'str | None' = None) -> 'ChannelMapResult'`
 - `DataCube(data: 'Any', header: 'pyfits.Header | None' = None) -> 'None'`
@@ -415,6 +461,7 @@ sph.set_theme('publication')      # or a dict of rcParam overrides
 - `add_reticle(ax: 'Any', coord: 'SkyCoord | tuple[float, float]', **kwargs: 'Any') -> 'Reticle'`
 - `add_geodesic_circle(ax: 'Any', lon: 'SkyCoord | float', lat: 'Any' = None, radius_deg: 'Any' = None, resolution: 'int' = 200, complement: 'bool' = False, clip: 'str' = 'auto', backend: 'str' = 'patch', **kwargs: 'Any') -> 'Any'`
 - `add_spherical_polygon(ax: 'Any', lons: 'SkyCoord | npt.ArrayLike', lats: 'Any' = None, resolution: 'int' = 100, geodesic: 'bool | str' = 'auto', geodesic_threshold: 'float' = 10.0, complement: 'bool' = False, clip: 'str' = 'auto', backend: 'str' = 'patch', min_piece_area: 'float | None' = None, **kwargs: 'Any') -> 'Any'`
+- `CompoundRegion(ax_or_projector: 'Any') -> 'None'`
 - `add_constellation_lines(ax: 'Any', data_file: 'str | None' = None, constellations: 'Iterable[str] | None' = None, rank_max: 'int | None' = None, color: 'Any' = '#C7A86A', lw: 'float' = 0.5, alpha: 'float' = 0.7, ls: 'str' = '-', zorder: 'int' = 2, stroke_color: 'Any' = None, stroke_lw: 'float' = 2.0, **kwargs: 'Any') -> 'list[Any]'`
 - `reproject_inset_axes(parent_ax: 'Any', rect: 'Any', wcs: 'Any' = None, projection: 'str' = 'TAN', center: 'SkyCoord | tuple[float, float] | None' = None, size: 'Any' = None, fig: 'Any' = None, npix: 'int' = 500, inherit_frame: 'bool' = True, direction: 'str' = 'inherit', transform: 'Any' = None, auto_fontsize: 'bool' = True, bg_color: 'Any' = None, tick_style: 'str' = 'auto', tick_rotation: 'Any' = 'tangent', **subplot_kw: 'Any') -> 'Any'`
 - `add_sizebar_asec(axin: 'Any', hdrin: 'Any', length_asec: 'float', label: 'str', **kwargs: 'Any') -> 'Any'`

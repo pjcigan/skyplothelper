@@ -74,3 +74,5 @@ Wrapping & rescaling
    wrap_center_pmrange
    map_to_newrange
    rescale_data_range
+   lon_east_to_west
+   lon_west_to_east

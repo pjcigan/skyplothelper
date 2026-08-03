@@ -89,6 +89,16 @@ ax = sph.make_planet_frame(111, center_LONdeg=-75, center_LATdeg=20)
 (The cartopy backend, {func}`~skyplothelper.make_cartopy_frame`, also
 defaults geographic, since cartopy is a mapping library.)
 
+**West vs. east longitude is a separate, label-only choice.** `direction=`
+decides which way the map is *drawn* (and can mirror it); `lon_west=True`
+only changes how the tick **labels** read — `71°W` instead of `289°` — for
+planetary maps that quote west longitude. The underlying data stays
+east-longitude and the map is not mirrored. It is available on
+`make_wcs_frame`, {func}`~skyplothelper.make_globe_frame`, and
+{func}`~skyplothelper.make_planet_frame`;
+{func}`~skyplothelper.lon_west_to_east` / {func}`~skyplothelper.lon_east_to_west`
+convert longitude values between the two conventions.
+
 ### Coordinate system: ICRS by default
 
 `frame='ICRS'` is the default sky frame; `'galactic'`, `'ecliptic'`, and

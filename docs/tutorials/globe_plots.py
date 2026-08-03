@@ -1259,6 +1259,59 @@ fig.tight_layout(rect=[0, 0, 1, 0.95])
 plt.show()
 
 # %% [markdown]
+# ### Filled features
+#
+# The features above are drawn as *lines* (matplotlib ``Line2D`` objects, via
+# ``ax.plot``); the same Earth data can also be drawn as **filled regions**. The
+# fills route through skyplothelper's region machinery (the engine behind
+# `add_spherical_polygon`), so they honor the projection seam on whatever frame
+# you give them:
+#
+# - **`plot_land(lakes=True)`** — filled continents with the lakes punched out as
+#   holes; `plot_lakes()` / `plot_rivers()` add inland water;
+# - **`plot_tectonic_plates(fill=True)`** — filled plates: a single color, a
+#   categorical map (panel b), or a `values=`-driven **choropleth**;
+# - **`clip_to_land()` / `clip_to_ocean()`** — mask *any* artist (an image drape,
+#   a data field) to the coastline, so an analysis shows only where it means
+#   something (panel c).
+#
+# Here we draw them on a flat, whole-world **Mollweide** map (`projection='MOL'`)
+# so every plate and coastline is visible at once — the same calls fill on the
+# SIN globe above, but a flat all-sky frame shows the whole surface in one view.
+
+# %%
+fig = plt.figure(figsize=(15, 5))
+
+# (a) A filled physical map: land (with lake holes), rivers, coastlines.
+ax = sph.make_planet_frame(131, body="earth", projection="MOL", center_LONdeg=0,
+                           grid=True, gridcolor="0.6", gridalpha=0.35)
+sph.plot_land(ax, lakes=True, facecolor="#cbb994")
+sph.plot_rivers(ax, color="#3a7bd5", lw=0.5)
+sph.plot_coastlines(ax, color=PAL["label"], lw=0.4)
+ax.set_title("(a) Filled land, lakes, rivers", fontsize=10)
+
+# (b) Tectonic plates as a filled categorical choropleth.
+ax = sph.make_planet_frame(132, body="earth", projection="MOL", center_LONdeg=0,
+                           grid=False)
+sph.plot_tectonic_plates(ax, fill=True, cmap="tab20", alpha=0.85, edgecolor="0.3")
+sph.plot_coastlines(ax, color=PAL["label"], lw=0.4)
+ax.set_title("(b) Tectonic plates, filled", fontsize=10)
+
+# (c) Mask a data field to the ocean with clip_to_ocean.
+ax = sph.make_planet_frame(133, body="earth", projection="MOL", center_LONdeg=0,
+                           grid=True, gridcolor="0.6", gridalpha=0.35)
+mesh = ax.pcolormesh(LONG, LATG, FIELD, transform=ax.get_transform("world"),
+                     cmap="magma", shading="auto", zorder=1)
+sph.clip_to_ocean(ax, mesh)
+sph.plot_coastlines(ax, color=PAL["label"], lw=0.4)
+ax.set_title("(c) A data field, clipped to ocean", fontsize=10)
+
+fig.suptitle("Filled Earth features — land/lakes/rivers, plate choropleth, "
+             "clip-to-coastline", fontsize=12)
+fig.tight_layout(rect=[0, 0, 1, 0.95])
+plt.show()
+
+# %% [markdown]
 # ## 8. The cartopy backend
 #
 # When you *do* want cartopy's full feature stack — land/ocean fills, national

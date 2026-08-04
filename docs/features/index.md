@@ -61,6 +61,7 @@ standalone-legend-blocks
 
 compound-region
 region-membership
+masking-data-to-a-region
 region-shapes
 survey-footprints
 tissot-indicatrices
@@ -82,6 +83,7 @@ layered-healpix-maps
 
 celestial-globe
 earth-with-surface-features
+filled-earth-features
 cartopy-support
 textured-planet
 nightshade
@@ -659,6 +661,24 @@ themes-at-a-glance
 :::
 
 :::{grid-item-card}
+:link: masking-data-to-a-region
+:link-type: doc
+:text-align: center
+
+```{image} /_static/features/masking-data-to-a-region-light.png
+:class: sph-plot plot-light dark-light
+:alt: Masking data to a region (light mode)
+```
+
+```{image} /_static/features/masking-data-to-a-region-dark.png
+:class: sph-plot plot-dark dark-light
+:alt: Masking data to a region (dark mode)
+```
+
+**Masking data to a region**
+:::
+
+:::{grid-item-card}
 :link: region-shapes
 :link-type: doc
 :text-align: center
@@ -832,6 +852,24 @@ themes-at-a-glance
 ```
 
 **Earth with surface features**
+:::
+
+:::{grid-item-card}
+:link: filled-earth-features
+:link-type: doc
+:text-align: center
+
+```{image} /_static/features/filled-earth-features-light.png
+:class: sph-plot plot-light dark-light
+:alt: Filled Earth features (light mode)
+```
+
+```{image} /_static/features/filled-earth-features-dark.png
+:class: sph-plot plot-dark dark-light
+:alt: Filled Earth features (dark mode)
+```
+
+**Filled Earth features**
 :::
 
 :::{grid-item-card}

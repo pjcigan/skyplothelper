@@ -913,6 +913,37 @@ ax.scatter(lon[inside], lat[inside], transform=tr, s=15, color="#d1495b",
 ax.legend(loc="lower right", fontsize=8)
 ```
 
+### Masking data to a region
+- guide: regions
+- api: CompoundRegion, clip_to_land, clip_to_ocean
+A region as a cookie-cutter: `clip()` masks any artist — an image, a data
+field, a scatter — to a region's shape, so data shows only where it falls
+*inside*. Here a smooth all-sky field is cut to a survey footprint (a box,
+minus the galactic plane, with a hole punched). This is the sky counterpart
+of the `clip_to_land` / `clip_to_ocean` helpers on Earth maps.
+
+```python
+import numpy as np
+import skyplothelper as sph
+
+# a smooth, large-scale all-sky field
+lon = np.linspace(0, 360, 480)
+lat = np.linspace(-90, 90, 240)
+LON, LAT = np.meshgrid(lon, lat)
+dlon = (LON - 150 + 180) % 360 - 180
+field = np.exp(-(dlon**2 + (LAT - 25)**2) / (2 * 45**2)) + 0.3 * np.cos(np.radians(LAT))
+
+fig, ax = sph.allsky_figure(projection="MOL", center=180)
+footprint = (sph.CompoundRegion(ax)
+             .add_lonlat_box(lat_min=-12, lat_max=70, lon_min=110, lon_max=260, frame="icrs")
+             .subtract_frame_band(-25, 25, frame="galactic")   # avoid the plane
+             .subtract_circle(180, 35, radius_deg=8))          # punch a hole
+mesh = ax.pcolormesh(LON, LAT, field, transform=ax.get_transform("world"),
+                     cmap="sph.deepsky", shading="gouraud")
+footprint.clip(mesh)                       # mask the field to the footprint shape
+footprint.render_boundary(color="white", linewidth=1.1)
+```
+
 ### Region shapes
 - guide: regions
 - api: add_rectangle, add_ellipse, add_annulus, add_latitude_band
@@ -1088,6 +1119,32 @@ fig = plt.figure(figsize=(4.6, 4.6))
 ax = sph.make_planet_frame(111, center_LONdeg=-30, center_LATdeg=25)
 sph.plot_coastlines(ax)
 sph.plot_tectonic_plates(ax, color="C3", lw=0.8)
+```
+
+### Filled Earth features
+- guide: globe
+- api: plot_tectonic_plates, plot_land, clip_to_ocean
+Beyond outlines, the Earth features also *fill*. `plot_tectonic_plates(fill=True)`
+draws a plate choropleth — here colored from the built-in dual-mode
+`REGION_PALETTE` — over a flat Mollweide world, with coastlines for reference.
+`plot_land(lakes=True)`, `plot_rivers`, and `clip_to_ocean` fill the other layers
+(see the Globe & Planet tutorial). The fills route through the same seam-aware
+region machinery as `add_spherical_polygon`.
+
+```python
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+
+import skyplothelper as sph
+
+# a discrete choropleth colormap from the built-in dual-mode region palette
+region_cmap = ListedColormap(sph.REGION_PALETTE)
+
+fig = plt.figure(figsize=(6.4, 3.4))
+ax = sph.make_planet_frame(111, projection="MOL", center_LONdeg=0,
+                           grid=True, gridcolor="0.55", gridalpha=0.3)
+sph.plot_tectonic_plates(ax, fill=True, cmap=region_cmap, alpha=0.9, edgecolor="0.2")
+sph.plot_coastlines(ax, color="0.15", lw=0.5)
 ```
 
 ### Cartopy support

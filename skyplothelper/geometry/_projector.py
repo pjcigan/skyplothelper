@@ -152,17 +152,30 @@ def _clip_polygon_to_hemisphere(
 
 
 def _despike_ring(pts: npt.NDArray[np.float64],
-                  tol: float = 1e-7) -> npt.NDArray[np.float64] | None:
+                  tol: float = 1e-7,
+                  uturn_dot: float = -0.999) -> npt.NDArray[np.float64] | None:
     """Remove degenerate spikes and duplicate points from a closed vertex ring.
 
     A polygon that *encloses a pole* (e.g. the North American tectonic plate)
     is stored as a ring cut up one meridian to the pole and back down the
     antimeridian. In unit-vector space ``±180°`` are the same point, so that cut
-    is a *palindromic retrace* — a zero-width spike that would otherwise be
-    drawn as a spurious 180° seam by any edge color. Peeling spikes (a vertex
-    whose neighbors coincide) collapses the retrace while leaving the ring still
-    enclosing the pole (the boundary just closes across the cut). Also drops
-    consecutive duplicates. Returns ``None`` if fewer than 3 vertices survive.
+    is an out-and-back *retrace* along one meridian — a zero-width excursion that
+    would otherwise be drawn as a spurious 180° seam by any edge color. Two peel
+    rules collapse it while leaving the ring still enclosing the pole (the
+    boundary just closes across the cut):
+
+    * **coincident-neighbor spike** — a vertex whose two neighbors coincide (a
+      symmetric retrace whose legs share vertices);
+    * **U-turn** — a vertex where the incoming and outgoing edges are nearly
+      antiparallel (``edge·edge < uturn_dot``, ~180° reversal). This catches the
+      *asymmetric* retrace the bundled plate data actually has (its up-leg jumps
+      straight to the pole in one edge while the down-leg steps back through an
+      intermediate latitude, so the pole tip's neighbors do *not* coincide). A
+      real boundary never reverses on itself to within ~2.5°, so only cut
+      artifacts are peeled.
+
+    Also drops consecutive duplicates. Returns ``None`` if fewer than 3 vertices
+    survive.
     """
     v = [p for i, p in enumerate(pts)
          if i == 0 or np.linalg.norm(p - pts[i - 1]) > tol]
@@ -171,7 +184,12 @@ def _despike_ring(pts: npt.NDArray[np.float64],
         changed = False
         i = 1
         while i < len(v) - 1:
-            if np.linalg.norm(v[i - 1] - v[i + 1]) < tol:   # spike tip
+            uturn = False
+            ein, eout = v[i] - v[i - 1], v[i + 1] - v[i]
+            ni, no = np.linalg.norm(ein), np.linalg.norm(eout)
+            if ni > 1e-12 and no > 1e-12:
+                uturn = float((ein / ni) @ (eout / no)) < uturn_dot
+            if np.linalg.norm(v[i - 1] - v[i + 1]) < tol or uturn:   # spike / U-turn
                 del v[i]
                 if i < len(v) and np.linalg.norm(v[i - 1] - v[i]) < tol:
                     del v[i]

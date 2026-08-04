@@ -64,16 +64,27 @@ def test_cap_crossing_limb_is_a_large_lune_not_a_chord(radius):
     plt.close(fig)
 
 
-def test_cap_enclosing_whole_visible_hemisphere_is_known_limitation():
-    """KNOWN LIMITATION: a cap larger than 90 deg centered on the near point
-    encloses the whole visible hemisphere, but its boundary ring is entirely
-    far-side (all-NaN), so there are no finite vertices to bridge and it
-    currently renders empty. (A robust fix would clip against the visible-
-    hemisphere domain — see the globe limb-fill notes.) Pinned so a future fix
-    that fills the disk flips this test deliberately."""
+@pytest.mark.parametrize("radius", [95, 110, 150, 179])
+def test_cap_enclosing_whole_visible_hemisphere_fills_disk(radius):
+    """A cap larger than 90 deg centered on the near point encloses the whole
+    visible hemisphere. Its boundary ring is entirely far-side (no limb
+    crossings), but the fill is the whole disk — the winding at the near point
+    (_encloses_direction) catches this and returns the frame silhouette."""
     fig, ax = _globe()
-    frac = _cap_frac(ax, 0, 0, 110)
-    assert frac < 0.02, frac
+    frac = _cap_frac(ax, 0, 0, radius)
+    assert frac > 0.97, f"radius={radius} frac={frac}"
+    plt.close(fig)
+
+
+@pytest.mark.parametrize("radius", [20, 40, 60])
+def test_far_side_cap_at_antipode_stays_empty(radius):
+    """The complement of the enclose case: a small cap centered on the *far*
+    point (the antipode of the globe center) is entirely on the back of the
+    globe and must render empty — the winding sign (~-2pi, antipode) keeps
+    _encloses_direction from wrongly filling the disk."""
+    fig, ax = _globe()
+    frac = _cap_frac(ax, 180, 0, radius)
+    assert frac < 0.02, f"radius={radius} frac={frac}"
     plt.close(fig)
 
 

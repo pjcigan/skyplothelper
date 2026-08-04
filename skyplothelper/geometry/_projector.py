@@ -114,9 +114,10 @@ def _clip_polygon_to_hemisphere(
     — it has no antipode singularity (the far side is simply clipped). A ring
     entirely on the far side (all ``p·center ≤ 0``) yields ``None``; a ring
     that crosses the limb is closed along the limb arc between its exit and
-    re-entry crossings. (A far-side ring that *encloses* the whole visible
-    hemisphere still yields ``None`` — all its vertices are clipped — which is
-    the one documented globe-fill limitation.)
+    re-entry crossings. A far-side ring that *encloses* the whole visible
+    hemisphere also yields ``None`` here (all its vertices are clipped); the
+    caller detects that case via :func:`_encloses_direction` and fills the whole
+    disk instead.
     """
     d = verts @ center
     n = len(verts)
@@ -178,6 +179,44 @@ def _despike_ring(pts: npt.NDArray[np.float64],
             else:
                 i += 1
     return np.asarray(v, dtype=float) if len(v) >= 3 else None
+
+
+def _encloses_direction(verts: npt.NDArray[np.float64],
+                        center: npt.NDArray[np.float64]) -> bool:
+    """True if the spherical polygon (unit-vector ring ``verts``) *encloses* the
+    ``center`` direction.
+
+    Used to catch the region that covers the **entire** visible hemisphere: its
+    whole boundary is on the far side, so :func:`_clip_polygon_to_hemisphere`
+    finds no limb crossings and returns ``None`` — but the visible fill is the
+    whole disk, not empty. Distinguish that from a plain far-side region (also
+    all-clipped, but genuinely invisible) by the *signed* winding at ``center``:
+    the sum of the signed tangent-plane angles each edge subtends there is ~0
+    when ``center`` is outside, and ~2pi in magnitude when the ``center`` *axis*
+    is enclosed. The tangent projection is antipodally symmetric, so a loop
+    around the far antipode reads the same magnitude but the *opposite sign*:
+    for a CCW exterior ring (the convention geodesic circles and the bundled
+    GeoJSON/plate rings follow) enclosing the near point gives +2pi and enclosing
+    the antipode gives -2pi. Requiring ``total > +pi`` therefore fills the whole
+    disk for a true hemisphere-enclosing region and never for a small far-side
+    cap. (A mis-oriented enclosing ring just renders empty, as before -- a
+    conservative miss, never a wrong fill.)
+    """
+    dots = verts @ center
+    t = verts - np.outer(dots, center)          # tangent-plane direction at center
+    norms = np.linalg.norm(t, axis=1)
+    good = norms > 1e-9
+    if int(good.sum()) < 3:
+        return False
+    t = t[good] / norms[good][:, None]
+    total = 0.0
+    n = len(t)
+    for i in range(n):
+        a, b = t[i], t[(i + 1) % n]
+        cross = float(center @ np.cross(a, b))
+        dot = float(np.clip(a @ b, -1.0, 1.0))
+        total += float(np.arctan2(cross, dot))
+    return total > np.pi                         # +2pi near point enclosed; -2pi antipode
 
 
 class Projector:
@@ -743,6 +782,12 @@ class Projector:
                             np.array([self._center_lat]))[0]
         clipped = _clip_polygon_to_hemisphere(verts, center)
         if clipped is None or len(clipped) < 3:
+            # No limb crossings: the region is either wholly on the far side
+            # (invisible → None) or it ENCLOSES the whole visible hemisphere, in
+            # which case the visible fill is the entire disk (the frame
+            # silhouette). Tell the two apart by the winding at the near point.
+            if _encloses_direction(verts, center):
+                return self.frame_polygon
             return None
         # unit vectors → (lon, lat); all now on the visible hemisphere, so
         # the backend projection returns finite coords.

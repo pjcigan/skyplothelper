@@ -686,8 +686,8 @@ for row, (label, draw, (c_mid, c_seam)) in enumerate(stress_rows):
         ax = sph.make_wcs_frame(gs[row, col], "AIT", center=center, fig=fig)
         draw(ax)
         ax.set_title(f"{label} — {tag}", fontsize=8)
-fig.suptitle("One clipper, every awkward case — left centered, right rotated onto the "
-             "seam (all clip='auto')", y=0.995)
+fig.suptitle("One clipper handles many challenging cases — left centered, right rotated "
+             "onto the seam (all clip='auto')", y=0.995)
 fig.tight_layout()
 
 # %% [markdown]
@@ -755,6 +755,57 @@ fig.tight_layout()
 # can equally be unioned, subtracted, or intersected here as
 # `add_polygon(lons, lats)` / `subtract_polygon(...)`.
 #
+# ### Combining whole regions
+#
+# Beyond combining simple shapes, you can also combine whole **arbitrarily complex
+# regions** — each an independently-built footprint — with the region-level
+# operators `union`, `intersection`, `difference`, and
+# `symmetric_difference`. This is how you can render "the sky where two surveys
+# overlap" (`A.intersection(B)`), "everything seen by at least one of them"
+# (`A.union(B)`), or "what is unique to exactly one or the other"
+# (`A.symmetric_difference(B)`). Both regions must live on the same frame; the
+# operation mutates the left region and returns it for chaining.
+#
+# This example also makes a second point: regions are **not limited to the FITS
+# all-sky frames**. They render on the non-FITS custom projections too — Robinson,
+# Eckert IV, Winkel Tripel, Kavrayskiy VII, McBryde — so the same set algebra (and
+# every `add_*` shape) works on a Robinson world map. Notice the symmetric
+# difference below correctly leaves the overlap as a **hole**.
+
+# %%
+fig = plt.figure(figsize=(14, 3.8))
+
+
+def _survey_A(ax):     # a two-part footprint (a wide field + a small satellite)
+    return (sph.CompoundRegion(ax).add_circle(138, 4, radius_deg=40)
+            .add_circle(150, 48, radius_deg=16))
+
+
+def _survey_B(ax):     # a second footprint, overlapping the first
+    return (sph.CompoundRegion(ax).add_circle(172, -4, radius_deg=40)
+            .add_circle(160, -50, radius_deg=16))
+
+
+r2r = [
+    ("A ∪ B — union", "union", "green"),
+    ("A ∩ B — intersection", "intersection", "gold"),
+    ("A − B — difference", "difference", "rust"),
+    ("A XOR B — symmetric diff.", "symmetric_difference", "blue"),
+]
+for i, (title, meth, colkey) in enumerate(r2r, start=1):
+    ax = sph.make_wcs_frame(141 + (i - 1), "robinson", center=155, fig=fig)
+    # faint reference outlines of the two input footprints
+    _survey_A(ax).render_boundary(color=RC["gray"], linewidth=0.7)
+    _survey_B(ax).render_boundary(color=RC["gray"], linewidth=0.7)
+    region = getattr(_survey_A(ax), meth)(_survey_B(ax))
+    region.render(facecolor=RC[colkey], alpha=0.6)
+    region.render_boundary(color=RC[colkey], linewidth=1.2)
+    ax.set_title(title, fontsize=9)
+fig.suptitle("Combining two whole footprints on a non-FITS Robinson map "
+             "(gray = the two inputs)", y=1.0)
+fig.tight_layout()
+
+# %% [markdown]
 # ### Complement, expand, and contract
 #
 # Three transformations act on the *accumulated* region rather than adding a shape:
@@ -1101,6 +1152,71 @@ print("a region minus itself is_empty:", nothing.is_empty)
 # > survey. The companion [Catalogs](catalogs.ipynb) tutorial builds on this for coordinate-frame
 # > handling and large catalogs. And for anything these queries don't cover, the
 # > region's underlying shapely geometry is available as `region.geometry`.
+
+# %% [markdown]
+# ### Masking data to a region
+#
+# `contains_points` gives you a boolean per source; sometimes you instead want to
+# *show* only what falls inside — mask an image, a scatter, a quiver field, or a
+# contour set to the region's shape. `region.clip(artist)` does exactly that: it
+# uses the finished region as a **cookie-cutter**, so the artist renders only where
+# it overlaps the region (`complement=True` masks to *outside* instead, for an
+# avoidance zone). It takes one artist or a list.
+#
+# > **A note on the word "clip".** This is a *different* operation from the `clip=`
+# > seam knob in §3. `clip=` controls how a region's **own outline** is split at the
+# > projection seam; `region.clip(artist)` uses a finished region to **mask other
+# > artists**. Same word, two unrelated jobs.
+#
+# This is the sky counterpart of `clip_to_land()` / `clip_to_ocean()` from the
+# [Globe & Planet](globe_plots.ipynb) tutorial — those are thin wrappers that build a
+# coastline region and call `.clip()` for you. Here the mask is a survey footprint or
+# an avoidance zone instead of a coastline; the mechanism is identical.
+
+# %%
+fig = plt.figure(figsize=(13, 5))
+
+# (a) Cookie-cut an all-sky data field to the survey footprint from above. The mesh
+#     is drawn over the whole sky, then clipped so only the footprint shows — holes
+#     and carved-out band included. (A smooth, large-scale field on a fine grid with
+#     shading='gouraud' keeps the mesh clean on the curved projection.)
+skylon = np.linspace(0, 360, 480)
+skylat = np.linspace(-90, 90, 240)
+SLON, SLAT = np.meshgrid(skylon, skylat)
+
+
+def _bump(lon0, lat0, width):                      # a broad gaussian blob on the sky
+    dlon = (SLON - lon0 + 180) % 360 - 180
+    return np.exp(-(dlon**2 + (SLAT - lat0)**2) / (2 * width**2))
+
+
+sky_field = _bump(150, 25, 45) + 0.8 * _bump(250, -20, 50) + 0.3 * np.cos(np.radians(SLAT))
+
+ax = sph.make_wcs_frame(121, "AIT", center=180, fig=fig)
+fp = (sph.CompoundRegion(ax)
+      .add_lonlat_box(lat_min=-12, lat_max=70, lon_min=110, lon_max=260, frame="icrs")
+      .subtract_frame_band(-25, 25, frame="galactic")
+      .subtract_circle(180, 35, radius_deg=8))
+mesh = ax.pcolormesh(SLON, SLAT, sky_field, transform=ax.get_transform("world"),
+                     cmap="sph.deepsky", shading="gouraud")
+fp.clip(mesh)                                     # <- mask the field to the footprint
+fp.render_boundary(color=PAL["label"], linewidth=1.2)
+ax.set_title("(a) a data field clipped to a survey footprint", fontsize=10)
+
+# (b) The complement: keep only the sources OUTSIDE a solar-avoidance zone.
+ax = sph.make_wcs_frame(122, "AIT", center=180, fig=fig)
+rng = np.random.default_rng(3)
+n = 1500
+ra = rng.uniform(0, 360, n)
+dec = np.degrees(np.arcsin(rng.uniform(-1, 1, n)))    # area-uniform on the sphere
+avoid = sph.CompoundRegion(ax).add_circle(180, 10, radius_deg=45)
+pts = ax.scatter(ra, dec, transform=ax.get_transform("world"), s=8, c=RC["green"])
+avoid.clip(pts, complement=True)                  # <- keep only points outside
+avoid.render_boundary(color=RC["rust"], linewidth=1.3)
+ax.set_title("(b) a scatter clipped to *outside* an avoidance zone", fontsize=10)
+
+fig.suptitle("region.clip() — a region as a cookie-cutter for other artists", y=1.0)
+fig.tight_layout()
 
 # %% [markdown]
 # ## 6. Planes and Tissot indicatrices

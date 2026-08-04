@@ -104,12 +104,13 @@ def choropleth(ax: Any, rings: Any, values: npt.ArrayLike, *,
             color: Any = missing_color
         else:
             color = cmap_obj(norm(val))
+        extra: dict[str, Any] = dict(kwargs)
+        if linewidth is not None:
+            extra['linewidth'] = linewidth
         add_spherical_polygon(
             ax, lons, lats, resolution=resolution, facecolor=color,
             edgecolor=edgecolor, alpha=alpha, zorder=zorder,
-            stroke_color=stroke_color, stroke_lw=stroke_lw,
-            **({} if linewidth is None else {'linewidth': linewidth}),
-            **kwargs)
+            stroke_color=stroke_color, stroke_lw=stroke_lw, **extra)
 
     sm = mcm.ScalarMappable(norm=norm, cmap=cmap_obj)
     sm.set_array(values)

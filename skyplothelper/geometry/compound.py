@@ -1537,17 +1537,20 @@ class CompoundRegion:
         if not isinstance(other, CompoundRegion):
             raise TypeError(
                 f"expected another CompoundRegion, got {type(other).__name__}")
-        a, b = self._geom, other._geom
-        a_empty = a is None or a.is_empty
-        b_empty = b is None or b.is_empty
-        if name == 'union':
-            g = b if a_empty else a if b_empty else a.union(b)
+        # Normalize each operand to None-if-empty so the branches below narrow
+        # cleanly (both for the reader and the type checker).
+        a = self._geom if (self._geom is not None
+                           and not self._geom.is_empty) else None
+        b = other._geom if (other._geom is not None
+                            and not other._geom.is_empty) else None
+        if a is not None and b is not None:
+            g = getattr(a, name)(b)          # union / intersection / … of both
         elif name == 'intersection':
-            g = None if (a_empty or b_empty) else a.intersection(b)
+            g = None                          # overlap with nothing is nothing
         elif name == 'difference':
-            g = None if a_empty else (a if b_empty else a.difference(b))
-        else:  # symmetric_difference
-            g = b if a_empty else a if b_empty else a.symmetric_difference(b)
+            g = a                             # a − nothing = a (None if a empty)
+        else:                                 # union / symmetric_difference
+            g = a if a is not None else b     # the one non-empty operand
         self._geom = g if (g is not None and not g.is_empty) else None
         return self
 
@@ -1606,10 +1609,15 @@ class CompoundRegion:
             The clip path (also applied to *artists*); apply to more artists
             with ``artist.set_clip_path(path, region.ax.transData)``.
         """
+        ax = self.ax
+        if ax is None:
+            raise TypeError(
+                "clip() requires a matplotlib-backed region (this region has no "
+                "axes — it was built on a non-matplotlib projector).")
         path = self.clip_path(complement=complement)
         seq = artists if isinstance(artists, (list, tuple)) else [artists]
         for art in seq:
-            art.set_clip_path(path, self.ax.transData)
+            art.set_clip_path(path, ax.transData)
         return path
 
     def expand(self, angle_deg: Any) -> CompoundRegion:

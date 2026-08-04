@@ -835,7 +835,7 @@ class Projector:
         return None if poly.is_empty else poly
 
     def render_region(self, geom: Any, *, complement: bool = False,
-                      min_area: float = 1.0, **style: Any) -> list[Any]:
+                      min_area: float | None = 1.0, **style: Any) -> list[Any]:
         """Render a projected shapely geometry to backend artists.
 
         The render half of the projector contract: takes the geometry

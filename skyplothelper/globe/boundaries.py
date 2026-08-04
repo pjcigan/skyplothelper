@@ -277,6 +277,17 @@ def _find_data_file(filename: str) -> str | None:
     return None
 
 
+def _require_data_file(filename: str) -> str:
+    """:func:`_find_data_file` but raise if the file is absent (so the path is
+    a plain ``str`` for ``np.load`` etc.)."""
+    path = _find_data_file(filename)
+    if path is None:
+        raise FileNotFoundError(
+            f"{filename} not found in the data search paths; run "
+            "skyplothelper.prepare_earth_data() to fetch it.")
+    return path
+
+
 def load_boundary_data(filename: str, key: str | None = None) -> np.ndarray:
     """
     Load boundary data from a .npz file.
@@ -463,6 +474,9 @@ def plot_boundaries_globe(ax: Any, data: npt.ArrayLike, wcs: Any = None,
             lats = np.array(new_lats)
 
         if hemisphere_only:
+            # hemisphere_only is only left True above when a WCS supplied a
+            # center (else it is flipped to False), so both are set here.
+            assert center_lon is not None and center_lat is not None
             vis = orthographic_visibility(lons, lats, center_lon, center_lat)
             lons = np.where(vis, lons, np.nan)
             lats = np.where(vis, lats, np.nan)
@@ -915,7 +929,7 @@ def _resolve_plate_values(values: Any, fname: str,
     become ``NaN`` (unfilled) — or an array with one value per plate ring.
     """
     if isinstance(values, dict):
-        d = np.load(_find_data_file(fname), allow_pickle=False)
+        d = np.load(_require_data_file(fname), allow_pickle=False)
         if 'plate_codes' not in d:
             raise FileNotFoundError(
                 "plot_tectonic_plates(values={...}) needs the plate code/name "
@@ -1046,7 +1060,7 @@ def plot_tectonic_plates(ax: Any, wcs_mode: bool = True, *,
         # bundled plate codes; fall back to per-ring if metadata is absent.
         cmap_obj = plt.get_cmap('tab20' if cmap is None else cmap)
         try:
-            meta = np.load(_find_data_file(fname), allow_pickle=False)
+            meta = np.load(_require_data_file(fname), allow_pickle=False)
             codes = [str(c) for c in meta['plate_codes']]
         except Exception:
             codes = [str(i) for i in range(len(rings))]
@@ -1299,7 +1313,7 @@ def prepare_earth_data(output_dir: str | None = None,
                 print(f"  {name.capitalize()} {res}: {n} polygons, "
                       f"{arr.shape[0]} points")
             out_path = os.path.join(output_dir, fname)
-            np.savez_compressed(out_path, **cast("dict[str, Any]", arrs))
+            np.savez_compressed(out_path, **arrs)
             print(f"  Saved: {out_path} ({os.path.getsize(out_path)/1024:.0f} KB)")
 
         if include_rivers:
@@ -1323,7 +1337,7 @@ def prepare_earth_data(output_dir: str | None = None,
                 print(f"  Rivers {res}: {len(segs)} segments, "
                       f"{arrs[f'rivers_{res}'].shape[0]} points")
             out_path = os.path.join(output_dir, 'rivers.npz')
-            np.savez_compressed(out_path, **cast("dict[str, Any]", arrs))
+            np.savez_compressed(out_path, **arrs)
             print(f"  Saved: {out_path} ({os.path.getsize(out_path)/1024:.0f} KB)")
 
     # -- Time zones (Natural Earth cultural, polygon geometries) ----------
@@ -1463,7 +1477,7 @@ def prepare_earth_data(output_dir: str | None = None,
             save_kw['plate_codes'] = np.array(plate_codes)
             save_kw['plate_names'] = np.array(plate_names)
         out_path = os.path.join(output_dir, 'tectonic_plates.npz')
-        np.savez_compressed(out_path, **cast("dict[str, Any]", save_kw))
+        np.savez_compressed(out_path, **save_kw)
         print(f"  Tectonic plates: {len(segments)} boundary segments, "
               f"{n_plates} plate polygons")
         print(f"  Saved: {out_path} ({os.path.getsize(out_path)/1024:.0f} KB)")

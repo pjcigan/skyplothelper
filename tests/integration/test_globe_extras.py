@@ -848,8 +848,12 @@ def test_plate_polygons_bundled_with_metadata():
     metadata (needed for fill + choropleth-by-plate)."""
     import numpy as np
 
-    from skyplothelper.globe.boundaries import _find_data_file
-    d = np.load(_find_data_file("tectonic_plates.npz"))
+    # _require_data_file raises a FileNotFoundError (pointing at
+    # prepare_earth_data) when the generate-on-demand file is absent, which the
+    # top-level conftest turns into a skip — rather than np.load(None) blowing up
+    # with a TypeError on a fresh checkout / CI without the data.
+    from skyplothelper.globe.boundaries import _require_data_file
+    d = np.load(_require_data_file("tectonic_plates.npz"))
     assert "plate_polygons" in d and "plate_codes" in d and "plate_names" in d
     assert int((np.asarray(d["plate_codes"]) == "PA").sum()) >= 2  # Pacific split
 

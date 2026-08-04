@@ -646,12 +646,16 @@ def test_plot_lakes_and_rivers_render():
     plt.close(fig)
 
 
-def test_fill_overlays_raise_on_nonfits_frame():
-    """Filling on a non-FITS projection (Robinson, ax.wcs is None) raises a
-    clear NotImplementedError -- the region fill needs a FITS WCS (G4)."""
+def test_fill_overlays_render_on_nonfits_frame():
+    """Filled geographic overlays render on the non-FITS custom projections
+    (Robinson/Eckert/…): each ring routes through add_spherical_polygon, which
+    the G4 projector unification made backend-agnostic, so the earlier FITS-only
+    guard is gone."""
+    from matplotlib.patches import PathPatch
     ax = make_planet_frame(111, projection="robinson")
-    with pytest.raises(NotImplementedError, match="non-FITS"):
-        plot_land(ax)
+    patches = plot_land(ax, facecolor="0.7")
+    assert patches
+    assert sum(isinstance(p, PathPatch) for p in ax.patches) >= 1
     plt.close(ax.figure)
 
 
@@ -827,10 +831,15 @@ def test_plot_land_lakes_hole_punch_smaller_than_land():
     plt.close(ax.figure)
 
 
-def test_plot_land_lakes_nonfits_raises():
+def test_plot_land_lakes_nonfits_renders():
+    """plot_land(lakes=True) renders on the non-FITS custom projections too
+    (Robinson/Eckert/…) — the land−lakes set-algebra runs through the same
+    region machinery, so the earlier FITS-only guard is gone."""
+    from matplotlib.patches import PathPatch
     ax = make_planet_frame(111, projection="robinson")
-    with pytest.raises(NotImplementedError):
-        plot_land(ax, lakes=True)
+    patches = plot_land(ax, lakes=True, facecolor="0.7")
+    assert sum(isinstance(p, PathPatch) for p in ax.patches) >= 1
+    assert patches
     plt.close(ax.figure)
 
 
@@ -864,10 +873,14 @@ def test_plot_tectonic_plates_fill_choropleth_returns_mappable():
     plt.close(ax.figure)
 
 
-def test_plot_tectonic_plates_fill_nonfits_raises():
+def test_plot_tectonic_plates_fill_nonfits_renders():
+    """Filled plates render on the non-FITS custom projections too — the fill
+    routes through the backend-agnostic region machinery (no FITS-WCS guard)."""
+    from matplotlib.patches import PathPatch
     ax = make_planet_frame(111, projection="robinson")
-    with pytest.raises(NotImplementedError):
-        plot_tectonic_plates(ax, fill=True)
+    patches = plot_tectonic_plates(ax, fill=True, alpha=0.6)
+    assert patches
+    assert sum(isinstance(p, PathPatch) for p in ax.patches) > 10
     plt.close(ax.figure)
 
 

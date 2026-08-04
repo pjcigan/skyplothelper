@@ -607,15 +607,10 @@ def fill_boundaries_globe(ax: Any, data: npt.ArrayLike,
     """
     from ..geometry.shapes import add_spherical_polygon
 
-    if getattr(ax, 'wcs', None) is None:
-        raise NotImplementedError(
-            "Filling geographic overlays on a non-FITS projection (Robinson, "
-            "Eckert, Winkel Tripel, ...) is not supported yet: the region fill "
-            "pipeline currently requires a FITS WCS. Use a FITS projection "
-            "(e.g. 'CAR', 'MOL', 'MER') for filled maps, or the default outline "
-            "rendering (non-FITS fill is planned via the region-projector "
-            "unification).")
-
+    # Each ring routes through add_spherical_polygon, which the G4 region-
+    # projector unification made backend-agnostic, so filled geographic overlays
+    # now work on the non-FITS custom projections (Robinson/Eckert/…) too — no
+    # FITS-WCS requirement.
     _pe = _stroke_path_effects(stroke_color, stroke_lw)
     if _pe is not None:
         kwargs.setdefault('path_effects', _pe)
@@ -699,8 +694,8 @@ def plot_land(ax: Any, resolution: str = '110m', facecolor: Any = '0.85', *,
     Parameters
     ----------
     ax : WCSAxes
-        A globe or flat planet frame on a FITS projection. (Non-FITS projections
-        like Robinson are not yet supported for fills.)
+        A globe or flat planet frame — any projection the region machinery
+        supports, including the non-FITS custom projections (Robinson/Eckert/…).
     resolution : str
         Data resolution. ``prepare_earth_data`` generates ``'110m'`` by default;
         pass finer resolutions there (or reach for cartopy for
@@ -715,8 +710,7 @@ def plot_land(ax: Any, resolution: str = '110m', facecolor: Any = '0.85', *,
         <skyplothelper.geometry.CompoundRegion.difference>`), so the holes are
         real geometry (correct under further clipping, membership tests, etc.),
         not just an over-painted patch. Default ``False`` (lakes filled as land,
-        matching the Natural Earth land product). Requires a FITS-projection
-        frame.
+        matching the Natural Earth land product).
     **kwargs
         Forwarded to :func:`fill_boundaries_globe` (or, with ``lakes=True``, to
         :meth:`CompoundRegion.render` — ``edgecolor`` / ``alpha`` / ``zorder`` /
@@ -731,12 +725,9 @@ def plot_land(ax: Any, resolution: str = '110m', facecolor: Any = '0.85', *,
         return fill_boundaries_globe(ax, data, facecolor=facecolor, **kwargs)
 
     # land − lakes: punch the lakes out as true holes via the region set-algebra
-    # (the region machinery dogfooded on real geographic data).
-    if getattr(ax, 'wcs', None) is None:
-        raise NotImplementedError(
-            "plot_land(lakes=True) needs a FITS-projection frame (ax.wcs is "
-            "None on non-FITS projections like Robinson). Use a FITS projection "
-            "(CAR/MOL/AIT/...) or a globe.")
+    # (the region machinery dogfooded on real geographic data). Works on every
+    # frame the region machinery supports — FITS all-sky, the SIN globe, and the
+    # non-FITS custom projections (Robinson/Eckert/…) — via _projector_for_axes.
     from ..geometry.compound import CompoundRegion
     lake_data = load_boundary_data('lakes.npz', key=f'lakes_{resolution}')
     # resolution=0: the bundled rings are already densified (as in
@@ -885,8 +876,8 @@ def clip_to_land(ax: Any, artists: Any = None, *,
     Parameters
     ----------
     ax : WCSAxes
-        A FITS-projection planet frame (non-FITS projections are not yet
-        supported — the projector needs a FITS WCS).
+        A planet frame — any projection the region machinery supports, including
+        the non-FITS custom projections (Robinson/Eckert/…).
     artists : Artist or list of Artist, optional
         Artist(s) to clip in place (e.g. the return of ``ax.scatter`` /
         ``ax.quiver`` / ``ax.imshow``). If omitted, nothing is clipped and only
@@ -977,9 +968,11 @@ def plot_tectonic_plates(ax: Any, wcs_mode: bool = True, *,
         If True, uses plot_boundaries_globe (fill always needs ``wcs_mode``).
     fill : bool
         If ``True``, fill the closed plate polygons instead of drawing the
-        boundary arcs. Requires a FITS-projection WCSAxes and the bundled plate
-        polygons (shipped in ``tectonic_plates.npz``; regenerate with
-        :func:`prepare_earth_data` if missing). Default ``False``.
+        boundary arcs. Fills on any projection the region machinery supports
+        (FITS all-sky, the SIN globe, and the non-FITS custom projections) and
+        needs the bundled plate polygons (shipped in ``tectonic_plates.npz``;
+        regenerate with :func:`prepare_earth_data` if missing). Default
+        ``False``.
     cmap : str or Colormap, optional
         Fill colormap. Default ``'tab20'`` (qualitative) for the categorical
         map, or ``'viridis'`` (sequential) when ``values=`` is given.

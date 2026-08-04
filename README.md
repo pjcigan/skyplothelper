@@ -279,7 +279,7 @@ genuinely appreciated. For now, cite the software via its repository and the inc
   author  = {Cigan, Phil},
   title   = {{skyplothelper}: astronomy visualization for matplotlib and astropy WCSAxes},
   year    = {2026},
-  version = {1.0.2},
+  version = {1.1.0},
   url     = {https://github.com/pjcigan/skyplothelper}
 }
 ```

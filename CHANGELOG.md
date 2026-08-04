@@ -4,6 +4,64 @@ All notable changes to skyplothelper are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0]
+
+This release extends the planet / geographic side of skyplothelper to reuse the
+same WCS and spherical-region machinery as the celestial tools: flat (non-globe)
+planet projections, filled geographic overlays, longitude-West labeling, and a
+set of region-machinery additions (region-to-region set algebra, region masking,
+non-FITS fills, and catalog / DS9 / CRTF interop). Every existing entry point is
+unchanged unless a new opt-in keyword is passed.
+
+### Added
+- **Flat planet frames.** `make_planet_frame(projection=...)` builds flat world
+  maps (plate carrée / Mollweide / Robinson / Eckert / …) that carry the full sph
+  machinery — lon/lat coordinate input, regions, overlays, baselines — not just
+  the SIN globe. `projection='SIN'` (the default) keeps the orthographic globe
+  unchanged.
+- **Filled geographic overlays.** `plot_land` (with `lakes=True` to punch lakes
+  out as true holes), `plot_lakes`, `plot_rivers`, and
+  `plot_tectonic_plates(fill=True)` — the plates as a single color, a categorical
+  map, or a `values=`-driven **choropleth**. `plot_time_zones` draws the
+  UTC-offset meridians. A general `choropleth` helper colors any list of rings by
+  value. The bundled 110 m Natural Earth / Bird (2003) plate data is fetched on
+  demand with `prepare_earth_data`.
+- **Region masking.** `CompoundRegion.clip(artists, complement=)` and
+  `clip_path()` mask any matplotlib artist (image, scatter, quiver, contour) to a
+  region's shape; `clip_to_land` / `clip_to_ocean` are the Earth-map conveniences.
+- **Region-to-region set algebra.** `CompoundRegion.union` / `intersection` /
+  `difference` / `symmetric_difference` combine two independently-built regions.
+- **More region construction + interop.** `CompoundRegion.from_points`
+  (convex / concave footprint from a scatter), `from_polygons` (batch),
+  `to_healpix_mask` / `from_healpix_mask`, `to_ds9` / `to_crtf` / `to_regions`
+  and `from_ds9` / `from_crtf` / `from_regions`, plus `centroid` / `bounds`
+  properties.
+- **Longitude-West labeling.** `lon_west=True` on the frame builders labels
+  longitude westward (e.g. `71°W`) — labels only; the underlying data and the map
+  orientation are unchanged. `lon_west_to_east` / `lon_east_to_west` converters
+  handle west-longitude input.
+- **Region fills on non-FITS projections.** The region fill / clip pipeline now
+  works on the custom Robinson / Eckert IV / Winkel Tripel / Kavrayskiy VII /
+  McBryde frames, not only FITS projections.
+- **Stroke on region shapes.** `stroke_color` / `stroke_lw` on the region shape
+  helpers and `CompoundRegion.render`, matching the other decoration helpers.
+- `make_globe_frame` / `make_planet_frame` accept `fig=` plus a subplot spec, so a
+  SIN globe drops cleanly into a multi-panel grid.
+
+### Fixed
+- **Filled regions on a globe** now clip to the visible hemisphere (a
+  cartopy-style domain clip) instead of chording across the disk or filling the
+  complement — a land mass, plate, or survey cap that spills past the limb fills
+  correctly. A region that encloses the whole visible hemisphere fills the whole
+  disk, and the ±180 meridian cut of a pole-enclosing region no longer draws a
+  spurious seam under an edge color.
+- Set-algebra holes (e.g. a symmetric difference) render correctly on the
+  radians-scale non-FITS frames instead of being welded shut by the render-time
+  seam cleanup.
+
+[1.1.0]: https://github.com/pjcigan/skyplothelper/releases/tag/v1.1.0
+
+
 ## [1.0.2]
 
 ### Fixed

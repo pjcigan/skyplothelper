@@ -403,6 +403,7 @@ from .ticks import (
 )
 from .visibility import (
     covisibility_circles,
+    covisibility_coverage,
     covisibility_duration_band,
     covisibility_region,
 )
@@ -456,7 +457,8 @@ __all__ = [
     # vector spherical harmonics
     "vsh_field", "vsh_shift_sources", "vsh_shift_frame", "VSH_PARAM_NAMES",
     # mutual sky visibility (co-visibility)
-    "covisibility_circles", "covisibility_region", "covisibility_duration_band",
+    "covisibility_circles", "covisibility_region", "covisibility_coverage",
+    "covisibility_duration_band",
     # ticks
     "format_ticklabels", "format_WCS_ticklabels", "format_mpl_ticklabels",
     "RAlabelformatter", "RAlabellist",

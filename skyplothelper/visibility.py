@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import itertools
 import warnings
+from collections import namedtuple
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from typing import Any
@@ -59,6 +60,7 @@ def _relaxed_iers() -> Iterator[None]:
 __all__ = [
     "covisibility_circles",
     "covisibility_region",
+    "covisibility_coverage",
     "covisibility_duration_band",
 ]
 
@@ -375,6 +377,110 @@ def covisibility_region(target: Any, stations: Any, time: Any = None, *,
                 pieces.append(inter)
         region._geom = unary_union(pieces).buffer(0) if pieces else None
     return region
+
+
+CoverageLayer = namedtuple("CoverageLayer", ["k", "region", "color", "artists"])
+
+
+def covisibility_coverage(target: Any, stations: Any, time: Any = None, *,
+                          mode: str = "exactly", el_min: Any = 15 * u.deg,
+                          min_k: int = 1, cmap: Any = "viridis",
+                          alpha: float = 0.55, label: bool = True,
+                          render: bool = True, **kwargs: Any,
+                          ) -> list["CoverageLayer"]:
+    """Co-visibility coverage as colored layers: the sky seen by ``k`` of the
+    ``N`` stations, for ``k = min_k … N``.
+
+    A convenience over :func:`covisibility_region` that builds and (by default)
+    draws one layer per coverage count, colored along *cmap*. Two layerings:
+
+    - ``mode='exactly'`` (default) — **disjoint** bands: the sky visible to
+      *exactly* k stations (``≥k`` minus ``≥k+1``). Reads as a coverage-count
+      choropleth ("seen by exactly 5, 4, 3, …").
+    - ``mode='atleast'`` — **nested** shells: the sky visible to *at least* k
+      stations (each a superset of the next). Useful for planning ("anywhere
+      ≥2 stations see is a valid baseline").
+
+    Parameters
+    ----------
+    target : WCSAxes, Projector, or plotly Figure
+        Where the layers are drawn / projected (as in :func:`covisibility_region`).
+    stations : dict or list
+        Station definitions — see :func:`covisibility_region`.
+    time : astropy.time.Time or str or datetime, optional
+        Observation instant; ``None`` (default) → current time.
+    mode : {'exactly', 'atleast'}
+        Disjoint exactly-k bands (default) or nested ≥k shells.
+    el_min : Quantity or float
+        Default minimum elevation (degrees).
+    min_k : int
+        Lowest coverage count to draw (default 1 → include single-station sky).
+    cmap : str or Colormap
+        Matplotlib colormap sampled across ``k = min_k … N`` (low k → low end).
+    alpha : float
+        Fill alpha for each layer (default 0.55).
+    label : bool
+        Annotate each layer with its ``k`` (``'≥k'`` in ``atleast`` mode) at a
+        point inside it. Skipped on non-FITS frames (no label anchor there).
+    render : bool
+        Draw the layers on *target* (matplotlib only). ``False`` returns the
+        regions without drawing.
+    **kwargs
+        Forwarded to :meth:`CompoundRegion.render` (e.g. ``edgecolor``).
+
+    Returns
+    -------
+    list of CoverageLayer
+        One ``CoverageLayer(k, region, color, artists)`` per coverage count
+        (``region.label`` is set; empty layers are included with no artists),
+        ordered by ascending ``k``.
+
+    Examples
+    --------
+    >>> layers = sph.covisibility_coverage(ax, stations)          # now, exactly-k
+    >>> layers = sph.covisibility_coverage(ax, stations, mode='atleast', min_k=2)
+    >>> {lay.k: round(lay.region.area_frac, 3) for lay in layers}  # coverage table
+    """
+    if mode not in ("exactly", "atleast"):
+        raise ValueError(f"mode must be 'exactly' or 'atleast', got {mode!r}")
+    if time is None:
+        time = Time.now()
+    n = len(_parse_stations(stations, el_min))
+    if n == 0:
+        return []
+    min_k = max(1, int(min_k))
+    ks = list(range(min_k, n + 1))
+
+    # "≥k" regions for every k we need (plus k=N+... implicitly empty). Built via
+    # covisibility_region so masks / min_stations semantics stay identical.
+    atleast = {k: covisibility_region(target, stations, time, el_min=el_min,
+                                      min_stations=k)
+               for k in range(min_k, n + 1)}
+
+    import matplotlib as mpl
+    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+    denom = max(len(ks) - 1, 1)
+
+    ax = getattr(atleast[min_k], "ax", None)
+    layers: list[CoverageLayer] = []
+    for i, k in enumerate(ks):
+        if mode == "atleast":
+            reg = atleast[k]
+            reg.label = f"≥{k}"
+        else:                                   # exactly k = ≥k minus ≥(k+1)
+            reg = atleast[k].difference(atleast[k + 1]) if k < n else atleast[k]
+            reg.label = f"{k}"
+        color = cmap_obj(i / denom)
+        artists: list[Any] = []
+        if render and ax is not None and not reg.is_empty:
+            artists = list(reg.render(facecolor=color, alpha=alpha,
+                                      zorder=2 + i, **kwargs))
+            if label and getattr(reg.projector, "wcs", None) is not None:
+                t = reg.annotate(ax, zorder=20 + i)
+                if t is not None:
+                    artists.append(t)
+        layers.append(CoverageLayer(k=k, region=reg, color=color, artists=artists))
+    return layers
 
 
 def _n_choose_k(n: int, k: int) -> int:

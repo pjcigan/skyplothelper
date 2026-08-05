@@ -225,3 +225,54 @@ def test_covisibility_region_sets_default_label():
     assert reg.label == "Co-visible"
     reg2 = sph.covisibility_region(_ax(), _NORTH, time=_T, min_stations=2)
     assert reg2.label == "Co-visible (≥2 of 3)"
+
+
+# --- covisibility_coverage (layered N-station plot) -------------------------
+
+def test_coverage_returns_one_layer_per_k():
+    layers = sph.covisibility_coverage(_ax(), _NORTH, time=_T, render=False)
+    assert [lay.k for lay in layers] == [1, 2, 3]
+
+
+def test_coverage_exactly_bands_tile_the_at_least_one_region():
+    """Sum of the disjoint exactly-k areas equals the >=1 area."""
+    layers = sph.covisibility_coverage(_ax(), _NORTH, time=_T, mode="exactly",
+                                       render=False)
+    total = sum(lay.region.area_frac for lay in layers)
+    at_least_1 = sph.covisibility_region(_ax(), _NORTH, time=_T,
+                                         min_stations=1).area_frac
+    assert total == pytest.approx(at_least_1, abs=1e-3)
+
+
+def test_coverage_atleast_is_monotone_decreasing():
+    layers = sph.covisibility_coverage(_ax(), _NORTH, time=_T, mode="atleast",
+                                       render=False)
+    fracs = [lay.region.area_frac for lay in layers]
+    assert all(a >= b - 1e-9 for a, b in zip(fracs, fracs[1:]))
+
+
+def test_coverage_labels_by_mode():
+    ex = sph.covisibility_coverage(_ax(), _NORTH, time=_T, mode="exactly",
+                                   render=False)
+    al = sph.covisibility_coverage(_ax(), _NORTH, time=_T, mode="atleast",
+                                   render=False)
+    assert [lay.region.label for lay in ex] == ["1", "2", "3"]
+    assert [lay.region.label for lay in al] == ["≥1", "≥2", "≥3"]
+
+
+def test_coverage_min_k_and_render_flag():
+    layers = sph.covisibility_coverage(_ax(), _NORTH, time=_T, min_k=2,
+                                       render=False)
+    assert [lay.k for lay in layers] == [2, 3]
+    assert all(lay.artists == [] for lay in layers)     # render=False -> no art
+
+
+def test_coverage_renders_artists():
+    layers = sph.covisibility_coverage(_ax(), _NORTH, time=_T, render=True)
+    # at least the low-k (non-empty) layers produced artists
+    assert any(len(lay.artists) > 0 for lay in layers)
+
+
+def test_coverage_bad_mode_raises():
+    with pytest.raises(ValueError):
+        sph.covisibility_coverage(_ax(), _NORTH, time=_T, mode="nope")

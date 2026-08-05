@@ -170,15 +170,23 @@ queryable {doc}`regions <regions>`:
 - {func}`~skyplothelper.covisibility_region` — the instantaneous mutual
   region for a target: all stations, or at least `min_stations=` of
   them, above `el_min=`.
+- {func}`~skyplothelper.covisibility_coverage` — the layered view: one
+  colored region per coverage count *k*, drawn and returned together. Either
+  disjoint **exactly-k** bands (a coverage-count choropleth, the default
+  `mode='exactly'`) or nested **≥k** shells (`mode='atleast'`, for "anywhere a
+  baseline can form"), optionally labeled with *k*.
 - {func}`~skyplothelper.covisibility_duration_band` — the declination
   band visible to the network for at least `min_hours=` per day —
   the long-exposure version of the same question.
 
 Because the results are `CompoundRegion`s, they render on either backend
 and answer membership queries (`contains_points`) — "which calibrators
-are co-visible right now" is a one-liner. For real observation planning
-(scheduling, slew, weather), these pair with the `obsplanning` package;
-this is the geometry layer.
+are co-visible right now" is a one-liner. `time` defaults to `None`, meaning
+the current instant, so the co-visible sky right now — or just its overall
+fraction (`region.area_frac` / `solid_angle`) — needs no `Time` object. Each
+region also carries a `label` (`'Co-visible'`) that `region.annotate(ax)` drops
+at a point inside it. For real observation planning (scheduling, slew,
+weather), these pair with the `obsplanning` package; this is the geometry layer.
 
 ## Pitfalls
 

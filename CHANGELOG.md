@@ -4,6 +4,37 @@ All notable changes to skyplothelper are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0]
+
+This release adds a world-coordinate way to set a frame's field of view,
+a few region-introspection conveniences, and a layered co-visibility plot.
+Every existing entry point is unchanged.
+
+### Added
+- **Set the view in degrees.** A skyplothelper frame is a WCS axes, so
+  `ax.set_xlim`/`set_ylim` take *pixels*. The new view helpers set the view in
+  world coordinates on any projection: `set_extent(ax, [lon0, lon1, lat0, lat1])`
+  (exact on rectilinear frames, a bounding box on curved ones), `zoom_to(ax, lon,
+  lat, pad=...)` (fit to a set of points, a `SkyCoord`, or a `CompoundRegion`),
+  `set_view(ax, center, fov)` (center + angular width), and `set_xlim` / `set_ylim`
+  shortcuts. Also available as `ax.sky_*` methods.
+- **`CompoundRegion` label & anchor.** `representative_point()` returns a
+  `(lon, lat)` guaranteed *inside* the region (a better label anchor than
+  `centroid`, which can fall in a hole); a `.label` attribute plus
+  `annotate(ax, text=None)` drops that name at the anchor in one call.
+- **Layered co-visibility coverage.** `covisibility_coverage(target, stations)`
+  builds and draws one colored region per coverage count *k* — disjoint
+  exactly-*k* bands (`mode='exactly'`, a coverage choropleth) or nested ≥*k*
+  shells (`mode='atleast'`), optionally labeled with *k*.
+
+### Changed
+- `covisibility_region` / `covisibility_circles` now default `time=None`,
+  meaning the current instant (`Time.now()`), so you can see the co-visible sky
+  — or its overall sky fraction — without constructing a `Time`.
+  `covisibility_region` also sets a default `.label` (`"Co-visible"`).
+
+[1.2.0]: https://github.com/pjcigan/skyplothelper/releases/tag/v1.2.0
+
 ## [1.1.0]
 
 This release extends the planet / geographic side of skyplothelper to reuse the

@@ -1,6 +1,6 @@
 # skyplothelper
 
-> Astronomy sky-plotting for Python (v1.1.0): WCS frames, all-sky maps, tilted globes, redshift (z-RA) wedges, spectral cubes + moment maps, HEALPix, and catalog plotting — matplotlib and plotly.
+> Astronomy sky-plotting for Python (v1.2.0): WCS frames, all-sky maps, tilted globes, redshift (z-RA) wedges, spectral cubes + moment maps, HEALPix, and catalog plotting — matplotlib and plotly.
 
 skyplothelper is **frame-first**: create a sky frame, then draw data and decorations onto its axes. In a Python session, `import skyplothelper as sph; sph.overview()` prints the orientation below and `sph.recipes('<keyword>')` prints these recipes.
 
@@ -157,6 +157,18 @@ sph.add_constellation_labels(ax)
 ```
 *Adjust:* add_constellation_boundaries for IAU borders; constellations=['Ori',...] to select.
 *Worked example:* [Constellations and Asterisms](https://skyplothelper.readthedocs.io/en/latest/tutorials/constellations.html)
+
+**Layered co-visibility: the sky seen by k of N ground stations**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=180)
+layers = sph.covisibility_coverage(ax, stations)  # time=None -> now
+# stations: {name: {'lat': deg, 'lon': deg, 'min_el': deg?}}; draws one
+# colored region per coverage count k (layers[i].region.area_frac, ...).
+```
+*Adjust:* mode='atleast' gives nested >=k shells (planning) vs the default 'exactly' disjoint choropleth; covisibility_region(..., min_stations=k) for one region; time defaults to now.
+*Worked example:* [Vector Fields & Sky Kinematics](https://skyplothelper.readthedocs.io/en/latest/tutorials/vector_fields.html)
 
 ### images
 
@@ -373,6 +385,17 @@ inset = sph.reproject_inset_axes(ax, [0.05, 0.05, 0.3, 0.3],
 *Adjust:* draws a magnified WCS panel; drape data/rasters onto `inset` as usual.
 *Worked example:* [Insets and Zoom Axes](https://skyplothelper.readthedocs.io/en/latest/tutorials/insets_and_zoom.html)
 
+**Zoom a built map to a lon/lat region (set the view in degrees)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'CAR', frame='ICRS', center=180)
+sph.set_extent(ax, [200, 260, -20, 20])  # [lon0,lon1,lat0,lat1] degrees
+# a WCSAxes zooms in PIXELS by default; these set the view in world coords.
+```
+*Adjust:* sph.zoom_to(ax, ra, dec, pad=2) frames a set of points (or a CompoundRegion); sph.set_view(ax, center=(lon,lat), fov=deg). Exact on rectilinear frames, a bounding box on curved ones.
+*Worked example:* [Insets and Zoom Axes](https://skyplothelper.readthedocs.io/en/latest/tutorials/insets_and_zoom.html)
+
 ### adjusting & legibility
 
 **Set the coordinate grid spacing & style**
@@ -471,6 +494,11 @@ sph.set_theme('publication')      # or a dict of rcParam overrides
 - `apply_frame_stroke(ax: 'Any', stroke_color: 'Any' = 'white', stroke_lw: 'float | None' = 1.6) -> 'None'`
 - `set_theme(theme: 'str | dict[str, Any]' = 'publication') -> 'None'`
 - `set_base_style(style: 'str | dict[str, Any]' = 'standard', specific_RCs: 'dict[str, Any] | None' = None) -> 'None'`
+- `set_extent(ax: 'Any', extent: 'Any', *, frame: 'str | None' = None, lon_west: 'bool' = False, pad: 'float' = 0.0) -> 'tuple[float, float, float, float]'`
+- `zoom_to(ax: 'Any', lon: 'SkyCoord | npt.ArrayLike', lat: 'npt.ArrayLike | None' = None, *, pad: 'float' = 5.0, frame: 'str | None' = None, lon_west: 'bool' = False) -> 'tuple[float, float, float, float]'`
+- `set_view(ax: 'Any', center: 'Any', fov: 'Any', *, frame: 'str | None' = None, lon_west: 'bool' = False, pad: 'float' = 0.0) -> 'tuple[float, float, float, float]'`
+- `covisibility_coverage(target: 'Any', stations: 'Any', time: 'Any' = None, *, mode: 'str' = 'exactly', el_min: 'Any' = <Quantity 15. deg>, min_k: 'int' = 1, cmap: 'Any' = 'viridis', alpha: 'float' = 0.55, label: 'bool' = True, render: 'bool' = True, **kwargs: 'Any') -> "list['CoverageLayer']"`
+- `covisibility_region(target: 'Any', stations: 'Any', time: 'Any' = None, *, el_min: 'Any' = <Quantity 15. deg>, min_stations: 'int | None' = None) -> 'Any'`
 
 ## Docs
 

@@ -53,7 +53,10 @@ def _bindings(tmp_path):
           "catalog": {"ra": rng.uniform(0, 360, n),
                       "dec": rng.uniform(-80, 80, n),
                       "mag": rng.uniform(5, 15, n),
-                      "flux": rng.uniform(1, 10, n)}}
+                      "flux": rng.uniform(1, 10, n)},
+          "stations": {"Mk": {"lat": 19.8, "lon": -155.5},
+                       "GBT": {"lat": 38.4, "lon": -79.8},
+                       "VLA": {"lat": 34.1, "lon": -107.6}}}
     try:
         import healpy as hp
         ns["pixel_indices"] = np.arange(hp.nside2npix(16))[::7]

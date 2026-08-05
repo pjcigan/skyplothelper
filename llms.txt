@@ -1,6 +1,6 @@
 # skyplothelper
 
-> Astronomy sky-plotting for Python (v1.1.0): WCS frames, all-sky maps, tilted globes, redshift (z-RA) wedges, spectral cubes + moment maps, HEALPix, and catalog plotting — matplotlib and plotly.
+> Astronomy sky-plotting for Python (v1.2.0): WCS frames, all-sky maps, tilted globes, redshift (z-RA) wedges, spectral cubes + moment maps, HEALPix, and catalog plotting — matplotlib and plotly.
 
 skyplothelper is **frame-first**: create a sky frame, then draw data and decorations onto its axes. In a Python session, `import skyplothelper as sph; sph.overview()` prints the orientation below and `sph.recipes('<keyword>')` prints these recipes.
 
@@ -157,6 +157,18 @@ sph.add_constellation_labels(ax)
 ```
 *Adjust:* add_constellation_boundaries for IAU borders; constellations=['Ori',...] to select.
 *Worked example:* [Constellations and Asterisms](https://skyplothelper.readthedocs.io/en/latest/tutorials/constellations.html)
+
+**Layered co-visibility: the sky seen by k of N ground stations**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=180)
+layers = sph.covisibility_coverage(ax, stations)  # time=None -> now
+# stations: {name: {'lat': deg, 'lon': deg, 'min_el': deg?}}; draws one
+# colored region per coverage count k (layers[i].region.area_frac, ...).
+```
+*Adjust:* mode='atleast' gives nested >=k shells (planning) vs the default 'exactly' disjoint choropleth; covisibility_region(..., min_stations=k) for one region; time defaults to now.
+*Worked example:* [Vector Fields & Sky Kinematics](https://skyplothelper.readthedocs.io/en/latest/tutorials/vector_fields.html)
 
 ### images
 
@@ -371,6 +383,17 @@ inset = sph.reproject_inset_axes(ax, [0.05, 0.05, 0.3, 0.3],
                                  size=20)   # 20 deg field
 ```
 *Adjust:* draws a magnified WCS panel; drape data/rasters onto `inset` as usual.
+*Worked example:* [Insets and Zoom Axes](https://skyplothelper.readthedocs.io/en/latest/tutorials/insets_and_zoom.html)
+
+**Zoom a built map to a lon/lat region (set the view in degrees)**
+
+```python
+import skyplothelper as sph
+ax = sph.make_wcs_frame(111, 'CAR', frame='ICRS', center=180)
+sph.set_extent(ax, [200, 260, -20, 20])  # [lon0,lon1,lat0,lat1] degrees
+# a WCSAxes zooms in PIXELS by default; these set the view in world coords.
+```
+*Adjust:* sph.zoom_to(ax, ra, dec, pad=2) frames a set of points (or a CompoundRegion); sph.set_view(ax, center=(lon,lat), fov=deg). Exact on rectilinear frames, a bounding box on curved ones.
 *Worked example:* [Insets and Zoom Axes](https://skyplothelper.readthedocs.io/en/latest/tutorials/insets_and_zoom.html)
 
 ### adjusting & legibility

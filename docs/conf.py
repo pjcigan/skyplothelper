@@ -212,7 +212,12 @@ if os.environ.get("READTHEDOCS") == "True":
         "json_url": "https://skyplothelper.readthedocs.io/en/latest/_static/switcher.json",
         "version_match": switcher_version,
     }
-    html_theme_options["show_version_warning_banner"] = True
+    # The theme's version-warning banner (separate from RTD Addons
+    # notifications) fired even on /en/stable/ and looped its "go to stable"
+    # link back to the same page, because version_match on the stable build
+    # doesn't resolve to the switcher's preferred "stable" slug. Disabled — the
+    # version switcher dropdown still navigates between stable/latest.
+    html_theme_options["show_version_warning_banner"] = False
     html_theme_options["navbar_end"] = [
         "version-switcher",
         "theme-switcher",

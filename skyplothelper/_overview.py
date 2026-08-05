@@ -459,6 +459,30 @@ RECIPES: tuple[Recipe, ...] = (
         "# then build frames/plots as usual; set_base_style('standard'|...) too.",
         see="styling",
     ),
+    Recipe(
+        "Zoom a built map to a lon/lat region (set the view in degrees)",
+        "insets", ("set_extent", "zoom_to", "set_view"),
+        "import skyplothelper as sph\n"
+        "ax = sph.make_wcs_frame(111, 'CAR', frame='ICRS', center=180)\n"
+        "sph.set_extent(ax, [200, 260, -20, 20])  # [lon0,lon1,lat0,lat1] degrees\n"
+        "# a WCSAxes zooms in PIXELS by default; these set the view in world coords.",
+        "sph.zoom_to(ax, ra, dec, pad=2) frames a set of points (or a "
+        "CompoundRegion); sph.set_view(ax, center=(lon,lat), fov=deg). Exact on "
+        "rectilinear frames, a bounding box on curved ones.",
+    ),
+    Recipe(
+        "Layered co-visibility: the sky seen by k of N ground stations",
+        "overlays", ("covisibility_coverage", "covisibility_region"),
+        "import skyplothelper as sph\n"
+        "ax = sph.make_wcs_frame(111, 'AIT', frame='ICRS', center=180)\n"
+        "layers = sph.covisibility_coverage(ax, stations)  # time=None -> now\n"
+        "# stations: {name: {'lat': deg, 'lon': deg, 'min_el': deg?}}; draws one\n"
+        "# colored region per coverage count k (layers[i].region.area_frac, ...).",
+        "mode='atleast' gives nested >=k shells (planning) vs the default "
+        "'exactly' disjoint choropleth; covisibility_region(..., min_stations=k) "
+        "for one region; time defaults to now.",
+        see="vector_fields",
+    ),
 )
 
 

@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from .geometry._parsing import _coords_or_arrays_deg
+from .geometry._parsing import _coords_or_arrays_deg, _resolve_sky_frame
 
 # Annotations are strings (PEP 563 / `from __future__ import annotations`),
 # so this import costs nothing at run time.
@@ -40,6 +40,7 @@ __all__ = [
     'scatter', 'plot', 'text', 'annotate', 'errorbar', 'fill',
     'fill_between', 'step',
     'contour', 'contourf', 'pcolormesh', 'tricontourf', 'hist2d',
+    'set_extent', 'set_xlim', 'set_ylim', 'zoom_to', 'set_view',
 ]
 
 # Verbs whose artists are a connected path, and so can streak across the map at
@@ -438,6 +439,253 @@ def hist2d(ax: Any, coords: SkyCoord | npt.ArrayLike, lat: npt.ArrayLike | None 
     return ax.hist2d(lon_a, lat_a, **_xy_kwargs(ax, kwargs))
 
 
+# --- view / limits --------------------------------------------------------
+#
+# A WCSAxes draws in PIXEL data coordinates, so matplotlib's own
+# ``ax.set_xlim`` / ``ax.set_ylim`` take pixels, not degrees — the same reason
+# ``ax.scatter`` needs the world transform. These wrappers set the *view* in
+# world (lon/lat) degrees instead. The subtlety is that on any curved
+# projection (MOL, AIT, a SIN globe, Robinson, an oblique/rotated WCS) a lon/lat
+# box is NOT a pixel rectangle: its meridians and parallels are curves, so the
+# four corners don't bound it. The robust primitive therefore samples the whole
+# *perimeter* of the requested box, projects every sample to pixels, and takes
+# the min/max pixel box. On a rectilinear frame (CAR / Mercator) that pixel box
+# IS the lon/lat box exactly; on a curved frame (MOL, AIT, a globe, oblique) it
+# is the bounding box of the projected region — so the view FRAMES the region
+# (showing a little extra near the corners) rather than cropping an exact box,
+# the same behavior as cartopy's set_extent off PlateCarree. Off-limb
+# (non-finite) samples on a globe are dropped.
+
+
+def _axes_world_to_pixel(ax: Any, lon: Any, lat: Any) -> tuple[np.ndarray, np.ndarray]:
+    """World (deg, axes frame) → pixel/data coords, via the same ``'world'``
+    transform the plotting verbs use (so it works on FITS and non-FITS frames
+    alike). Off-projection points come back non-finite for the caller to drop."""
+    lon = np.atleast_1d(np.asarray(lon, dtype=float))
+    lat = np.atleast_1d(np.asarray(lat, dtype=float))
+    disp = world_transform(ax).transform(np.column_stack([lon, lat]))
+    data = ax.transData.inverted().transform(disp)
+    return np.asarray(data[:, 0], float), np.asarray(data[:, 1], float)
+
+
+def _to_axes_frame(ax: Any, lon: Any, lat: Any, frame: str | None) -> tuple[Any, Any]:
+    """Convert degree arrays given in *frame* into the axes' own frame. A no-op
+    when *frame* is None or already matches the axes frame."""
+    if frame is None:
+        return lon, lat
+    src = _resolve_sky_frame(frame)
+    dst = _resolve_sky_frame(_axes_frame(ax))
+    if src == dst:
+        return lon, lat
+    import astropy.units as u
+    from astropy.coordinates import SkyCoord
+    c = SkyCoord(np.asarray(lon, float) * u.deg,
+                 np.asarray(lat, float) * u.deg, frame=src).transform_to(dst)
+    return c.spherical.lon.to_value(u.deg), c.spherical.lat.to_value(u.deg)
+
+
+def _short_lon_pair(a: float, b: float) -> tuple[float, float]:
+    """Two longitudes → ``(lon0, lon1)`` whose ``linspace`` sweeps the SHORTER
+    arc between them, so a box straddling 0°/360° (or given in °W) still traces
+    the small box the user meant rather than the long way around the sphere."""
+    a = float(a)
+    dl = ((float(b) - a + 180.0) % 360.0) - 180.0
+    return a, a + dl
+
+
+def _world_box_to_pixels(ax: Any, lon0: float, lon1: float, lat0: float,
+                         lat1: float, *, frame: str | None = None,
+                         samples: int = 181) -> tuple[float, float, float, float]:
+    """Perimeter-sample the lon/lat box → bounding ``(x0, x1, y0, y1)`` in pixels."""
+    lo = np.linspace(lon0, lon1, samples)
+    la = np.linspace(lat0, lat1, samples)
+    ones = np.ones(samples)
+    edge_lon = np.concatenate([lo, lo, lon0 * ones, lon1 * ones])
+    edge_lat = np.concatenate([lat0 * ones, lat1 * ones, la, la])
+    edge_lon, edge_lat = _to_axes_frame(ax, edge_lon, edge_lat, frame)
+    px, py = _axes_world_to_pixel(ax, edge_lon, edge_lat)
+    good = np.isfinite(px) & np.isfinite(py)
+    if not good.any():
+        raise ValueError(
+            "sph view: none of the requested lon/lat box projects to a finite "
+            "pixel on this frame — is the region entirely off the visible "
+            "hemisphere of a globe, or the frame not yet built?")
+    return (float(px[good].min()), float(px[good].max()),
+            float(py[good].min()), float(py[good].max()))
+
+
+def _apply_box(ax: Any, x0: float, x1: float, y0: float,
+               y1: float) -> tuple[float, float, float, float]:
+    """Set the pixel view window, preserving the frame's native orientation
+    (the east-left/right handedness lives in the world→display transform, not
+    in the pixel limits, so we never invert here)."""
+    ax.set_xlim(x0, x1)
+    ax.set_ylim(y0, y1)
+    return (x0, x1, y0, y1)
+
+
+def set_extent(ax: Any, extent: Any, *, frame: str | None = None,
+               lon_west: bool = False, pad: float = 0.0,
+               ) -> tuple[float, float, float, float]:
+    """Set the visible field of view to a lon/lat box, cartopy-style.
+
+    The world-coordinate answer to "zoom this WCS map to a region" (a WCS axes
+    otherwise takes ``set_xlim``/``set_ylim`` in *pixels*, not degrees). Frames
+    the region on **any** projection by sampling the box perimeter, not just its
+    corners (see the module note above): the pixel window is the lon/lat box
+    exactly on a rectilinear frame (CAR/Mercator) and its bounding box on a
+    curved one (MOL/AIT/globe/oblique) — so on curved frames it shows a little
+    beyond the box near the corners. Returns the pixel ``(x0, x1, y0, y1)`` set.
+
+    Parameters
+    ----------
+    ax : WCSAxes
+    extent : sequence of 4 floats
+        ``[lon_min, lon_max, lat_min, lat_max]`` in degrees. Longitudes are
+        east-positive unless *lon_west* is set; a box that crosses 0°/360° is
+        handled (the shorter arc between the two longitudes is used).
+    frame : str, optional
+        Frame the *extent* is given in (``'galactic'``, ``'icrs'``, …). Default
+        ``None`` — the axes' own frame. Converted to the axes frame for you.
+    lon_west : bool
+        Interpret the two longitudes as **west**-longitude (°W); they are run
+        through :func:`~skyplothelper.lon_west_to_east` before use. Pair with a
+        frame built with ``lon_west=True`` for a fully west-labeled regional map.
+    pad : float
+        Margin in **degrees** added on all sides before conversion (default 0).
+
+    Examples
+    --------
+    >>> sph.set_extent(ax, [-125, -66, 24, 50])           # continental US, °E
+    >>> sph.set_extent(ax, [125, 66, 24, 50], lon_west=True, pad=3)
+    >>> sph.set_extent(ax, [-10, 10, -5, 5], frame='galactic')  # galactic center
+    """
+    lon_a, lon_b, lat_a, lat_b = (float(v) for v in extent)
+    if lon_west:
+        from .projections.project import lon_west_to_east
+        lon_a = float(lon_west_to_east(lon_a))
+        lon_b = float(lon_west_to_east(lon_b))
+    lat0, lat1 = min(lat_a, lat_b), max(lat_a, lat_b)
+    lon0, lon1 = _short_lon_pair(lon_a, lon_b)
+    if pad:
+        lat0 = max(-90.0, lat0 - pad)
+        lat1 = min(90.0, lat1 + pad)
+        s = np.sign(lon1 - lon0) or 1.0
+        lon0 -= s * pad
+        lon1 += s * pad
+    return _apply_box(ax, *_world_box_to_pixels(ax, lon0, lon1, lat0, lat1,
+                                                frame=frame))
+
+
+def set_xlim(ax: Any, lon0: float, lon1: float, *, frame: str | None = None,
+             lon_west: bool = False, pad: float = 0.0) -> tuple[float, float]:
+    """Set the longitude range of the view (leaving the latitude range as is).
+
+    A convenience for the common cylindrical (plate-carrée / ``CAR``) case,
+    where a longitude range maps to a fixed pixel-x range. On a curved
+    projection the x-extent of a meridian varies with latitude, so this samples
+    at the current center latitude — exact on ``CAR``, approximate elsewhere;
+    prefer :func:`set_extent` there. Returns the pixel ``(x0, x1)`` it set.
+    """
+    from .wcs_frame import _get_wcs_center_lat
+    if lon_west:
+        from .projections.project import lon_west_to_east
+        lon0 = float(lon_west_to_east(lon0))
+        lon1 = float(lon_west_to_east(lon1))
+    lon0, lon1 = _short_lon_pair(lon0, lon1)
+    if pad:
+        s = np.sign(lon1 - lon0) or 1.0
+        lon0 -= s * pad
+        lon1 += s * pad
+    clat = float(_get_wcs_center_lat(ax))
+    px, _ = _axes_world_to_pixel(ax, [lon0, lon1], [clat, clat])
+    x0, x1 = float(np.nanmin(px)), float(np.nanmax(px))
+    ax.set_xlim(x0, x1)
+    return (x0, x1)
+
+
+def set_ylim(ax: Any, lat0: float, lat1: float, *,
+             pad: float = 0.0) -> tuple[float, float]:
+    """Set the latitude range of the view (leaving the longitude range as is).
+
+    The latitude companion to :func:`set_xlim`; samples at the current center
+    longitude. Exact on ``CAR``, approximate on curved projections (prefer
+    :func:`set_extent`). Returns the pixel ``(y0, y1)`` it set.
+    """
+    from .wcs_frame import _get_wcs_center_lon
+    lat0, lat1 = min(lat0, lat1), max(lat0, lat1)
+    if pad:
+        lat0 = max(-90.0, lat0 - pad)
+        lat1 = min(90.0, lat1 + pad)
+    clon = float(_get_wcs_center_lon(ax))
+    _, py = _axes_world_to_pixel(ax, [clon, clon], [lat0, lat1])
+    y0, y1 = float(np.nanmin(py)), float(np.nanmax(py))
+    ax.set_ylim(y0, y1)
+    return (y0, y1)
+
+
+def zoom_to(ax: Any, lon: SkyCoord | npt.ArrayLike, lat: npt.ArrayLike | None = None,
+            *, pad: float = 5.0, frame: str | None = None,
+            lon_west: bool = False) -> tuple[float, float, float, float]:
+    """Frame the view around a set of points (autoscale-to-content).
+
+    Fits the field of view to the bounding box of *lon*/*lat* (or a SkyCoord)
+    with a *degree* margin — "show me all these things with a little room". The
+    longitude bounding box is computed with wrap handling, so a cluster
+    straddling 0°/360° still frames tightly. Returns the pixel box it set.
+
+    Examples
+    --------
+    >>> sph.zoom_to(ax, ra, dec, pad=2)             # frame a catalog +2 deg
+    >>> sph.zoom_to(ax, site_skycoords, pad=5)      # frame observatories
+    """
+    if hasattr(lon, 'transform_to'):                 # SkyCoord → axes frame
+        lon_d, lat_d = _resolve(ax, lon, None, None, 'sph.zoom_to')
+        box_frame = None
+    else:
+        lon_d = np.atleast_1d(np.asarray(lon, dtype=float))
+        lat_d = np.atleast_1d(np.asarray(lat, dtype=float))
+        box_frame = frame
+    if lon_west:
+        from .projections.project import lon_west_to_east
+        lon_d = np.atleast_1d(lon_west_to_east(lon_d))
+    ref = float(lon_d[0])                             # unwrap around 1st point
+    lon_un = ref + (((lon_d - ref + 180.0) % 360.0) - 180.0)
+    return set_extent(ax, [float(lon_un.min()), float(lon_un.max()),
+                           float(np.min(lat_d)), float(np.max(lat_d))],
+                      frame=box_frame, pad=pad)
+
+
+def set_view(ax: Any, center: Any, fov: Any, *, frame: str | None = None,
+             lon_west: bool = False, pad: float = 0.0,
+             ) -> tuple[float, float, float, float]:
+    """Set the view to a *center* at a chosen angular *field of view*.
+
+    The post-construction analog of a frame's ``center`` + ``fov_deg``.
+    *center* is ``(lon, lat)`` (or a lone longitude, keeping the frame's center
+    latitude); *fov* is a scalar full-width in degrees or ``(dlon, dlat)``.
+    Returns the pixel box it set.
+
+    Examples
+    --------
+    >>> sph.set_view(ax, (-105, 35), 40)             # 40 deg wide about NM
+    >>> sph.set_view(ax, (266.4, -29.0), (12, 8))    # galactic center field
+    """
+    if np.ndim(center) == 0:
+        from .wcs_frame import _get_wcs_center_lat
+        clon = float(center)
+        clat = float(_get_wcs_center_lat(ax))
+    else:
+        clon, clat = float(center[0]), float(center[1])
+    if np.ndim(fov) == 0:
+        dlon = dlat = float(fov)
+    else:
+        dlon, dlat = float(fov[0]), float(fov[1])
+    return set_extent(ax, [clon - dlon / 2.0, clon + dlon / 2.0,
+                           clat - dlat / 2.0, clat + dlat / 2.0],
+                      frame=frame, lon_west=lon_west, pad=pad)
+
+
 # --- ax.sky_* methods -----------------------------------------------------
 
 # Attached ONLY to axes skyplothelper builds. Deliberately not monkeypatched
@@ -446,7 +694,8 @@ def hist2d(ax: Any, coords: SkyCoord | npt.ArrayLike, lat: npt.ArrayLike | None 
 # — these are bound references to them, so the two spellings cannot drift.
 _METHOD_VERBS = ('scatter', 'plot', 'step', 'fill', 'fill_between',
                  'errorbar', 'text', 'annotate', 'contour', 'contourf',
-                 'pcolormesh', 'tricontourf', 'hist2d')
+                 'pcolormesh', 'tricontourf', 'hist2d',
+                 'set_extent', 'set_xlim', 'set_ylim', 'zoom_to', 'set_view')
 
 
 def _attach_sky_methods(ax: Any) -> Any:

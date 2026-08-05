@@ -253,3 +253,145 @@ def test_to_lonlat_misuse_raises():
         sph.to_lonlat(SkyCoord([1.0], [2.0], unit="deg"), [3.0])
     with pytest.raises(TypeError):
         sph.to_lonlat([1.0, 2.0])
+
+
+# ---- view / limits API (set_extent, set_xlim/ylim, zoom_to, set_view) ----
+
+from skyplothelper.plotting import _short_lon_pair  # noqa: E402
+
+
+def _car(center_lon=0.0, center_lat=0.0, npix=720):
+    """A flat plate-carree planet frame (FITS CAR) with a real WCS."""
+    ax = sph.make_planet_frame(111, body="earth", projection="CAR",
+                               center_LONdeg=center_lon, center_LATdeg=center_lat,
+                               npix=npix, grid=False)
+    ax.figure.canvas.draw()
+    return ax
+
+
+def _pixel_of(ax, lon, lat):
+    """World (deg) -> pixel/data coords via the standard WCSAxes world path.
+
+    Independent of the implementation under test: the documented idiom is the
+    'world' transform (world->display) composed with transData^-1 (display->
+    pixel). Used to check that a point lands inside/outside the view window.
+    """
+    disp = ax.get_transform("world").transform([[lon, lat]])
+    return ax.transData.inverted().transform(disp)[0]
+
+
+def _in_view(ax, lon, lat):
+    x, y = _pixel_of(ax, lon, lat)
+    (x0, x1), (y0, y1) = sorted(ax.get_xlim()), sorted(ax.get_ylim())
+    return x0 <= x <= x1 and y0 <= y <= y1
+
+
+def test_short_lon_pair_takes_the_shorter_arc():
+    # a 20-deg box straddling 180 must sweep 20 deg, not 340
+    a, b = _short_lon_pair(170.0, 190.0)
+    assert b - a == pytest.approx(20.0)
+    a, b = _short_lon_pair(170.0, -170.0)   # -170 == 190
+    assert b - a == pytest.approx(20.0)
+    # west-longitude box [160 W, 60 W] -> east [200, 300], a 100-deg span
+    a, b = _short_lon_pair(200.0, 300.0)
+    assert b - a == pytest.approx(100.0)
+
+
+def test_set_extent_frames_the_box_on_car():
+    ax = _car()
+    box = sph.set_extent(ax, [-40, 20, -10, 30])
+    assert len(box) == 4
+    assert ax.get_xlim()[0] < ax.get_xlim()[1]
+    assert ax.get_ylim()[0] < ax.get_ylim()[1]
+    # a point inside the box is in view; a far-away point is not
+    assert _in_view(ax, -10, 10)
+    assert not _in_view(ax, 150, -60)
+    # the view is a genuine crop, not the whole 720-px frame
+    assert (ax.get_xlim()[1] - ax.get_xlim()[0]) < 700
+
+
+def test_set_extent_lon_west_matches_east():
+    box_e = sph.set_extent(_car(), [-125, -66, 24, 50])
+    box_w = sph.set_extent(_car(), [125, 66, 24, 50], lon_west=True)
+    assert np.allclose(box_e, box_w, atol=1.0)
+
+
+def test_set_extent_pad_widens_the_window():
+    tight = sph.set_extent(_car(), [-20, 20, -10, 10])
+    padded = sph.set_extent(_car(), [-20, 20, -10, 10], pad=8)
+    assert (padded[1] - padded[0]) > (tight[1] - tight[0])
+    assert (padded[3] - padded[2]) > (tight[3] - tight[2])
+
+
+def test_set_xlim_set_ylim_exact_on_car():
+    ax = _car()
+    x0, x1 = sph.set_xlim(ax, -30, 30)
+    # on CAR the meridians -30/+30 map exactly to the x-limits (to <1 px)
+    px = sorted(_pixel_of(ax, lon, 0)[0] for lon in (-30, 30))
+    assert min(x0, x1) == pytest.approx(px[0], abs=1.0)
+    assert max(x0, x1) == pytest.approx(px[1], abs=1.0)
+    y0, y1 = sph.set_ylim(ax, -15, 45)
+    py = sorted(_pixel_of(ax, 0, lat)[1] for lat in (-15, 45))
+    assert min(y0, y1) == pytest.approx(py[0], abs=1.0)
+    assert max(y0, y1) == pytest.approx(py[1], abs=1.0)
+
+
+def test_zoom_to_frames_all_points():
+    ax = _car()
+    lon = np.array([-120.0, -100.0, -80.0])
+    lat = np.array([20.0, 35.0, 45.0])
+    sph.zoom_to(ax, lon, lat, pad=3)
+    for lo, la in zip(lon, lat):
+        assert _in_view(ax, lo, la)
+    # a point well outside the cluster is excluded
+    assert not _in_view(ax, 60, -40)
+
+
+def test_zoom_to_accepts_skycoord():
+    # a SkyCoord in another frame is converted into the axes frame first
+    ax = sph.make_wcs_frame(111, projection="MOL", center=0, frame="icrs")
+    ax.figure.canvas.draw()
+    sc = SkyCoord([120.0, 130.0], [20.0, 30.0], unit="deg", frame="galactic")
+    sph.zoom_to(ax, sc, pad=2)
+    assert ax.get_xlim()[0] < ax.get_xlim()[1]
+    # the framed points (in ICRS) are in view
+    assert _in_view(ax, sc.icrs.ra.deg[0], sc.icrs.dec.deg[0])
+
+
+def test_set_view_centers_on_target():
+    ax = _car()
+    sph.set_view(ax, (-100, 30), (40, 20))
+    assert _in_view(ax, -100, 30)          # the center is in view
+    assert _in_view(ax, -100 + 15, 30 + 8)  # inside the half-fov
+    assert not _in_view(ax, -100 + 40, 30)  # outside the half-fov
+
+
+def test_set_extent_frame_conversion_shifts_the_window():
+    """Passing frame='galactic' must interpret the box in galactic and land it
+    at the corresponding place on an ICRS map (not the same pixels as ICRS)."""
+    ax_icrs = sph.make_wcs_frame(111, projection="MOL", center=0, frame="icrs")
+    ax_icrs.figure.canvas.draw()
+    same = sph.set_extent(ax_icrs, [-10, 10, -5, 5])
+    ax_icrs2 = sph.make_wcs_frame(111, projection="MOL", center=0, frame="icrs")
+    ax_icrs2.figure.canvas.draw()
+    gal = sph.set_extent(ax_icrs2, [-10, 10, -5, 5], frame="galactic")
+    assert not np.allclose(same, gal, atol=5.0)
+
+
+def test_set_extent_on_globe_drops_offlimb_and_errors_when_all_hidden():
+    ax = sph.make_globe_frame(111, center_LONdeg=0, center_LATdeg=0)
+    ax.figure.canvas.draw()
+    # a near-side box gives a finite crop
+    box = sph.set_extent(ax, [-30, 30, -20, 20])
+    assert all(np.isfinite(box))
+    # a box entirely on the FAR side (around the antimeridian) has no finite
+    # pixels -> clear error rather than a garbage window
+    with pytest.raises(ValueError):
+        sph.set_extent(ax, [178, 182, -2, 2])
+
+
+def test_view_methods_are_attached():
+    ax = _car()
+    assert hasattr(ax, "sky_set_extent")
+    ax.sky_set_extent([-40, 20, -10, 30])
+    assert _in_view(ax, -10, 10)

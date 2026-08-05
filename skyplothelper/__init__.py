@@ -342,11 +342,16 @@ from .plotting import (
     pcolormesh,
     plot,
     scatter,
+    set_extent,
+    set_view,
+    set_xlim,
+    set_ylim,
     step,
     text,
     to_lonlat,
     tricontourf,
     world_transform,
+    zoom_to,
 )
 from .projections.canvas import healpix_to_canvas, project_to_canvas
 from .projections.project import lon_east_to_west, lon_west_to_east, project
@@ -512,6 +517,7 @@ __all__ = [
     "scatter", "plot", "text", "annotate", "errorbar", "fill",
     "fill_between", "step", "contour", "contourf", "pcolormesh",
     "tricontourf", "hist2d", "world_transform", "to_lonlat", "to_time",
+    "set_extent", "set_xlim", "set_ylim", "zoom_to", "set_view",
     "MultiLegend", "LegendBlock", "ColorBlock", "ShapeBlock", "LineBlock",
     "SizeBlock", "EdgeBlock", "FillBlock", "AlphaBlock", "OrientBlock",
     "RegionBlock", "TextBlock", "ColorbarBlock", "GlyphBlock",

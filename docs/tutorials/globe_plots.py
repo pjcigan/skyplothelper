@@ -794,6 +794,106 @@ plt.show()
 # | [Natural Earth](https://www.naturalearthdata.com/) | Earth raster + vector (coastlines, borders, …) | Public domain |
 
 # %% [markdown]
+# ### Regional maps: zooming in, and longitude counted westward
+#
+# Everything so far has drawn a whole body at once. Often you want a **regional**
+# map — zoomed to an area — and, for Earth station catalogs, longitude can be
+# quoted either eastward or **westward**. Two small things make both clean.
+#
+# **Set the view in degrees, not pixels.** A skyplothelper frame is a WCS axes,
+# and its *data* coordinates are pixels — so matplotlib's own
+# `ax.set_xlim(-125, -66)` reads those as pixel columns −125…−66 and blanks the
+# frame. Set the view in world coordinates instead:
+#
+# - `sph.set_extent(ax, [lon_min, lon_max, lat_min, lat_max])` — the main one.
+#   This is a direct setting of the axis extents, similar to the cartopy
+#   procedure. It frames a lon/lat region on **any** projection: on a rectilinear
+#   map (plate carrée, Mercator) the window is exactly that box; on a curved one
+#   (Mollweide, a globe, an oblique frame) it's the box's *bounding* window, so
+#   you'll see a little past the corners.
+# - `sph.zoom_to(ax, lon, lat, pad=…)` — frame a set of points, with a margin.
+# - `sph.set_view(ax, center, fov)` — a center and an angular width.
+# - `sph.set_xlim` / `sph.set_ylim` — single-axis shortcuts; exact on a
+#   rectilinear map, approximate on a curved one (each sets one axis from one
+#   pair of values). Reach for `set_extent` when in doubt.
+#
+# **Longitude westward is a labeling choice, not a mirror.** Pass `lon_west=True`
+# to any frame builder and the longitude ticks read `120°W` instead of
+# `-120°`/`240°` — the map is *not* flipped. There's no reversal of your *input*,
+# though: the data, and everything you draw with the `sph.` verbs, stays
+# **east-positive** regardless of the labels. So a station at 120°W goes in as
+# east-longitude — either `sph.lon_west_to_east(120)` (→ `240`) or simply `-120`,
+# the same meridian. Convert a °W catalog once at the door, and pass
+# `lon_west=True` to `set_extent` too if your extent is written in °W.
+
+# %% [markdown]
+# One thing to watch: use the **`sph.` verbs** (`sph.scatter`, `sph.text`, …),
+# not bare `ax.scatter`. The `sph.` versions apply the world transform, so you
+# pass degrees; matplotlib's own `ax.scatter(lon, lat)` would place points in
+# *pixel* coordinates. That's standard WCS-axes behavior and it's the same on
+# every skyplothelper frame — celestial, globe, or planet — so the habit carries
+# over from [Getting started](getting_started.ipynb).
+
+# %%
+# fig-slug: lon-west-observatories
+# A handful of US observatories, longitudes as they're often quoted: degrees WEST.
+OBS = {
+    "Keck": (155.47, 19.83), "Lick": (121.64, 37.34), "Palomar": (116.86, 33.36),
+    "Kitt Peak": (111.60, 31.96), "VLA": (107.62, 34.08), "McDonald": (104.02, 30.67),
+    "GBT": (79.84, 38.43), "Arecibo": (66.75, 18.34),
+}
+
+
+# A crop-aware cousin of `drape` (above): drape the raster over just the visible
+# window by shifting the WCS reference pixel to the cropped corner.
+def drape_region(ax, hdu, zorder=-10):
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    nx, ny = round(x1 - x0), round(y1 - y0)
+    hdr = ax.wcs.to_header()
+    hdr["NAXIS1"], hdr["NAXIS2"] = nx, ny
+    hdr["CRPIX1"] = hdr.get("CRPIX1", 1.0) - x0
+    hdr["CRPIX2"] = hdr.get("CRPIX2", 1.0) - y0
+    bg = sph.reproject_rgb_map(hdu, hdr, shape_out=(ny, nx))
+    ax.imshow(np.nan_to_num(bg), extent=[x0, x1, y0, y1], origin="lower", zorder=zorder)
+
+
+# A geographic plate-carrée Earth, labeled in °W. center_lat=0 keeps CAR
+# north-up; we zoom to the region afterward with set_extent.
+ax = sph.make_planet_frame(111, body="earth", projection="CAR",
+                           center_LONdeg=sph.lon_west_to_east(105),
+                           center_LATdeg=0, lon_west=True, grid=True, npix=1440)
+ax.figure.set_size_inches(9.5, 5.2)
+
+# Zoom by DEGREES — the extent is written in °W, matching the axis labels.
+sph.set_extent(ax, [162, 56, 11, 53], lon_west=True)
+
+drape_region(ax, sph.pseudofits_from_image(EARTH_DAY, geo=True))
+
+# Convert the °W catalog to the east-positive values the frame stores, then plot
+# with the sph verbs (world coords). One conversion, at the door.
+lonW = np.array([v[0] for v in OBS.values()])
+lat = np.array([v[1] for v in OBS.values()])
+sph.scatter(ax, sph.lon_west_to_east(lonW), lat, s=70, marker="^",
+            facecolor="gold", edgecolor="black", linewidth=0.8, zorder=6)
+for name, (lw, la) in OBS.items():
+    sph.text(ax, sph.lon_west_to_east(lw), la, " " + name, color="white",
+             fontsize=8, va="center", zorder=7)
+ax.set_title("US observatories — entered in °W, axis labeled °W", fontsize=12)
+plt.show()
+
+# %% [markdown]
+# The dishes land on the right spots — Keck out toward Hawaii, Arecibo down at
+# Puerto Rico, the Southwest cluster in between — and the axis reads `120°W`,
+# `60°W` as one might quote them for the westward convention. To reframe, change
+# the single `set_extent` line: widen `pad`, swap in
+# `sph.zoom_to(ax, sph.lon_west_to_east(lonW), lat, pad=6)` to fit the stations
+# automatically, or `sph.set_view(ax, center=(105, 35), fov=(70, 35),
+# lon_west=True)` for a fixed center and width. Drop `lon_west=True` everywhere
+# and you get the identical map labeled in east-longitude — same pixels, same
+# dishes.
+
+# %% [markdown]
 # ## 4. Tilting the view and the TiltedEarthFrame
 #
 # §1 aimed the camera at a tilted globe — and that is the *main* way you'll use it:

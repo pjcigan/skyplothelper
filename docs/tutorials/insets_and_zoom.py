@@ -216,6 +216,24 @@ sph.connect_inset_axes(ax, inset, color="0.95", linewidth=1.1)
 plt.show()
 
 # %% [markdown]
+# **Setting a view in degrees.** The inset window above was set in *pixels*
+# (`inset.set_xlim(nx - half, nx + half)`) because we already had the nucleus in
+# pixel coordinates. More often you'll want to name the region in **degrees** —
+# and since a frame's data coordinates are pixels, plain `set_xlim`/`set_ylim`
+# won't take them. Use the view helpers, which work on any WCS frame, parent or
+# inset:
+#
+# ```python
+# sph.set_extent(inset, [202.44, 202.50, 47.17, 47.22])  # an RA/Dec box, degrees
+# sph.zoom_to(ax, ra, dec, pad=1)                         # frame points, + margin
+# sph.set_view(ax, center=(202.47, 47.20), fov=0.12)      # center + angular width
+# ```
+#
+# These reframe the view in world coordinates. On a rectilinear map the box is
+# exact; on a curved projection `set_extent` frames the bounding region — see
+# [Globe & Planet Plotting](globe_plots.ipynb).
+
+# %% [markdown]
 # ## 1. The zoom inset in one call
 #
 # The workhorse is `reproject_inset_axes`. Give it the parent axes, a rectangle

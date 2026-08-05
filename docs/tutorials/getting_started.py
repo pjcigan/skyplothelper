@@ -247,6 +247,13 @@ plt.show()
 # actually is.
 
 # %% [markdown]
+# **Zooming works the same way.** Because a frame's data coordinates are pixels,
+# `ax.set_xlim`/`set_ylim` zoom in *pixels* — to set the view in **degrees**, use
+# `sph.set_extent(ax, [ra_min, ra_max, dec_min, dec_max])` (or
+# `sph.zoom_to(ax, ra, dec)` to frame a set of points). The
+# [Insets & Zoom](insets_and_zoom.ipynb) tutorial covers the whole family.
+
+# %% [markdown]
 # ## 4. Your first all-sky map
 #
 # To show the *whole* sky we switch to an all-sky projection. The

@@ -332,6 +332,14 @@ docs. Note the asymmetry it implies: **images go on in pixel coordinates**
 (`ax.imshow(data)` needs no `transform=`, and the WCS makes the sky grid line
 up over it), while **sky coordinates need the world transform**.
 
+The same asymmetry governs **zooming**: because a sky frame's data coordinates
+are pixels, `ax.set_xlim`/`set_ylim` take *pixels*, not degrees. To set the
+view in world coordinates use the view helpers —
+{func}`~skyplothelper.set_extent` (a `[lon_min, lon_max, lat_min, lat_max]`
+box), {func}`~skyplothelper.zoom_to` (fit the view to a set of points), or
+{func}`~skyplothelper.set_view` (a center and an angular width) — which frame a
+region on any projection.
+
 Ticks and grids are reached through `ax.coords` — per-axis objects with their
 own API (`ax.coords[0].set_ticks(...)`, `.set_major_formatter(...)`,
 `.grid(...)`). That's the machinery behind the rcParams caveat above, and

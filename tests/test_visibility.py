@@ -203,3 +203,25 @@ def test_covisibility_region_no_invalid_value_runtimewarning():
             sph.covisibility_region(_ax(), stations, t, min_stations=3)
     assert not [w for w in rec
                 if "invalid value encountered" in str(w.message)]
+
+
+# --- time=None -> current time, and the producer-set label ------------------
+
+def test_covisibility_circles_time_none_uses_now():
+    """Omitting time falls back to the current instant (no exception, real caps)."""
+    caps = sph.covisibility_circles(_NORTH)
+    assert len(caps) == len(_NORTH)
+    assert all(c["radius_deg"] == pytest.approx(75.0) for c in caps)  # 90 - 15
+
+
+def test_covisibility_region_time_none_uses_now():
+    reg = sph.covisibility_region(_ax(), _NORTH)
+    assert not reg.is_empty          # three continental-US-ish sites overlap now
+    assert 0.0 < reg.area_frac < 1.0
+
+
+def test_covisibility_region_sets_default_label():
+    reg = sph.covisibility_region(_ax(), _NORTH, time=_T)
+    assert reg.label == "Co-visible"
+    reg2 = sph.covisibility_region(_ax(), _NORTH, time=_T, min_stations=2)
+    assert reg2.label == "Co-visible (≥2 of 3)"

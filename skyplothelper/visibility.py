@@ -38,6 +38,7 @@ import numpy as np
 import numpy.typing as npt
 from astropy import units as u
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
+from astropy.time import Time
 
 from ._timeinput import to_time
 
@@ -202,7 +203,7 @@ def _add_station(region: Any, station: dict[str, Any], gast_deg: float,
 
 # --- public: pure geometry bridge -------------------------------------------
 
-def covisibility_circles(stations: Any, time: Any, *,
+def covisibility_circles(stations: Any, time: Any = None, *,
                          el_min: Any = 15 * u.deg) -> list[dict[str, Any]]:
     """Per-station visibility caps for ``stations`` at ``time`` (pure geometry).
 
@@ -215,8 +216,11 @@ def covisibility_circles(stations: Any, time: Any, *,
     ----------
     stations : dict or list
         Station definitions — see :func:`covisibility_region`.
-    time : astropy.time.Time or str or datetime
-        Observation instant (UTC assumed for naive inputs).
+    time : astropy.time.Time or str or datetime, optional
+        Observation instant (UTC assumed for naive inputs). ``None`` (the
+        default) uses the **current time** (:meth:`astropy.time.Time.now`) — a
+        convenience for a quick look at the co-visible sky (or its overall sky
+        fraction) when the exact instant doesn't matter.
     el_min : Quantity or float
         Default minimum elevation (degrees). Per-station ``'min_el'`` overrides.
 
@@ -227,6 +231,8 @@ def covisibility_circles(stations: Any, time: Any, *,
         'min_el_deg'}``. ``center`` is the overhead point; ``radius_deg`` is
         ``90 − min_el``.
     """
+    if time is None:
+        time = Time.now()
     gast = _gast_deg(time)
     caps = []
     for st in _parse_stations(stations, el_min):
@@ -262,7 +268,7 @@ def _compound_region_for(target: Any) -> Any:
 
 # --- public: instantaneous co-visibility region -----------------------------
 
-def covisibility_region(target: Any, stations: Any, time: Any, *,
+def covisibility_region(target: Any, stations: Any, time: Any = None, *,
                         el_min: Any = 15 * u.deg,
                         min_stations: int | None = None) -> Any:
     """The instantaneously co-visible sky as a :class:`CompoundRegion`.
@@ -283,8 +289,11 @@ def covisibility_region(target: Any, stations: Any, time: Any, *,
         ``hor_mask`` are optional (defaulting to ``el_min`` / no mask). Values
         may also be astropy ``EarthLocation`` / ``SkyCoord`` (with the global
         ``el_min``), which lets ITRF *xyz* coordinates flow in via astropy.
-    time : astropy.time.Time or str or datetime
-        Observation instant.
+    time : astropy.time.Time or str or datetime, optional
+        Observation instant. ``None`` (the default) uses the **current time**
+        (:meth:`astropy.time.Time.now`) — handy for seeing the co-visible sky
+        (or its overall fraction) at *some* time when the exact instant doesn't
+        matter.
     el_min : Quantity or float
         Default minimum elevation (degrees). Default ``15``.
     min_stations : int or None
@@ -300,11 +309,16 @@ def covisibility_region(target: Any, stations: Any, time: Any, *,
         The co-visible region (possibly empty — check
         :attr:`CompoundRegion.is_empty`).
     """
+    if time is None:
+        time = Time.now()
     region = _compound_region_for(target)
     sts = _parse_stations(stations, el_min)
     gast = _gast_deg(time)
     n = len(sts)
     k = n if min_stations is None else int(min_stations)
+    # A default name so region.annotate(ax) works out of the box (overridable).
+    region.label = ("Co-visible" if min_stations is None
+                    else f"Co-visible (≥{k} of {n})")
     if k < 1:
         raise ValueError(f"min_stations must be >= 1, got {min_stations!r}")
     if k > n:

@@ -158,7 +158,18 @@ Beyond rendering, a region is a queryable object:
   `contains_point` — membership tests for catalogs ("which of my sources
   fall in the survey?").
 - {meth}`~skyplothelper.CompoundRegion.area_frac` and `solid_angle` — sky
-  coverage of the region.
+  coverage of the region (frame fraction, and an approximate `sq_deg` / `sr`).
+- {meth}`~skyplothelper.CompoundRegion.centroid`,
+  `representative_point`, and `bounds` — *where* the region is: the area
+  centroid, a point guaranteed to lie **inside** it, and its lon/lat bounding
+  box. Prefer `representative_point` for placing a label — a centroid can fall
+  in a hole or between disjoint lobes, whereas this always lands on the region.
+  {func}`~skyplothelper.zoom_to` accepts a region directly and frames it via
+  those bounds. (These three need a FITS-WCS frame.)
+- {attr}`~skyplothelper.CompoundRegion.label` +
+  {meth}`~skyplothelper.CompoundRegion.annotate` — name a region, then drop the
+  name at `representative_point` in one call (`region.annotate(ax)`); producers
+  like the co-visibility builders set `label` for you.
 - {meth}`~skyplothelper.CompoundRegion.expand` / `contract` — grow or
   shrink by an angular margin (buffer zones).
 - {meth}`~skyplothelper.CompoundRegion.complement` — invert the region;

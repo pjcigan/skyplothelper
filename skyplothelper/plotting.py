@@ -638,7 +638,14 @@ def zoom_to(ax: Any, lon: SkyCoord | npt.ArrayLike, lat: npt.ArrayLike | None = 
     --------
     >>> sph.zoom_to(ax, ra, dec, pad=2)             # frame a catalog +2 deg
     >>> sph.zoom_to(ax, site_skycoords, pad=5)      # frame observatories
+    >>> sph.zoom_to(ax, covis_region, pad=3)        # frame a CompoundRegion
     """
+    if hasattr(lon, 'representative_point') and hasattr(lon, 'bounds'):
+        # A CompoundRegion: frame its lon/lat bounding box.
+        if getattr(lon, 'is_empty', False):
+            raise ValueError("sph.zoom_to: the region is empty — nothing to frame.")
+        lo0, lo1, la0, la1 = lon.bounds
+        return set_extent(ax, [lo0, lo1, la0, la1], frame=frame, pad=pad)
     if hasattr(lon, 'transform_to'):                 # SkyCoord → axes frame
         lon_d, lat_d = _resolve(ax, lon, None, None, 'sph.zoom_to')
         box_frame = None

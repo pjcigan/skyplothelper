@@ -211,6 +211,10 @@ class CompoundRegion:
             # (Robinson / Eckert / … custom frames, ax.wcs is None).
             self.projector = _projector_for_axes(ax_or_projector)
         self._geom = None
+        #: Optional human-readable name for the region. Left ``None`` by default;
+        #: producers may set it (e.g. covisibility builders use ``'Co-visible'``)
+        #: and :meth:`annotate` draws it at :meth:`representative_point`.
+        self.label: str | None = None
         # ``_frame_poly`` is now a thin alias for the projector's frame
         # polygon; preserved as an instance attribute so existing tests
         # and downstream code that read ``region._frame_poly`` directly
@@ -431,6 +435,69 @@ class CompoundRegion:
         lon, lat = wcs.pixel_to_world_values(np.asarray(xs), np.asarray(ys))
         return (float(np.min(lon)), float(np.max(lon)),
                 float(np.min(lat)), float(np.max(lat)))
+
+    def representative_point(self) -> tuple[float, float]:
+        """``(lon, lat)`` in degrees (region frame) of a point GUARANTEED to lie
+        inside the region.
+
+        Unlike :attr:`centroid` — the area-weighted mean, which on a concave,
+        holed, or multi-part region can fall *outside* it — shapely's
+        ``representative_point`` always lands on the region, which makes it the
+        right anchor for a label (see :meth:`annotate`). ``(nan, nan)`` if empty.
+        Requires a FITS-WCS frame (same restriction as :attr:`centroid`)."""
+        if self._geom is None or self._geom.is_empty:
+            return (float('nan'), float('nan'))
+        wcs = getattr(self.projector, 'wcs', None)
+        if wcs is None:
+            raise NotImplementedError(
+                "representative_point requires a FITS-WCS frame (no "
+                "pixel->world inverse on non-FITS projections here).")
+        p = self._geom.representative_point()
+        lon, lat = wcs.pixel_to_world_values(p.x, p.y)
+        return (float(lon), float(lat))
+
+    def annotate(self, ax: Any = None, text: str | None = None,
+                 **kwargs: Any) -> Any:
+        """Draw the region's :attr:`label` (or *text*) at a point inside it.
+
+        Places the string at :meth:`representative_point` (guaranteed inside the
+        region, so the label never floats in a hole or off a crescent) using the
+        axes' world transform.
+
+        Parameters
+        ----------
+        ax : WCSAxes, optional
+            Axes to draw on. Defaults to the axes the region was built on
+            (``None`` only for a region built on a bare :class:`Projector`, in
+            which case *ax* is required).
+        text : str, optional
+            The string to draw. Defaults to :attr:`label`; if both are unset (or
+            empty), nothing is drawn and ``None`` is returned.
+        **kwargs
+            Forwarded to ``ax.text`` (``color``, ``fontsize``, …). ``ha``/``va``
+            default to ``'center'``.
+
+        Returns
+        -------
+        matplotlib.text.Text or None
+            The text artist, or ``None`` if the region is empty or there is
+            nothing to label. Matplotlib WCSAxes only.
+        """
+        ax = ax if ax is not None else self.ax
+        if ax is None:
+            raise TypeError(
+                "annotate needs a matplotlib WCSAxes — pass ax=, or build the "
+                "region on an axes rather than a bare Projector.")
+        s = text if text is not None else self.label
+        if not s:
+            return None
+        lon, lat = self.representative_point()
+        if not (np.isfinite(lon) and np.isfinite(lat)):
+            return None
+        kwargs.setdefault('transform', ax.get_transform('world'))
+        kwargs.setdefault('ha', 'center')
+        kwargs.setdefault('va', 'center')
+        return ax.text(float(lon), float(lat), s, **kwargs)
 
     def _boundary_rings_lonlat(self) -> list[Any]:
         """Per-polygon boundary rings unprojected to sky coords: a list of

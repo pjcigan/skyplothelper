@@ -323,3 +323,25 @@ def test_planet_frame_lon_spacing_one_name_all_projections(projection):
     tight = _n_lon_labels(ax_tight)
     assert tight > _n_lon_labels(build(45))     # 15 deg -> more lines than 45 deg
     plt.close("all")
+
+
+def test_globe_canonical_npix_no_warning_naxispix_deprecated():
+    # npix works with no warning...
+    _, dep = _spacing_deprecations(
+        lambda: make_globe_frame(center_LONdeg=0, npix=200))
+    assert not dep
+    # ...Naxispix still works but warns
+    with pytest.warns(DeprecationWarning, match="Naxispix"):
+        ax = make_globe_frame(center_LONdeg=0, Naxispix=200)
+    assert int(ax.wcs._naxis[0]) == 200
+    plt.close("all")
+
+
+@pytest.mark.parametrize("projection", ["SIN", "CAR"])
+def test_planet_frame_npix_one_name_all_projections(projection):
+    """npix (not Naxispix) works on make_planet_frame for globe and flat alike."""
+    _, dep = _spacing_deprecations(
+        lambda: sph.make_planet_frame(111, fig=plt.figure(), projection=projection,
+                                      center_LONdeg=0, npix=220))
+    assert not dep
+    plt.close("all")

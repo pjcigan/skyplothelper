@@ -47,6 +47,7 @@ from .frame import (
     quaternion_to_fits_ortho,
 )
 from .insets import (
+    clean_inset,
     connect_inset_axes,
     mark_inset_axes,
     reproject_inset_axes,
@@ -109,6 +110,7 @@ __all__ = [
     "pseudofits_from_image", "make_nightshade_blend",
     # Insets
     "reproject_inset_axes", "mark_inset_axes", "connect_inset_axes",
+    "clean_inset",
     # Baselines
     "plot_baselines",
     # Animation save helpers (the animators themselves — animate_globe /

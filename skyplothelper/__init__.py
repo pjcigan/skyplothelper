@@ -165,6 +165,7 @@ from .globe import (
     add_scale_bar_curved_parallel,
     add_scale_bar_cylindrical,
     add_surface_compass,
+    clean_inset,
     clip_to_land,
     clip_to_ocean,
     connect_inset_axes,
@@ -565,6 +566,7 @@ __all__ = [
     "plot_boundaries_globe", "plot_boundaries_ortho",
     "pseudofits_from_image", "make_nightshade_blend",
     "reproject_inset_axes", "mark_inset_axes", "connect_inset_axes",
+    "clean_inset",
     "plot_baselines",
     "save_animation", "WebPWriter",
     # === geometry ===

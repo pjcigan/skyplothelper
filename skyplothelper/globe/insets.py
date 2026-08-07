@@ -172,6 +172,7 @@ def reproject_inset_axes(parent_ax: Any, rect: Any, wcs: Any = None,
                          bg_color: Any = None,
                          tick_style: str = 'auto',
                          tick_rotation: Any = 'tangent',
+                         clean: bool = False,
                          **subplot_kw: Any) -> Any:
     """
     Create a WCSAxes inset at ``rect`` covering a sky region.
@@ -273,6 +274,11 @@ def reproject_inset_axes(parent_ax: Any, rect: Any, wcs: Any = None,
         Label rotation for the overlay tick styles; ignored when the
         effective style is ``'native'``. Forwarded to ``_apply_tick_style``
         (same meaning as on :func:`make_wcs_frame`).
+    clean : bool
+        If ``True``, drop the verbose ``pos.eq.ra`` / ``pos.eq.dec`` axis
+        labels on the inset (the tick values already convey the scale), via
+        :func:`clean_inset`. Default ``False`` (existing insets unchanged). To
+        also hide the tick labels, call ``clean_inset(inset, ticklabels=False)``.
     **subplot_kw
         Extra kwargs passed to
         :class:`~astropy.visualization.wcsaxes.WCSAxes`. Useful ones:
@@ -496,6 +502,46 @@ def reproject_inset_axes(parent_ax: Any, rect: Any, wcs: Any = None,
     # handled the same as an auto-built one.
     _apply_inset_tick_style(inset_ax, wcs, tick_style, tick_rotation, auto_fs)
 
+    # Opt-in decluttering: drop the verbose pos.eq.ra/pos.eq.dec axis labels the
+    # tick values already convey. Off by default so existing insets are
+    # unchanged; call clean_inset(ax, ticklabels=False) yourself to also hide the
+    # tick labels (e.g. a schematic locator panel).
+    if clean:
+        clean_inset(inset_ax)
+
+    return inset_ax
+
+
+def clean_inset(inset_ax: Any, ticklabels: bool = True) -> Any:
+    """Tidy an inset (or any WCSAxes) by dropping its verbose axis labels.
+
+    Inset frames auto-label their axes with the coordinate's UCD-ish name
+    (``pos.eq.ra`` / ``pos.eq.dec``, ``pos.galactic.lon`` …), which is noise on a
+    small zoom panel where the tick values already convey the scale. This hides
+    those axis labels, keeping the tick labels so coordinates stay readable.
+
+    Parameters
+    ----------
+    inset_ax : WCSAxes
+        The inset axes to tidy (returned by :func:`reproject_inset_axes`).
+    ticklabels : bool
+        Keep the tick labels (default ``True``). Pass ``False`` to hide those
+        too — e.g. a purely schematic locator/overview panel with no room for
+        coordinates.
+
+    Returns
+    -------
+    WCSAxes
+        The same axes, for chaining.
+
+    See Also
+    --------
+    reproject_inset_axes : pass ``clean=True`` to apply this on creation.
+    """
+    for c in (0, 1):
+        inset_ax.coords[c].axislabels.set_visible(False)
+        if not ticklabels:
+            inset_ax.coords[c].set_ticklabel_visible(False)
     return inset_ax
 
 

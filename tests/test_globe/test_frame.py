@@ -264,3 +264,62 @@ def test_make_globe_frame_accepts_tuple_and_subplotspec():
     ax_planet = make_planet_frame((3, 4, 12))
     assert isinstance(ax_planet, WCSAxes)
     plt.close(fig)
+
+
+# ---- grid-spacing kwarg unification (1.2.1) ----
+
+import warnings  # noqa: E402
+
+import skyplothelper as sph  # noqa: E402
+
+
+def _n_lon_labels(ax):
+    ax.figure.canvas.draw()
+    txt = ax.coords[0].ticklabels.text
+    return len([s for v in txt.values() for s in v])
+
+
+def _spacing_deprecations(fn):
+    """Run *fn*; return only OUR spacing DeprecationWarnings (ignoring unrelated
+    library warnings like mpl's PyparsingDeprecationWarning during draw)."""
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        result = fn()
+    return result, [x for x in rec if "is deprecated; use" in str(x.message)]
+
+
+def test_globe_canonical_lon_spacing_no_warning():
+    ax, dep = _spacing_deprecations(
+        lambda: make_globe_frame(center_LONdeg=0, lon_spacing=15, lat_spacing=15))
+    assert not dep
+    # 15-deg spacing -> more longitude labels than the 30-deg default
+    assert _n_lon_labels(ax) > _n_lon_labels(make_globe_frame(center_LONdeg=0))
+    plt.close("all")
+
+
+def test_globe_deg_spacing_alias_warns_but_works():
+    with pytest.warns(DeprecationWarning, match="lon_deg_spacing"):
+        ax = make_globe_frame(center_LONdeg=0, lon_deg_spacing=15)
+    assert _n_lon_labels(ax) > 8
+    plt.close("all")
+
+
+def test_globe_default_spacing_unchanged_no_warning():
+    _, dep = _spacing_deprecations(lambda: make_globe_frame(center_LONdeg=0))
+    assert not dep
+    plt.close("all")
+
+
+@pytest.mark.parametrize("projection", ["SIN", "CAR"])
+def test_planet_frame_lon_spacing_one_name_all_projections(projection):
+    """The same lon_spacing name works whether make_planet_frame routes to the
+    globe (SIN) or the flat (CAR) builder — the 1.2.1 fix."""
+    def build(sp):
+        # a fresh figure per build so the second doesn't replace the first at 111
+        return sph.make_planet_frame(111, fig=plt.figure(), projection=projection,
+                                     center_LONdeg=0, lon_spacing=sp, lat_spacing=sp)
+    ax_tight, dep = _spacing_deprecations(lambda: build(15))
+    assert not dep                              # canonical name -> no deprecation
+    tight = _n_lon_labels(ax_tight)
+    assert tight > _n_lon_labels(build(45))     # 15 deg -> more lines than 45 deg
+    plt.close("all")

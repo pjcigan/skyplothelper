@@ -8,6 +8,7 @@ maps Euler angles to fits-WCS (CRVAL, LONPOLE) parameters.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -550,6 +551,26 @@ def make_globe_angles(
 # WCS Globe Frame Creation
 # =============================================================================
 
+def _resolve_globe_spacing(spacing: float | None, deg_spacing: float | None,
+                           axis: str) -> float:
+    """Resolve the canonical ``{axis}_spacing`` against the deprecated
+    ``{axis}_deg_spacing`` alias for :func:`make_globe_frame`.
+
+    ``lon_spacing``/``lat_spacing`` are the names shared with
+    :func:`~skyplothelper.wcs_frame.make_wcs_frame`; the older
+    ``lon_deg_spacing``/``lat_deg_spacing`` still work but warn. Default 30°
+    (unchanged) when neither is given.
+    """
+    if deg_spacing is not None:
+        warnings.warn(
+            f"make_globe_frame: '{axis}_deg_spacing' is deprecated; use "
+            f"'{axis}_spacing' instead (same meaning — spacing in degrees).",
+            DeprecationWarning, stacklevel=3)
+        if spacing is None:
+            return float(deg_spacing)
+    return float(spacing) if spacing is not None else 30.0
+
+
 def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
                      center_LATdeg: float = 0.,
                      radesys: str = 'ICRS', direction: str = 'sky',
@@ -557,7 +578,10 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
                      projection: str = 'SIN', equinox: float = 2000.0,
                      lonpole: float = 0., latpole: float = 0.,
                      obstime: Any = None, Naxispix: int = 360,
-                     lon_deg_spacing: float = 30, lat_deg_spacing: float = 30,
+                     lon_deg_spacing: float | None = None,
+                     lat_deg_spacing: float | None = None,
+                     lon_spacing: float | None = None,
+                     lat_spacing: float | None = None,
                      grid: bool = True, gridcolor: Any = '0.8',
                      gridalpha: float = 0.3,
                      gridlw: float | None = None,
@@ -623,10 +647,15 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
         Pixel dimension for the projection grid (NAXIS1=NAXIS2). Controls
         the resolution of projected images. Default 360; use 720-1440
         for large/high-res plots.
-    lon_deg_spacing : float, optional
-        Spacing between longitude grid lines, in degrees. Default 30.
-    lat_deg_spacing : float, optional
-        Spacing between latitude grid lines, in degrees. Default 30.
+    lon_spacing, lat_spacing : float, optional
+        Spacing between longitude / latitude grid lines, in degrees. Default
+        30. These are the **canonical** names, shared with
+        :func:`~skyplothelper.wcs_frame.make_wcs_frame` and
+        :func:`~skyplothelper.make_planet_frame`.
+    lon_deg_spacing, lat_deg_spacing : float, optional
+        **Deprecated** aliases for ``lon_spacing`` / ``lat_spacing`` (same
+        meaning). Kept for backward compatibility; passing them emits a
+        ``DeprecationWarning``.
     grid : bool, optional
         Whether to draw a coordinate grid. Default True.
     gridcolor : str or color, optional
@@ -698,6 +727,11 @@ def make_globe_frame(subplot_number: Any = 111, center_LONdeg: float = 0,
             center_LATdeg=15, radesys='ITRS', lonpole=-23.44,
             direction='geo', return_header=True)
     """
+    # Canonical lon_spacing/lat_spacing (shared with make_wcs_frame); the
+    # lon_deg_spacing/lat_deg_spacing aliases still work but warn. Reassign so
+    # the rest of the body reads the resolved value.
+    lon_deg_spacing = _resolve_globe_spacing(lon_spacing, lon_deg_spacing, "lon")
+    lat_deg_spacing = _resolve_globe_spacing(lat_spacing, lat_deg_spacing, "lat")
     # Map radesys to fits coordinate type codes
     rs = radesys.lower()
     if 'super' in rs:
@@ -869,6 +903,9 @@ def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
                       center_LONdeg: float = 0.,
                       center_LATdeg: float = 0., projection: str = 'SIN',
                       radesys: str | None = None, lon_west: bool = False,
+                      lon_spacing: float | None = None,
+                      lat_spacing: float | None = None,
+                      grid: bool = True,
                       **kwargs: Any) -> Any:
     """Globe frame for a planetary body, viewed from outside.
 
@@ -931,12 +968,34 @@ def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
         projections alike. Feed °W input coordinates through
         :func:`~skyplothelper.lon_west_to_east` once at the door. See
         :func:`~skyplothelper.wcs_frame.make_wcs_frame`.
+    lon_spacing, lat_spacing : float, optional
+        Grid-line spacing in degrees. **One name works for every projection** —
+        it forwards to the right builder underneath. Default ``None`` keeps each
+        builder's own default (30° on the ``SIN`` globe; automatic, ~8 lines
+        across the field, on the flat projections). This is the same name used
+        by :func:`~skyplothelper.wcs_frame.make_wcs_frame`.
+    grid : bool
+        Draw the coordinate grid (default ``True``).
     **kwargs
         Forwarded to the underlying builder (``lonpole`` / ``latpole`` for
-        tilt, ``obstime``, ``grid``, ``direction`` to override the geographic
-        default, etc.). Note the globe-only features (nightshade, back-
-        hemisphere culling) apply to the ``SIN`` globe; on a flat projection the
-        whole surface is shown.
+        tilt, ``obstime``, ``direction`` to override the geographic default,
+        etc.) — see **Other Parameters**. Note the globe-only features
+        (nightshade, back-hemisphere culling) apply to the ``SIN`` globe; on a
+        flat projection the whole surface is shown.
+
+    Other Parameters
+    ----------------
+    gridcolor, gridalpha, gridlw, gridls : optional
+        Grid line color / alpha / width / style (forwarded).
+    lonpole, latpole : float, optional
+        Pole orientation for a tilted view (e.g. ``lonpole=-23.44`` for Earth's
+        obliquity). ``Naxispix`` / ``npix`` set the draped-surface resolution.
+    obstime : optional
+        Observation time (enables nightshade / Sun-position features on Earth).
+    tick_style, tick_rotation, auto_fontsize, fig, return_header : optional
+        As on :func:`make_globe_frame` (``SIN``) /
+        :func:`~skyplothelper.wcs_frame.make_wcs_frame` (flat) — whichever this
+        call routes to by ``projection``.
 
     Returns
     -------
@@ -977,19 +1036,25 @@ def make_planet_frame(subplot_number: Any = 111, *, body: str = 'earth',
     from ..projections.registry import _resolve_projection
     proj_key, _ = _resolve_projection(projection)
     if proj_key == 'sin':
+        # Globe branch: None → make_globe_frame's own 30° default.
         return make_globe_frame(subplot_number, center_LONdeg=center_LONdeg,
                                 center_LATdeg=center_LATdeg, radesys=radesys,
                                 projection=projection, lon_west=lon_west,
-                                **kwargs)
+                                lon_spacing=lon_spacing, lat_spacing=lat_spacing,
+                                grid=grid, **kwargs)
 
     from ..wcs_frame import make_wcs_frame
     # The two builders diverge on a couple of kwarg names (make_globe_frame
     # predates make_wcs_frame); translate the one that commonly gets forwarded.
     if 'return_header' in kwargs:
         kwargs['return_hdr'] = kwargs.pop('return_header')
+    # Flat branch: None → make_wcs_frame's 'auto' default (its spacing sentinel).
     return make_wcs_frame(subplot_number, projection=projection,
                           center_lon=center_LONdeg, center_lat=center_LATdeg,
-                          frame=radesys, lon_west=lon_west, **kwargs)
+                          frame=radesys, lon_west=lon_west, grid=grid,
+                          lon_spacing='auto' if lon_spacing is None else lon_spacing,
+                          lat_spacing='auto' if lat_spacing is None else lat_spacing,
+                          **kwargs)
 
 
 # =============================================================================

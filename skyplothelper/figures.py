@@ -60,7 +60,18 @@ def allsky_figure(projection: str = 'AIT', center: SkyCoord | float | tuple[floa
         Tick label style preset
     grid : bool
     **wcs_kwargs
-        Additional kwargs passed to make_wcs_frame
+        Additional keyword arguments forwarded to
+        :func:`~skyplothelper.wcs_frame.make_wcs_frame` — see **Other
+        Parameters** for the common ones.
+
+    Other Parameters
+    ----------------
+    lon_spacing, lat_spacing : float or 'auto'
+        Grid-line spacing in degrees (``'auto'`` picks round values).
+    lon_units, lon_west, tick_style, tick_rotation, gridcolor, gridalpha : optional
+        Longitude units / west-labeling, tick styling, and grid appearance.
+        Anything :func:`~skyplothelper.wcs_frame.make_wcs_frame` accepts works
+        here.
 
     Returns
     -------
@@ -106,7 +117,17 @@ def offset_figure(center: SkyCoord | tuple[float, float], fov_deg: float = 1.0, 
     npix : int
         Number of pixels per axis
     **wcs_kwargs
-        Additional kwargs passed to make_wcs_frame
+        Additional keyword arguments forwarded to
+        :func:`~skyplothelper.wcs_frame.make_wcs_frame` — see **Other
+        Parameters**.
+
+    Other Parameters
+    ----------------
+    lon_spacing, lat_spacing : float or 'auto'
+        Grid-line spacing in degrees (``'auto'`` picks round values).
+    lon_units, tick_style, tick_rotation, gridcolor, gridalpha : optional
+        Tick units / styling and grid appearance — anything
+        :func:`~skyplothelper.wcs_frame.make_wcs_frame` accepts.
 
     Returns
     -------

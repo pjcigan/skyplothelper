@@ -44,6 +44,15 @@ the projection's natural boundary.
 are creation-time conveniences; everything is re-tunable afterward (see
 {doc}`ticks`).
 
+`lon_spacing`/`lat_spacing` (and `npix`, the pixel-grid size) use the **same
+names** on {func}`~skyplothelper.make_globe_frame` and
+{func}`~skyplothelper.make_planet_frame`, so one spelling works on every
+builder regardless of projection. (The older globe names `lon_deg_spacing` /
+`lat_deg_spacing` / `Naxispix` still work but are deprecated.) To change the
+spacing on an already-built frame, go through the coordinate directly:
+`ax.coords[0].set_ticks(spacing=10 * u.deg)` (longitude) /
+`ax.coords[1].set_ticks(spacing=10 * u.deg)` (latitude).
+
 Two practically useful extras: `fig=` targets an existing figure (for
 multi-panel layouts), and `return_hdr=True` also returns the synthesized
 FITS header, handy when downstream code (reprojection, HEALPix rasterizing)
@@ -191,6 +200,31 @@ control, the underpinnings are public:
 The offset tick styles themselves (arcsec offsets, VLBI hybrid
 absolute+offset labeling) live with the rest of the tick machinery — see
 {doc}`ticks`.
+
+## Zoom insets
+
+{func}`~skyplothelper.reproject_inset_axes` adds a **live child `WCSAxes`**
+that magnifies a sky region — its own independent WCS, reprojected into
+whatever projection you ask for, so you *draw into it* in world coordinates
+like any frame (not a cropped bitmap). Give it the parent axes, a `rect`, and
+the region (`center` + `size` in degrees):
+
+```python
+inset = sph.reproject_inset_axes(ax, rect=[0.6, 0.05, 0.35, 0.35],
+                                 transform="parent", center=(202.47, 47.2),
+                                 size=0.12, clean=True)
+sph.plot_catalog(inset, cat, ...)                 # draw into it normally
+sph.mark_inset_axes(ax, inset); sph.connect_inset_axes(ax, inset)
+```
+
+`rect` is `(left, bottom, width, height)` as fractions — of the **figure**
+(`transform='figure'`, the default) or of the **parent axes' box**
+(`transform='parent'`, for tucking the inset into a corner). `clean=True`
+drops the verbose `pos.eq.ra` / `pos.eq.dec` axis labels
+({func}`~skyplothelper.clean_inset` does it after the fact); `bg_color=` gives
+an opaque card that survives a transparent export. The full walkthrough —
+marking, connectors, circular globe insets, locator panels — is the
+{doc}`Insets & zoom tutorial </tutorials/insets_and_zoom>`.
 
 ## Drawing data on a frame
 

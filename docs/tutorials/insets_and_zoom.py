@@ -115,17 +115,6 @@ synth = {
     "dec": np.concatenate([bg_dec, knot_dec]),
 }
 
-def clean_inset(ax, ticklabels=True):
-    """Tidy an inset frame: drop the verbose `pos.eq.ra`/`pos.eq.dec` axis
-    labels (the tick values already convey the scale), keeping the tick labels
-    themselves so the reader can read off coordinates. Pass ``ticklabels=False``
-    to hide those too (e.g. the schematic connector panels in §2)."""
-    for c in (0, 1):
-        ax.coords[c].axislabels.set_visible(False)
-        if not ticklabels:
-            ax.coords[c].set_ticklabel_visible(False)
-
-
 def _dark_mode():
     """True when the active style is a dark theme — detected from the figure
     background luminance, so the notebook's colors adapt to whatever theme is
@@ -206,7 +195,7 @@ nx, ny = m51_wcs.wcs_world2pix([M51_NUCLEUS], 0)[0]
 half = 55  # pixels — a ~0.06 deg window on the nucleus
 inset.set_xlim(nx - half, nx + half)
 inset.set_ylim(ny - half, ny + half)
-clean_inset(inset)
+sph.clean_inset(inset)
 for c in (0, 1):                      # light labels read over the dark image
     inset.coords[c].set_ticklabel(color="0.9")
 # A light neutral for the box + connectors — it stays crisp over both the dark
@@ -214,6 +203,12 @@ for c in (0, 1):                      # light labels read over the dark image
 sph.mark_inset_axes(ax, inset, edgecolor="0.95", linewidth=1.6)
 sph.connect_inset_axes(ax, inset, color="0.95", linewidth=1.1)
 plt.show()
+
+# %% [markdown]
+# Both number pairs in `rect=[0.62, 0.62, 0.35, 0.35]` are fractions —
+# `(left, bottom, width, height)` — of the figure by default (or of the parent
+# axes with `transform='parent'`). [Section 3](#3.-Placing-the-inset) covers
+# placement in full.
 
 # %% [markdown]
 # **Setting a view in degrees.** The inset window above was set in *pixels*
@@ -274,7 +269,7 @@ for ins in (see_through, filled):
     # only the galaxies inside the window so the names don't spill onto the wide view.
     sph.plot_catalog(ins, chain, ra_col="ra_deg", dec_col="dec_deg",
                      s=45, color=ROI, label_col="name", label_fontsize=7)
-    clean_inset(ins)
+    sph.clean_inset(ins)
 see_through.set_title("facecolor='none' — see-through", fontsize=8)
 filled.set_title("bg_color — opaque card", fontsize=8)
 plt.show()
@@ -331,7 +326,7 @@ inset = sph.reproject_inset_axes(
     ax, rect=[0.62, 0.10, 0.34, 0.42], transform="figure",
     projection="TAN", center=CHAIN_CENTER, size=2.6, bg_color=card_color())
 sph.plot_catalog(inset, chain, ra_col="ra_deg", dec_col="dec_deg", s=55, color=ROI)
-clean_inset(inset)
+sph.clean_inset(inset)
 
 sph.mark_inset_axes(ax, inset, edgecolor=ROI, linewidth=1.6)
 sph.connect_inset_axes(ax, inset, color=ROI, linewidth=1.1)
@@ -354,7 +349,7 @@ for i, mode in enumerate(["diagonal", "crossing", "matching"]):
     ins = sph.reproject_inset_axes(
         a, rect=[0.58, 0.06, 0.40, 0.40], transform="parent",
         projection="TAN", center=CHAIN_CENTER, size=2.6)
-    clean_inset(ins, ticklabels=False)
+    sph.clean_inset(ins, ticklabels=False)
     sph.mark_inset_axes(a, ins, edgecolor=ROI, linewidth=1.4)
     sph.connect_inset_axes(a, ins, corners=mode, color=ROI, linewidth=1.1)
 fig.suptitle("Connector routing — corners=", fontsize=12)
@@ -385,7 +380,7 @@ for i, curv in enumerate([0.0, 0.25, -0.25]):
     ins = sph.reproject_inset_axes(
         a, rect=[0.58, 0.06, 0.40, 0.40], transform="parent",
         projection="TAN", center=CHAIN_CENTER, size=2.6)
-    clean_inset(ins, ticklabels=False)
+    sph.clean_inset(ins, ticklabels=False)
     sph.mark_inset_axes(a, ins, edgecolor=ROI, linewidth=1.4)
     sph.connect_inset_axes(a, ins, color=ROI, linewidth=1.2, curvature=curv)
 fig.suptitle("Connector curvature — straight, outward, inward", fontsize=12)
@@ -422,7 +417,7 @@ inset = sph.reproject_inset_axes(
     ax, rect=[0.60, 0.04, 0.37, 0.37], transform="parent",
     projection="TAN", center=KNOT, size=1.6, bg_color=card_color())
 sph.plot_catalog(inset, synth, s=20, color=ROI)
-clean_inset(inset)
+sph.clean_inset(inset)
 
 sph.mark_inset_axes(ax, inset, edgecolor=ROI, linewidth=1.5)
 sph.connect_inset_axes(ax, inset, color=ROI, linewidth=1.0)
@@ -465,7 +460,7 @@ for (name, center, size), left in zip(TARGETS, (0.065, 0.385, 0.705)):
     stamp.imshow(sph.reproject_background(panorama, pano_hdr, stamp),
                  origin="lower")
     stamp.set_title(name, fontsize=9)
-    clean_inset(stamp)
+    sph.clean_inset(stamp)
     sph.mark_inset_axes(ax, stamp, edgecolor=ROI_WARM, linewidth=1.5)
     sph.connect_inset_axes(ax, stamp, color=ROI_WARM, linewidth=1.0)
 plt.show()
@@ -689,7 +684,7 @@ zoom = sph.reproject_inset_axes(
     ax, rect=[0.68, 0.06, 0.30, 0.42], transform="figure",
     projection="TAN", center=ROI_CENTER, size=ROI_SIZE, bg_color=zoom_bg)
 draw_science(zoom, smin=18, smax=120)
-clean_inset(zoom)
+sph.clean_inset(zoom)
 sph.mark_inset_axes(ax, zoom, edgecolor=MARK, linewidth=1.8)
 sph.connect_inset_axes(ax, zoom, color=MARK, linewidth=1.3, corners=[('ul','ul'),('ur','ur')])
 

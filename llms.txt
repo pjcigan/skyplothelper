@@ -1,6 +1,6 @@
 # skyplothelper
 
-> Astronomy sky-plotting for Python (v1.2.0): WCS frames, all-sky maps, tilted globes, redshift (z-RA) wedges, spectral cubes + moment maps, HEALPix, and catalog plotting — matplotlib and plotly.
+> Astronomy sky-plotting for Python (v1.2.1): WCS frames, all-sky maps, tilted globes, redshift (z-RA) wedges, spectral cubes + moment maps, HEALPix, and catalog plotting — matplotlib and plotly.
 
 skyplothelper is **frame-first**: create a sky frame, then draw data and decorations onto its axes. In a Python session, `import skyplothelper as sph; sph.overview()` prints the orientation below and `sph.recipes('<keyword>')` prints these recipes.
 

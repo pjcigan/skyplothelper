@@ -4,6 +4,36 @@ All notable changes to skyplothelper are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1]
+
+Consistency and discoverability follow-ups. Backward-compatible.
+
+### Added
+- **`clean_inset(ax, ticklabels=True)`** — drops an inset's verbose
+  `pos.eq.ra` / `pos.eq.dec` axis labels (keeping the tick labels), promoted
+  from the insets tutorial. `reproject_inset_axes` gains an opt-in
+  `clean=False` knob to apply it on creation.
+- `make_planet_frame` now exposes `lon_spacing` / `lat_spacing` / `npix` /
+  `grid` as explicit parameters, so one name controls the grid on every
+  projection (previously the correct spelling changed with `projection`).
+
+### Changed
+- **Unified grid kwargs across the frame builders.** `make_globe_frame` now
+  accepts `lon_spacing` / `lat_spacing` and `npix` — the same names
+  `make_wcs_frame` uses — so they work identically everywhere.
+
+### Deprecated
+- `make_globe_frame`'s `lon_deg_spacing` / `lat_deg_spacing` / `Naxispix`
+  (use `lon_spacing` / `lat_spacing` / `npix`). The old names still work but
+  emit a `DeprecationWarning`.
+
+### Docs
+- New *Zoom insets* guide section; the tutorial spells out
+  `rect=(left, bottom, width, height)`; `Other Parameters` sections on
+  `allsky_figure` / `offset_figure` surface the forwarded grid kwargs.
+
+[1.2.1]: https://github.com/pjcigan/skyplothelper/releases/tag/v1.2.1
+
 ## [1.2.0]
 
 This release adds a world-coordinate way to set a frame's field of view,
